@@ -78,12 +78,16 @@
   min-height:48px;
   border:none;
   border-radius:var(--r-pill);
-  background:#07C160;
+  /* 微信品牌绿没有进 tint 体系，这里按 tint 玻璃的三件套现配一份：
+     染色底（可降级的半透明）+ 模糊 + 上缘高光/发丝边/投影 */
+  background:rgba(7,193,96,.88);
   color:#fff;
   font-size:var(--fs-body);
   font-weight:700;
   letter-spacing:var(--ls-snap);
-  box-shadow:0 8px 20px -8px rgba(7,193,96,.55), inset 0 1px 0 rgba(255,255,255,.28);
+  -webkit-backdrop-filter:var(--gb-blur-sm);
+  backdrop-filter:var(--gb-blur-sm);
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.42),0 0 0 .5px rgba(4,140,68,.42),var(--gb-drop);
   transition:transform .12s ease-out, filter .15s;
 }
 .btn-wx:active{ transform:scale(.985); filter:brightness(.96); }

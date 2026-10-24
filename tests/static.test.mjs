@@ -730,4 +730,25 @@ test('今日页分叉欢迎横幅：品牌蓝配色 + 一辈子一次的闸门',
   assert(/\.fk-btn:active\{[\s\S]*?scale\(\.96\)/.test(css), '横幅按键按压应 scale(.96)（基准参数）');
 });
 
+test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键除外', () => {
+  const app = stripCssComments(read(path.join(MP, 'app.wxss')));
+  const today = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const weekly = stripCssComments(read(path.join(MP, 'pages', 'weekly', 'weekly.wxss')));
+  const login = stripCssComments(read(path.join(MP, 'pages', 'login', 'login.wxss')));
+
+  // 染色玻璃三件套：tint 底（半透明，可降级）+ 模糊 + tint 边光
+  assert(/\.btn-primary\{[\s\S]*?background:var\(--gb-tint-brand\)/.test(app), '主键应是品牌染色玻璃');
+  assert(/\.btn-primary\{[\s\S]*?backdrop-filter:var\(--gb-blur-sm\)/.test(app), '主键应带模糊');
+  assert(/\.btn-danger\{[\s\S]*?--gb-tint-red/.test(app), '危险键应是红染色玻璃');
+  assert(/\.tz-btn-red\{[\s\S]*?--gb-tint-red/.test(today), '立即打卡应是红染色玻璃');
+  assert(/\.tz-btn-ghost\{[\s\S]*?--gb-face-2/.test(today), '调整计划应是清玻璃');
+  assert(/\.btn-green\{[\s\S]*?--gb-tint-green/.test(weekly), '一键复制应是绿染色玻璃');
+  assert(/\.btn-wx\{[\s\S]*?backdrop-filter:var\(--gb-blur-sm\)/.test(login), '微信登录键应是绿染色玻璃');
+
+  // +1 是全站唯一发光体：紫色实底渐变，明确不参与玻璃系统
+  const start = today.indexOf('\n.plus1{');
+  const body = today.slice(start, today.indexOf('\n}', start));
+  assert(body.indexOf('backdrop-filter') < 0, '+1 主键不应使用毛玻璃');
+});
+
 export const suite = '小程序静态检查';

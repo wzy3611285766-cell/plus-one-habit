@@ -566,8 +566,14 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   transition:transform .12s ease-out,opacity .12s ease-out;
 }
 .btn::after{ border:none; }
-.btn:active{ transform:scale(.985); }
-.btn-primary{ background:var(--brand-gradient); color:var(--text-on-accent); box-shadow:var(--sh-accent); }
+.btn:active{ transform:scale(.97);filter:brightness(.96); }
+.btn-primary{
+  background:var(--gb-tint-brand);
+  color:var(--text-on-accent);
+  -webkit-backdrop-filter:var(--gb-blur-sm);
+  backdrop-filter:var(--gb-blur-sm);
+  box-shadow:var(--gb-tint-brand-hi),var(--gb-tint-brand-edge),var(--gb-drop);
+ }
 /* 次级按钮走玻璃面：面本身是渐变的半透明白，不支持模糊时仍然是一块浅色按钮 */
 .btn-ghost{
   background:var(--gb-face-2);
@@ -577,7 +583,13 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   box-shadow:var(--gb-edge-hi),var(--gb-hair);
 }
 .btn-plain{ background:transparent; color:var(--brand-500); box-shadow:none; }
-.btn-danger{ background:var(--danger-50); color:var(--danger-ink); }
+.btn-danger{
+  background:var(--gb-tint-red);
+  color:#fff;
+  -webkit-backdrop-filter:var(--gb-blur-sm);
+  backdrop-filter:var(--gb-blur-sm);
+  box-shadow:var(--gb-tint-red-edge),var(--gb-drop);
+ }
 .btn[disabled]{ opacity:.45; box-shadow:none; }
 .btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-xs); width:auto; padding:0 20rpx; }
 
