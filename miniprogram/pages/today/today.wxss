@@ -34,17 +34,13 @@
 
 /* 新建目标：42×42 方键，不与 +1 抢注意力 */
 .add-goal{
-  position:relative;
-  overflow:hidden;
+  /* iOS 导航区图标键：平时无底，按下浮现圆形灰高亮 */
   flex:none;
   width:calc(42px);height:calc(42px);
   border-radius:var(--r-md);
-  background:var(--gb-face-2);
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
-  box-shadow:var(--gb-edge-hi),var(--gb-hair);
+  background:none;
  }
-.add-goal:active{ transform:scale(.92);filter:brightness(.96); }
+.add-goal:active{ background:rgba(120,120,128,.18); }
 .add-h,.add-v{
   position:absolute;left:50%;top:50%;
   background:var(--brand-500);border-radius:2rpx;
@@ -254,15 +250,14 @@
   box-shadow:var(--gb-tint-amber-edge),var(--gb-drop);
  }
 .tz-btn-ghost{
-  background:var(--gb-face-2);
+  /* iOS 次级：灰底胶囊，与全局 .btn-ghost 同语言 */
+  background:var(--surface-sunken);
   color:var(--text-1);
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
-  box-shadow:var(--gb-edge-hi),var(--gb-hair);
+  box-shadow:none;
  }
 .tz-btn-red:active,
 .tz-btn-amber:active,
-.tz-btn-ghost:active{ transform:scale(.96);filter:brightness(.96); }
+.tz-btn-ghost:active{ transform:scale(.97);opacity:.85; }
 
 .all-done{
   display:flex;align-items:center;justify-content:center;gap:10rpx;
@@ -344,22 +339,18 @@
 .badge-today{ background:var(--brand-50);color:var(--brand-600); }
 
 .more-btn{
+  /* 同 add-goal：iOS 导航区图标键 */
   flex:none;
   width:32px;height:32px;min-height:0;
   margin:-4px -4px -4px auto;
   display:flex;align-items:center;justify-content:center;
-  position:relative;
-  overflow:hidden;
   border-radius:var(--r-sm);
-  background:var(--gb-face-2);
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
-  box-shadow:var(--gb-edge-hi),var(--gb-hair);
+  background:none;
   color:var(--text-3);
   font-size:var(--fs-body);
   letter-spacing:1rpx;
 }
-.more-btn:active{ transform:scale(.92);filter:brightness(.96);color:var(--brand-600); }
+.more-btn:active{ background:rgba(120,120,128,.18);color:var(--brand-600); }
 
 /* 进度条：凹槽 + 目标色填充 + 前沿白点 + 本次 +1 的追光 */
 .mini-progress{

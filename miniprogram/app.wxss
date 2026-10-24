@@ -563,8 +563,8 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 /* ---------- 按钮 ---------- */
 .btn{
   display:flex;align-items:center;justify-content:center;gap:8rpx;
-  width:100%;height:calc(48px);
-  /* 圆边：整枚胶囊（液态玻璃按键的形状） */
+  /* iOS 大键 = 50pt 胶囊，semibold + 收紧字距 */
+  width:100%;height:calc(50px);
   border-radius:var(--r-pill);
   /* 液态玻璃的镜面高光层挂在 ::after 上，这里要给它定位基准 */
   position:relative;
@@ -572,11 +572,13 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   border:none;
   font-size:var(--fs-body);
   font-weight:600;
+  letter-spacing:var(--ls-snap);
   line-height:1;
   transition:transform .12s ease-out,opacity .12s ease-out;
 }
 .btn::after{ border:none; }
-.btn:active{ transform:scale(.97);filter:brightness(.96); }
+/* iOS 的按压是透明度衰减（highlight），不是变暗 */
+.btn:active{ transform:scale(.97);opacity:.85; }
 .btn-primary{
   background:var(--gb-tint-brand);
   color:var(--text-on-accent);
@@ -584,13 +586,13 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   backdrop-filter:var(--gb-blur-sm);
   box-shadow:var(--gb-tint-brand-hi),var(--gb-tint-brand-edge),var(--gb-drop);
  }
-/* 次级按钮走玻璃面：面本身是渐变的半透明白，不支持模糊时仍然是一块浅色按钮 */
+/* 次级按钮 = iOS 的 systemGray5 灰底胶囊（SwiftUI .bordered 的灰）。
+   玻璃只留给栏与浮层（iOS 本来就用玻璃的地方），
+   内容区的次级操作用灰底——这是原生 iOS 最有辨识度的按键样式。 */
 .btn-ghost{
-  background:var(--gb-face-2);
+  background:var(--surface-sunken);
   color:var(--text-1);
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
-  box-shadow:var(--gb-edge-hi),var(--gb-hair);
+  box-shadow:none;
 }
 .btn-plain{ background:transparent; color:var(--brand-500); box-shadow:none; }
 .btn-danger{
@@ -609,10 +611,7 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 .btn-wx::after,
 .fk-btn::after,
 .tz-btn-red::after,
-.tz-btn-amber::after,
-.tz-btn-ghost::after,
-.add-goal::after,
-.more-btn::after{
+.tz-btn-amber::after{
   content:"";
   position:absolute;
   inset:0;
@@ -631,8 +630,8 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 .tz-btn-amber{
   text-shadow:0 1px 2px rgba(0,0,0,.18);
 }
-.btn[disabled]{ opacity:.45; box-shadow:none; }
-.btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-xs); width:auto; padding:0 20rpx; }
+.btn[disabled]{ opacity:.4; box-shadow:none; text-shadow:none; }
+.btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-pill); width:auto; padding:0 20rpx; }
 
 /* ---------- 输入 ---------- */
 .field{ margin-top:16px; }

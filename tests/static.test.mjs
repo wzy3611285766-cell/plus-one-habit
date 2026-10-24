@@ -751,9 +751,14 @@ test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键�
   assert(app.indexOf('rgba(255,255,255,.55) 0%,rgba(255,255,255,.16) 30%') >= 0, '镜面高光应又亮又窄（.55 → 30% 收光）');
   assert(app.indexOf('.fk-btn,') >= 0 && app.indexOf('text-shadow:0 1px 2px rgba(0,0,0,.18)') >= 0, '染色玻璃上的白字应有轻投影');
   assert(/\.btn\{[\s\S]*?border-radius:var\(--r-pill\)/.test(app), '按键应是全圆边胶囊');
+  assert(/\.btn\{[\s\S]*?height:calc\(50px\)/.test(app), '大键高度应对齐 iOS 的 50pt');
+  assert(/\.btn\{[\s\S]*?letter-spacing:var\(--ls-snap\)/.test(app), '按键文字应用 iOS 的收紧字距');
+  assert(/\.btn:active\{[\s\S]*?opacity:\.85/.test(app), '按压应是 iOS 的透明度衰减');
+  assert(/\.btn-ghost\{[\s\S]*?background:var\(--surface-sunken\)/.test(app), '次级键应是 iOS 灰底胶囊');
+  assert(/\.add-goal:active\{[\s\S]*?rgba\(120,120,128,\.18\)/.test(today) && /\.more-btn:active\{[\s\S]*?rgba\(120,120,128,\.18\)/.test(today), '图标键按下应浮现 iOS 灰色高亮');
   assert(/\.btn-danger\{[\s\S]*?--gb-tint-red/.test(app), '危险键应是红染色玻璃');
   assert(/\.tz-btn-red\{[\s\S]*?--gb-tint-red/.test(today), '立即打卡应是红染色玻璃');
-  assert(/\.tz-btn-ghost\{[\s\S]*?--gb-face-2/.test(today), '调整计划应是清玻璃');
+  assert(/\.tz-btn-ghost\{[\s\S]*?background:var\(--surface-sunken\)/.test(today), '调整计划应是 iOS 灰底次级键');
   assert(/\.btn-green\{[\s\S]*?--gb-tint-green/.test(weekly), '一键复制应是绿染色玻璃');
   assert(/\.btn-wx\{[\s\S]*?backdrop-filter:var\(--gb-blur-sm\)/.test(login), '微信登录键应是绿染色玻璃');
 
