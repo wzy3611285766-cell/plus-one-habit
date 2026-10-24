@@ -1,0 +1,94 @@
+/* 顶部 hero —— 对齐 final17.html 的 .hero（手机档，第 1598–1618 行）
+ *
+ * 手机上的形态是「一条顶栏」，不是一块大 banner：
+ *   标题一行（--fs-h3）+ 一排横向滚动的 chips，副标题直接隐藏。
+ * 数据变化时 chips 会自己刷新，所以它是页面里唯一常驻的「概览」。
+ *
+ * 双光晕 + 点阵都用伪元素画，零资源。
+ */
+
+.hero{
+  position:relative;
+  overflow:hidden;
+  margin:calc(var(--gap-block) * -.7) calc(var(--pad-page) * -1) 0;
+  padding:0 var(--pad-page) 8px;
+  background:var(--hero-grad);
+  color:var(--text-on-dark);
+}
+
+/* 左上冷光 + 右中暖绿，两层柔光叠在一起，平面渐变才有厚度 */
+.hero::before{
+  content:"";
+  position:absolute;inset:-60% -20% auto -20%;
+  height:200%;
+  pointer-events:none;
+  background:
+    radial-gradient(38% 42% at 22% 8%, var(--hero-halo-1), transparent 70%),
+    radial-gradient(34% 38% at 84% 26%, var(--hero-halo-2), transparent 70%);
+  filter:blur(var(--hero-halo-blur));
+}
+
+/* 1.1px 的点阵：只在深色面上看得见，负责把「纯色块」变成「材质」 */
+.hero::after{
+  content:"";
+  position:absolute;inset:0;
+  pointer-events:none;
+  background-image:radial-gradient(var(--hero-dots) 1.1px, transparent 1.1px);
+  background-size:22px 22px;
+  opacity:.55;
+}
+
+.hero-top{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+}
+
+.hero-title{
+  min-width:0;
+  font-size:var(--fs-h3);
+  font-weight:800;
+  letter-spacing:var(--ls-tight);
+  line-height:1.25;
+  color:#fff;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* ---------- chips：横向滚动条 ---------- */
+.hero-chips{
+  position:relative;
+  z-index:2;
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+  /* 两侧负边距让首尾 chip 贴到屏幕边缘，滚动时不会被裁一半 */
+  margin-left:calc(var(--pad-page) * -1);
+  margin-right:calc(var(--pad-page) * -1);
+  padding:0 var(--pad-page);
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+.chip{
+  flex:none;
+  display:flex;
+  align-items:baseline;
+  gap:4px;
+  padding:4px 10px;
+  border-radius:999rpx;
+  background:var(--chip-bg);
+  border:1px solid var(--chip-bd);
+  font-size:var(--fs-nano);
+  line-height:1.4;
+  color:rgba(255,255,255,.82);
+}
+.chip-k{ font-weight:500; }
+.chip-v{
+  font-size:var(--fs-xs);
+  font-weight:700;
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+}

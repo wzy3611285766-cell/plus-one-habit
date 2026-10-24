@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>云开发控制台 · 操作图解</title>
+<style>
+  /* 示意图，不是截图。按云开发控制台的布局画的，用来说明每一步点哪儿。 */
+
+  * { box-sizing: border-box; }
+
+  :root {
+    --bg: #eef0f4;
+    --card: #ffffff;
+    --ink: #1b1b1f;
+    --ink-2: #5c5c68;
+    --ink-3: #9797a4;
+    --line: #dcdee5;
+    --line-2: #eceef3;
+    --mark: #ff3b30;
+    --pick: #0a84ff;
+    --pick-soft: #e8f2ff;
+    --warn: #ff9500;
+    --warn-soft: #fff6e8;
+    --ok: #34c759;
+    --ok-soft: #eaf9ef;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101014;  --card: #1a1a1f;
+      --ink: #f0f0f4; --ink-2: #a8a8b4; --ink-3: #6e6e7a;
+      --line: #2e2e36; --line-2: #24242b;
+      --pick-soft: #0d2b4a; --warn-soft: #3a2a12; --ok-soft: #0e2f1c;
+    }
+  }
+
+  body {
+    margin: 0; padding: 40px 20px 90px;
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.75 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+
+  h1 { font-size: 27px; font-weight: 700; letter-spacing: -.4px; margin: 0 0 10px; }
+  .lead { color: var(--ink-2); margin: 0 0 12px; }
+  .caveat {
+    background: var(--warn-soft); color: var(--ink-2);
+    border-left: 3px solid var(--warn);
+    padding: 12px 16px; border-radius: 8px;
+    font-size: 13.5px; margin-bottom: 36px;
+  }
+  .caveat b { color: var(--ink); }
+
+  .figure { margin-bottom: 48px; }
+  .figure h2 { font-size: 19px; font-weight: 650; margin: 0 0 4px; }
+  .figure .h2sub { color: var(--ink-3); font-size: 13px; margin: 0 0 16px; }
+  .figure h2 .who {
+    font-size: 11px; font-weight: 600;
+    background: var(--pick-soft); color: #0a63c9;
+    padding: 2px 9px; border-radius: 999px; margin-left: 8px;
+    vertical-align: middle;
+  }
+  @media (prefers-color-scheme: dark) { .figure h2 .who { color: #6db6ff; } }
+
+  .shot {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+
+  /* 编号 */
+  .mark { position: relative; }
+  .badge {
+    position: absolute; top: -11px; right: -11px;
+    width: 23px; height: 23px; border-radius: 50%;
+    background: var(--mark); color: #fff;
+    font: 700 12.5px/1 -apple-system, sans-serif; font-style: normal;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 2.5px var(--card), 0 2px 6px rgba(0,0,0,.22);
+    z-index: 6;
+  }
+  .badge.left { left: -14px; right: auto; top: 50%; transform: translateY(-50%); }
+  .badge.tl { top: -11px; left: -11px; right: auto; }
+
+  /* 控制台外壳 */
+  .console-top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px;
+    background: #f6f7f9; border-bottom: 1px solid var(--line);
+    font-size: 12.5px; color: #4a4a55;
+  }
+  @media (prefers-color-scheme: dark) { .console-top { background: #212128; color: #b8b8c4; } }
+  .env-pill {
+    padding: 3px 10px; border-radius: 6px;
+    background: #fff; border: 1px solid var(--line);
+    font-family: ui-monospace, Menlo, monospace; font-size: 11.5px;
+  }
+  @media (prefers-color-scheme: dark) { .env-pill { background: #2b2b33; } }
+
+  .console-body { display: flex; min-height: 300px; }
+
+  .c-side {
+    width: 168px; flex: none;
+    background: #fafbfc; border-right: 1px solid var(--line);
+    padding: 12px 8px; font-size: 13px; color: #4a4a55;
+  }
+  @media (prefers-color-scheme: dark) { .c-side { background: #1e1e24; color: #b0b0bc; } }
+  .c-item { padding: 7px 10px; border-radius: 6px; white-space: nowrap; }
+  .c-item.on { background: var(--pick-soft); color: #0a63c9; font-weight: 650; }
+  @media (prefers-color-scheme: dark) { .c-item.on { color: #6db6ff; } }
+
+  .c-main { flex: 1; min-width: 0; padding: 16px 18px; }
+
+  /* 表格样式 */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th {
+    text-align: left; font-weight: 600; color: var(--ink-3);
+    font-size: 11.5px; padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
+  .tbl tr:last-child td { border-bottom: none; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+
+  .btn-add {
+    display: inline-block; padding: 6px 14px; border-radius: 8px;
+    background: var(--pick); color: #fff; font-size: 12.5px; font-weight: 600;
+  }
+  .bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .tab {
+    padding: 8px 16px; font-size: 13px; color: var(--ink-3);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab.on { color: var(--pick); border-bottom-color: var(--pick); font-weight: 650; }
+
+  .tag-uniq {
+    display: inline-block; padding: 1px 8px; border-radius: 4px;
+    background: var(--ok-soft); color: #0a7a45;
+    font-size: 11px; font-weight: 650;
+  }
+  @media (prefers-color-scheme: dark) { .tag-uniq { color: #4fd18b; } }
+
+  /* 表单 */
+  .form-row { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+  .form-label { width: 88px; flex: none; font-size: 13px; color: var(--ink-2); padding-top: 7px; }
+  .field {
+    display: inline-block; padding: 7px 12px; min-width: 170px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; font-size: 12.5px; color: var(--ink);
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { .field { background: #26262e; } }
+  .radio { display: flex; gap: 20px; align-items: center; padding-top: 6px; font-size: 13px; color: var(--ink-2); }
+  .dot {
+    display: inline-block; width: 15px; height: 15px; border-radius: 50%;
+    border: 1.5px solid var(--ink-3); margin-right: 6px; vertical-align: -2px;
+  }
+  .dot.on { border-color: var(--pick); border-width: 5px; }
+  .add-field { color: var(--pick); font-size: 12.5px; }
+
+  /* 权限选项 */
+  .perm-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-radius: 8px; margin-bottom: 8px;
+    border: 1px solid var(--line); font-size: 13.5px; color: var(--ink-2);
+  }
+  .perm-row.on { border-color: var(--ok); background: var(--ok-soft); color: var(--ink); font-weight: 600; }
+  .perm-row .dot { flex: none; }
+
+  /* 图例 */
+  .legend { margin: 18px 0 0; padding: 0; }
+  .legend li {
+    list-style: none; display: flex; gap: 11px; align-items: flex-start;
+    margin-bottom: 12px; font-size: 14px;
+  }
+  .num {
+    flex: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--mark); color: #fff; font: 700 12px/1 sans-serif;
+    display: flex; align-items: center; justify-content: center; margin-top: 4px;
+  }
+  .legend span { color: var(--ink-2); }
+  .legend b { color: var(--ink); }
+
+  code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px; background: var(--line-2);
+    padding: 2px 7px; border-radius: 5px;
+  }
+
+  .steps {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 26px 30px;
+  }
+  .steps h2 { font-size: 19px; margin: 0 0 18px; }
+  .steps ol { padding-left: 22px; margin: 0; }
+  .steps li { margin-bottom: 14px; }
+  .ok { color: #0a8a4a; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .ok { color: #4fd18b; } }
+  .warn { color: #b45309; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .warn { color: #fbbf24; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>云开发控制台 · 操作图解</h1>
+  <p class="lead">
+    建集合、建索引、设权限——这三步<b>必须你自己在网页上点</b>，我代劳不了。
+    但我可以把每一步点哪儿画清楚，你照着点就行。
+  </p>
+  <div class="caveat">
+    <b>再次提醒：界面可能因版本略有差异。</b>位置对不上不要紧，<b>认关键词</b>：
+    「数据库」「索引管理」「权限设置」「唯一」。
+  </div>
+
+  <!-- ================= 图 1 ================= -->
+  <div class="figure">
+    <h2>图 1 · 控制台里三个要去的地方<span class="who">你来做</span></h2>
+    <p class="h2sub">在开发者工具点顶部「☁ 云开发」打开，就是这个窗口</p>
+
+    <div class="shot">
+      <div class="console-top">
+        <span>环境</span>
+        <span class="env-pill">demo-d4ggmg7lf4736fb7c ▾</span>
+      </div>
+      <div class="console-body">
+        <div class="c-side">
+          <div class="c-item">概览</div>
+          <div class="c-item on mark">数据库<i class="badge left">1</i></div>
+          <div class="c-item">存储</div>
+          <div class="c-item mark">云函数<i class="badge left">2</i></div>
+          <div class="c-item">静态网站</div>
+          <div class="c-item">设置</div>
+        </div>
+        <div class="c-main" style="color:var(--ink-3);font-size:13.5px;">
+          <p>左边这排菜单是整个控制台的导航。</p>
+          <p><b style="color:var(--ink-2);">「数据库」</b>——建集合、建索引、设权限，全在这里。</p>
+          <p><b style="color:var(--ink-2);">「云函数」</b>——看云函数有没有上传成功、配环境变量。</p>
+        </div>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><span class="num">1</span><span><b>「数据库」</b> —— 第 2、3、4 步（建集合 / 建索引 / 设权限）都在这里做。</span></li>
+      <li><span class="num">2</span><span><b>「云函数」</b> —— 第 5、6 步（确认上传成功、配环境变量）在这里做。</span></li>
+    </ul>
+  </div>
+
+  <!-- ================= 图 2 ================= -->
+  <div class="figure">
+    <h2>图 2 · 建 5 个集合<span class="who">你来做</span></h2>
+    <p class="h2sub">点「数据库」之后的样子</p>
+
+    <div class="shot">
+      <div class="console-top">
+        <span>数据库</span>
+      </div>
+      <div class="console-body" style="min-height:auto;">
+        <div class="c-side">
+          <div class="c-item">概览</div>
+          <div class="c-item on">数据库</div>
+          <div class="c-item">存储</div>
+          <div class="c-item">云函数</div>
+        </div>
+        <div class="c-main">
+          <div class="bar">
+            <b style="font-size:14px;">集合列表</b>
+            <span class="btn-add mark">＋ 新建集合<i class="badge left">1</i></span>
+          </div>
+          <table class="tbl">
+            <tr><th>集合名称</th><th>记录数</th></tr>
+            <tr><td class="mono">accounts</td><td>0</td></tr>
+            <tr><td class="mono">sessions</td><td>0</td></tr>
+            <tr><td class="mono">verify_codes</td><td>0</td></tr>
+            <tr><td class="mono">rate_limits</td><td>0</td></tr>
+            <tr><td class="mono">sync_docs</td><td>0</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><span class="num">1</span><span>点「新建集合」，<b>输入名字后回车</b>，重复 5 次。</span></li>
+    </ul>
+
+    <div class="caveat" style="margin-top:18px;">
+      <b>⚠️ 名字必须一字不差</b>（区分大小写，用<b>半角下划线</b>，别用中文标点）：
+      <code>accounts</code> <code>sessions</code> <code>verify_codes</code>
+      <code>rate_limits</code> <code>sync_docs</code><br>
+      打错了不会立刻报错，但账号功能会莫名其妙失败——<b>这是最难查的一类问题，所以建的时候慢一点。</b>
+    </div>
+  </div>
+
+  <!-- ================= 图 3 ================= -->
+  <div class="figure">
+    <h2>图 3 · 建索引（最容易漏「唯一」的一步）<span class="who">你来做</span></h2>
+    <p class="h2sub">点某个集合的名字进入详情，上方有三个标签</p>
+
+    <div class="shot">
+      <div class="console-top"><span>数据库 / accounts</span></div>
+      <div class="c-main">
+        <div class="tabs">
+          <div class="tab">记录</div>
+          <div class="tab on mark">索引管理<i class="badge">1</i></div>
+          <div class="tab">权限设置</div>
+        </div>
+
+        <div class="bar">
+          <b style="font-size:13.5px;">已有索引</b>
+          <span class="btn-add mark">＋ 新建索引<i class="badge left">2</i></span>
+        </div>
+        <table class="tbl">
+          <tr><th>索引名称</th><th>字段</th><th>属性</th></tr>
+          <tr><td class="mono">email_1</td><td class="mono">email</td><td><span class="tag-uniq">唯一</span></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><span class="num">1</span><span>进集合后，点上方 <b>「索引管理」</b> 标签（默认停在「记录」上，需要手动切）。</span></li>
+      <li><span class="num">2</span><span>点「新建索引」，会弹出下面图 4 那个表单。</span></li>
+    </ul>
+  </div>
+
+  <!-- ================= 图 4 ================= -->
+  <div class="figure">
+    <h2>图 4 · 新建索引的表单，长这样<span class="who">你来做</span></h2>
+    <p class="h2sub">这张图最重要 —— 90% 的错误都在「唯一」这个开关上</p>
+
+    <div class="shot">
+      <div class="c-main" style="padding:26px;">
+        <div style="font-size:15px;font-weight:650;margin-bottom:22px;">新建索引</div>
+
+        <div class="form-row">
+          <div class="form-label">索引名称</div>
+          <div><span class="field">email_1</span>
+            <div style="font-size:11.5px;color:var(--ink-3);margin-top:6px;">随便起，能认出是哪个字段就行</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-label">索引属性</div>
+          <div class="radio mark">
+            <i class="badge left">1</i>
+            <span><i class="dot"></i>非唯一</span>
+            <span><i class="dot on"></i><b style="color:var(--ink);">唯一</b></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-label">字段</div>
+          <div class="mark">
+            <i class="badge left">2</i>
+            <span class="field">email</span>
+            <span class="field" style="min-width:90px;">升序 ▾</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-label"></div>
+          <div class="add-field mark">＋ 添加字段<i class="badge left">3</i></div>
+        </div>
+
+        <div style="text-align:right;padding-top:10px;border-top:1px solid var(--line);">
+          <span style="color:var(--ink-3);font-size:13px;margin-right:16px;">取消</span>
+          <span class="btn-add">确定</span>
+        </div>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><span class="num">1</span><span><b>「唯一」这个开关是重点。</b>
+        下面这张表里标了 ✅ 的，<b>必须选「唯一」</b>；标 ❌ 的选「非唯一」。<br>
+        <span class="warn">漏勾了不会立刻报错，但「两个人用同一个邮箱注册」时会出现两个账号 —— 这类问题事后很难补救。</span></span></li>
+
+      <li><span class="num">2</span><span><b>字段名要和你代码里用的一模一样</b>（区分大小写）。比如
+        <code>tokenHash</code> 不能写成 <code>tokenhash</code>。</span></li>
+
+      <li><span class="num">3</span><span>只有两处需要<b>多个字段</b>的组合索引：
+        <code>verify_codes</code> 的 <code>target</code>+<code>purpose</code>、
+        <code>sync_docs</code> 的 <code>userId</code>+<code>key</code>。
+        点「＋ 添加字段」加第二行即可。</span></li>
+    </ul>
+
+    <table class="tbl" style="margin-top:22px;background:var(--card);border-radius:10px;overflow:hidden;">
+      <tr><th>集合</th><th>字段</th><th>要勾「唯一」吗</th></tr>
+      <tr><td class="mono">accounts</td><td class="mono">email</td><td>✅ <b>要</b></td></tr>
+      <tr><td class="mono">accounts</td><td class="mono">phone</td><td>✅ <b>要</b></td></tr>
+      <tr><td class="mono">accounts</td><td class="mono">openid</td><td>✅ <b>要</b></td></tr>
+      <tr><td class="mono">sessions</td><td class="mono">tokenHash</td><td>✅ <b>要</b></td></tr>
+      <tr><td class="mono">sessions</td><td class="mono">userId</td><td>❌ 不要</td></tr>
+      <tr><td class="mono">sessions</td><td class="mono">expiresAt</td><td>❌ 不要</td></tr>
+      <tr><td class="mono">verify_codes</td><td class="mono">target + purpose</td><td>❌ 不要</td></tr>
+      <tr><td class="mono">verify_codes</td><td class="mono">expiresAt</td><td>❌ 不要</td></tr>
+      <tr><td class="mono">rate_limits</td><td class="mono">expiresAt</td><td>❌ 不要</td></tr>
+      <tr><td class="mono">sync_docs</td><td class="mono">userId + key</td><td>✅ <b>要</b></td></tr>
+    </table>
+  </div>
+
+  <!-- ================= 图 5 ================= -->
+  <div class="figure">
+    <h2>图 5 · 设权限 + 配环境变量<span class="who">你来做</span></h2>
+    <p class="h2sub">左边是集合的「权限设置」标签，右边是云函数的「配置」</p>
+
+    <div class="shot">
+      <div class="console-body" style="min-height:auto;">
+        <div class="c-main" style="border-right:1px solid var(--line);">
+          <div style="font-size:14px;font-weight:650;margin-bottom:14px;">集合 → 权限设置</div>
+          <div class="perm-row"><i class="dot"></i>所有用户可读，仅创建者可读写</div>
+          <div class="perm-row"><i class="dot"></i>仅创建者可读写</div>
+          <div class="perm-row"><i class="dot"></i>所有用户可读</div>
+          <div class="perm-row on mark"><i class="dot on"></i>所有用户不可读写<i class="badge left">1</i></div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:12px;">
+            选最后一项。<b>5 个集合都要设。</b>
+          </div>
+        </div>
+
+        <div class="c-main">
+          <div style="font-size:14px;font-weight:650;margin-bottom:14px;">云函数 → auth → 配置</div>
+          <table class="tbl">
+            <tr><th>变量名</th><th>值</th></tr>
+            <tr class="mark">
+              <td class="mono">AUTH_DEV_MODE<i class="badge left">2</i></td>
+              <td class="mono">1</td>
+            </tr>
+          </table>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:12px;">
+            只加这一条就够了。改完要<b>保存</b>。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><span class="num">1</span><span><b>「所有用户不可读写」</b> —— 必须选这个。<br>
+        所有数据访问都走云函数（云函数有管理员权限）。<br>
+        <span class="warn">留着默认权限的话，别人能直接读写你的数据库，绕过全部账号校验。</span></span></li>
+
+      <li><span class="num">2</span><span><b><code>AUTH_DEV_MODE = 1</code></b> —— 让它把「找回密码」的验证码
+        <b>直接显示在页面上</b>，而不是真发短信（个人主体发不了短信）。你就能自己把流程走完。<br>
+        以后接上真实通道，删掉这条即可。</span></li>
+    </ul>
+  </div>
+
+  <!-- ================= 结尾清单 ================= -->
+  <div class="steps">
+    <h2>你的完整勾选清单</h2>
+    <ol>
+      <li>导入项目 <code>C:\Users\Lenovo\WorkBuddy\2026-10-05-12-45-40\v3_work\wxapp</code><br>
+        <span class="ok">✔ 文件树里能看到 auth 和 sync 两个云函数文件夹</span></li>
+
+      <li>建 5 个集合：<code>accounts</code> <code>sessions</code> <code>verify_codes</code>
+        <code>rate_limits</code> <code>sync_docs</code><br>
+        <span class="ok">✔ 数据库里正好这 5 个</span></li>
+
+      <li>按图 4 那张表建 10 个索引（4 个勾「唯一」）<br>
+        <span class="ok">✔ 每个集合的索引列表里都齐了</span></li>
+
+      <li>5 个集合的权限都设为「所有用户不可读写」<br>
+        <span class="ok">✔ 权限设置里最后一项被选中</span></li>
+
+      <li>右键 <code>auth</code> → 上传并部署：云端安装依赖；再对 <code>sync</code> 做一次<br>
+        <span class="ok">✔ 云开发控制台的「云函数」里能看到这两个</span></li>
+
+      <li>给 <code>auth</code> 加环境变量 <code>AUTH_DEV_MODE=1</code>，保存<br>
+        <span class="ok">✔ 环境变量列表里能看到</span></li>
+
+      <li>点「编译」<br>
+        <span class="ok">✔ 看到「今日」页和底部四个页签 —— 成了 🎉</span></li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>

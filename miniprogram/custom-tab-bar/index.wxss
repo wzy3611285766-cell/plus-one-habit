@@ -1,0 +1,346 @@
+/* 底部导航 —— 逐项对齐 design-baseline.html 的 .nav（手机档，第 406–434 行）
+ *
+ *   容器：glass-bg 磨砂 + blur(20px) saturate(180%) + border-top + 内高光
+ *   按钮：flex:1、min-height 52px、圆角 r-md、竖排、字号 fs-nano
+ *   选中：不再是「顶部一小条指示线」，而是整枚玻璃胶囊 + 品牌色文字
+ *
+ * 图标是 24×24 线性图标（stroke 2.2）的 CSS 复刻，容器 20px：
+ *   viewBox 24 → 20px，缩放系数 0.8333，下面所有数值都按它换算。
+ * 全部用 currentColor 上色，激活态变色不需要额外规则。
+ */
+
+/**
+ * 自定义组件是 isolated 样式作用域：app.wxss 里的 `.theme-dark` 进不来，
+ * 组件根节点上的 class 匹配不到任何规则。CSS 变量本来会继承，但
+ * 「深色那一份重新赋值」写在 app.wxss 里，于是手动深色下这里拿到的仍是浅色值。
+ * 所以必须在本文件里补一份本组件用到的深色 token。
+ */
+.tabbar.theme-dark{
+  --glass-bg:rgba(28,28,30,.74);
+  --glass-bd:rgba(255,255,255,.06);
+  --line:#2C2C2E;
+  --text-3:#8E8E93;
+  --brand-600:#2E8DFF;
+  --sh-inset-hi:inset 0 1px 0 rgba(255,255,255,.055);
+}
+.tabbar.theme-light{
+  --glass-bg:rgba(255,255,255,.80);
+  --glass-bd:rgba(255,255,255,.65);
+  --line:#E5E5EA;
+  --text-3:#6E6E73;
+  --brand-600:#0064D6;
+  --sh-inset-hi:inset 0 1px 0 rgba(255,255,255,.62);
+}
+
+/* 深色下玻璃换成「暗面上的薄雾」：不能照抄浅色的白，否则整条栏发灰 */
+.tabbar.theme-dark .tab{
+  background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.04) 100%);
+  box-shadow:
+    inset 0 .5px 0 rgba(255,255,255,.16),
+    0 0 0 .5px rgba(255,255,255,.06);
+}
+.tabbar.theme-dark .tab::after{
+  background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.03) 42%,rgba(255,255,255,0) 62%);
+  opacity:.7;
+}
+.tabbar.theme-dark .tab.on{
+  background:linear-gradient(180deg,rgba(10,132,255,.28),rgba(10,132,255,.10));
+  box-shadow:
+    inset 0 .5px 0 rgba(255,255,255,.30),
+    inset 0 0 0 .5px rgba(102,171,255,.30),
+    0 1px 3px rgba(0,0,0,.30);
+}
+.tabbar.theme-dark .tab:active{
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.40),
+    0 0 0 .5px rgba(255,255,255,.06);
+}
+
+.tabbar{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:200;
+  /* final17 的手机档：5px 8px，不是 6px 12px —— 底部栏更薄、更贴边 */
+  padding:5px 8px calc(5px + env(safe-area-inset-bottom));
+  background:var(--glass-bg);
+  /* saturation 140% 取自 liquid-glass-react 的默认值（它也是 Apple 那套的 Web 复刻） */
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  backdrop-filter:blur(20px) saturate(140%);
+  border-top:1px solid var(--line);
+  box-shadow:var(--sh-inset-hi);
+  color:var(--text-3);
+}
+
+/* spacing 融合：相邻玻璃靠到 2px，视觉上几乎相接 —— 
+   这是 Liquid Glass 区别于普通毛玻璃的标志性行为 */
+.tabbar-inner{
+  display:flex;
+  gap:2px;
+}
+
+/**
+ * 底部按键参照 @callstack/liquid-glass 的语义（iOS 26 UIKit 玻璃的薄封装）。
+ *
+ * 那个库不暴露 blur / 折射 / 高光参数 —— 它们由系统材质完成。
+ * 它能调的只有四件事，这里逐条对齐：
+ *
+ *   effect="clear"     未选中项：更透明，几乎只剩模糊 → 底面 .14 → .05
+ *   effect="regular"   选中项：标准玻璃 + tintColor → 品牌色 .16 → .06
+ *   tintColor          品牌色只做「着色」，不是实心填充
+ *   interactive        按下时玻璃响应手指 → 塌陷 + 轻微提亮（不是只变暗）
+ *   Container spacing  相邻玻璃靠近时融合 → 格子间距收到 2px
+ *
+ * 参数母本换成了 liquid-glass-react（Web 版，6.5k stars）：
+ *   saturation 140            → 底栏 backdrop-filter 的 saturate
+ *   aberrationIntensity 2     → 边缘的极淡青/品红渐变（真色差做不到，做暗示）
+ *   elasticity 0.15           → 按下的回弹曲线
+ *   displacementScale 70      → 折射，WebView 里没有 feDisplacementMap，放弃
+ */
+.tab{
+  position:relative;
+  flex:1;
+  min-height:54px;
+  border-radius:var(--r-md);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  font-size:10px;
+  font-weight:var(--fw-semi);
+  color:var(--text-3);
+  /* effect="clear"：极淡的一层，靠底栏的模糊透出内容 */
+  background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.05) 100%);
+  box-shadow:
+    inset 0 .5px 0 rgba(255,255,255,.55),
+    inset 0 -.5px 0 rgba(255,255,255,.10),
+    /* 边缘内发光：真折射做不了，但「光在玻璃边缘聚集」是它最明显的观感，
+       这一圈极淡的内发光能补上大半 */
+    inset 0 0 12px rgba(255,255,255,.10),
+    0 0 0 .5px rgba(15,23,42,.04);
+  overflow:hidden;
+  /* elasticity：回弹用带过冲的曲线，0.15 的量感是「有点弹，但不晃」 */
+  transition:color .18s ease-out,background .18s ease-out,box-shadow .18s ease-out,
+    transform .26s cubic-bezier(.34,1.56,.64,1),filter .14s ease-out;
+}
+
+/**
+ * 镜面高光 + 边缘色差。
+ * 色差（aberrationIntensity）在真玻璃上是 RGB 三通道位移不一致，
+ * WebView 做不到通道分离，这里用两条极淡的青/品红对角渐变做暗示 ——
+ * 暗光下几乎看不见，亮光下边缘会「泛一点彩」，这是廉价但有效的近似。
+ */
+.tab::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.40) 0%,rgba(255,255,255,.08) 42%,rgba(255,255,255,0) 62%),
+    linear-gradient(135deg,rgba(0,200,255,.10) 0%,rgba(0,200,255,0) 38%),
+    linear-gradient(-45deg,rgba(255,0,128,.07) 0%,rgba(255,0,128,0) 42%);
+  opacity:.75;
+}
+
+/* interactive：按下时塌陷 + 提亮 */
+.tab:active{
+  transform:scale(.97);
+  filter:brightness(1.06);
+  box-shadow:
+    inset 0 2px 6px rgba(15,23,42,.12),
+    inset 0 -.5px 0 rgba(255,255,255,.12),
+    0 0 0 .5px rgba(15,23,42,.06);
+  background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.04) 100%);
+}
+
+/* effect="regular" + tintColor：选中项 = 品牌色玻璃 + 更强的边缘光 */
+.tab.on{
+  color:var(--brand-600);
+  background:linear-gradient(180deg,rgba(0,122,255,.16),rgba(0,122,255,.06));
+  box-shadow:
+    inset 0 .5px 0 rgba(255,255,255,.78),
+    inset 0 -.5px 0 rgba(255,255,255,.18),
+    inset 0 0 14px rgba(120,200,255,.18),
+    inset 0 0 0 .5px rgba(0,122,255,.22),
+    0 1px 3px rgba(0,84,190,.12);
+}
+.tab.on::after{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.14) 44%,rgba(255,255,255,0) 64%),
+    linear-gradient(135deg,rgba(120,220,255,.16) 0%,rgba(120,220,255,0) 40%),
+    linear-gradient(-45deg,rgba(255,120,190,.10) 0%,rgba(255,120,190,0) 44%);
+  opacity:.95;
+}
+.tab.on::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:2px;
+  z-index:2;
+  transform:translateX(-50%);
+  width:18px;
+  height:3px;
+  border-radius:999rpx;
+  background:var(--brand-500);
+}
+
+/* 图标与文字要压在高光层之上 */
+.ico,
+.lb{
+  position:relative;
+  z-index:1;
+}
+
+.lb{
+  font-size:10px;
+  font-weight:var(--fw-semi);
+  letter-spacing:var(--ls-label);
+  line-height:1.2;
+}
+
+/* ---------- 图标容器 ---------- */
+/* 容器仍是 20px（内部每个几何块都按 20px 换算过），
+   用 scale 放大到 22px：改一个数就行，不用重算二十个定位值 */
+.ico{
+  position:relative;
+  width:20px;
+  height:20px;
+  color:inherit;
+  flex:none;
+  transform:scale(1.1);
+  transform-origin:50% 50%;
+}
+/* 默认全部隐藏，下面按页签用更高优先级的选择器逐个打开。
+   不用属性选择器：小程序 WXSS 对它支持不稳，.g 这种类选择器最保险。 */
+.g{ position:absolute;background:currentColor;display:none; }
+
+/**
+ * 今日：清单打勾 —— 方框右上角是**开口**的，勾从缺口穿出去。
+ * 基准的 SVG 路径是 `M21 12v7…V5…h11`，到 h11 就停了，
+ * 所以右上角本来就没有边。这里拆成四段画，才能真的留出缺口：
+ *   g1 左边 + 底边（L 形，左下圆角）
+ *   g2 上边左段（圆头）
+ *   g3 右边下段（圆头，起点让开缺口）
+ *   g4 勾
+ */
+.ico-today .g1{
+  display:block;
+  left:1.6px;top:2.4px;
+  width:15.8px;height:15.2px;
+  background:transparent;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  border-radius:0 0 0 2.6px;
+  box-sizing:border-box;
+}
+.ico-today .g2{
+  display:block;
+  left:1.6px;top:1.4px;
+  width:10.6px;height:2px;
+  border-radius:1px;
+}
+.ico-today .g3{
+  display:block;
+  left:15.4px;top:8.2px;
+  width:2px;height:9.4px;
+  border-radius:1px;
+}
+/* 勾：L 形旋转 42°，尾端伸到缺口外 */
+.ico-today .g4{
+  display:block;
+  left:7.2px;top:5.2px;
+  width:5.4px;height:10px;
+  background:transparent;
+  border-right:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(42deg);
+  transform-origin:50% 50%;
+}
+
+/* ---------- 看板：坐标轴 + 三根柱 ---------- */
+/* 轴线与柱都用 2px 圆头条，末端是圆的（border 画不出圆头） */
+.ico-board .g1{
+  display:block;
+  left:2.4px;top:2.4px;
+  width:2px;height:15.2px;
+  border-radius:1px;
+}
+.ico-board .g2{
+  display:block;
+  left:2.4px;top:16.6px;
+  width:15.8px;height:2px;
+  border-radius:1px;
+}
+.ico-board .g3{
+  display:block;
+  left:5.8px;top:10.2px;
+  width:2.4px;height:5px;
+  border-radius:1.2px;
+}
+.ico-board .g4{
+  display:block;
+  left:9.8px;top:6.8px;
+  width:2.4px;height:8.4px;
+  border-radius:1.2px;
+}
+.ico-board .g5{
+  display:block;
+  left:13.8px;top:3.4px;
+  width:2.4px;height:11.8px;
+  border-radius:1.2px;
+}
+
+/* ---------- 周报：日历 ---------- */
+.ico-weekly .g1{
+  display:block;
+  left:2.5px;top:3.3px;
+  width:15px;height:15px;
+  background:transparent;
+  border:1.8px solid currentColor;
+  border-radius:2.5px;
+  box-sizing:border-box;
+}
+.ico-weekly .g2{
+  display:block;
+  left:2.5px;top:8.3px;
+  width:15px;height:1.8px;
+}
+.ico-weekly .g3{
+  display:block;
+  left:6.7px;top:1.7px;
+  width:1.8px;height:3.3px;
+  border-radius:1px;
+}
+.ico-weekly .g4{
+  display:block;
+  left:13.3px;top:1.7px;
+  width:1.8px;height:3.3px;
+  border-radius:1px;
+}
+
+/* ---------- 我的：头 + 肩 ---------- */
+.ico-mine .g1{
+  display:block;
+  left:6.7px;top:3.3px;
+  width:6.7px;height:6.7px;
+  background:transparent;
+  border:1.8px solid currentColor;
+  border-radius:50%;
+  box-sizing:border-box;
+}
+.ico-mine .g2{
+  display:block;
+  left:3.3px;top:11.7px;
+  width:13.3px;height:5.8px;
+  background:transparent;
+  border:1.8px solid currentColor;
+  border-bottom:0;
+  border-radius:50% 50% 0 0 / 100% 100% 0 0;
+  box-sizing:border-box;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .tab{ transition:none; }
+}

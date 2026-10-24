@@ -1,0 +1,10 @@
+{
+  "name": "sync",
+  "version": "1.0.0",
+  "description": "学习目标管理台 · 打卡数据多设备同步云函数（分片增量拉取 + 乐观并发推送）",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

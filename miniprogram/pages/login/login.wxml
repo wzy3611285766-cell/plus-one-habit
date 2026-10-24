@@ -1,0 +1,51 @@
+<view class="page login-page {{themeClass}}">
+
+  <!-- 品牌区：全站唯一使用主色渐变的地方，登录页需要一点仪式感 -->
+  <view class="brand">
+    <view class="brand-mark">+1</view>
+    <view class="brand-title">学习目标管理台</view>
+    <view class="brand-sub">微信一键登录</view>
+  </view>
+
+  <!-- 云开发没配好时，与其让用户反复试错，不如直接说清楚要做什么 -->
+  <view wx:if="{{!cloudReady}}" class="card">
+    <view class="card-title">账号功能尚未启用</view>
+    <view class="card-sub">暂时无法登录，打卡仍可正常记录。</view>
+    <view class="setup-list">
+      <view class="setup-item">
+        <text class="setup-no">1</text>
+        <text class="setup-txt">在微信开发者工具里创建云开发环境</text>
+      </view>
+      <view class="setup-item">
+        <text class="setup-no">2</text>
+        <text class="setup-txt">把环境 ID 填进 miniprogram/utils/config.js 的 ENV_ID</text>
+      </view>
+      <view class="setup-item">
+        <text class="setup-no">3</text>
+        <text class="setup-txt">上传部署 auth 与 sync 两个云函数</text>
+      </view>
+    </view>
+    <view class="field-hint">{{cloudError}}</view>
+    <view class="sheet-actions">
+      <button class="btn btn-ghost" bindtap="goGuest">先返回打卡</button>
+    </view>
+  </view>
+
+  <view wx:else class="card">
+
+    <view wx:if="{{error}}" class="banner banner-err">
+      <view class="banner-dot"></view>
+      <text class="banner-text">{{error}}</text>
+    </view>
+
+    <button class="btn btn-wx" disabled="{{busy}}" bindtap="doLogin">
+      <view class="wx-mark"></view>
+      <text>{{busy ? busyText : '微信一键登录'}}</text>
+    </button>
+
+    <view class="login-foot">
+      <text class="link" bindtap="goGuest">先不登录</text>
+    </view>
+  </view>
+
+</view>

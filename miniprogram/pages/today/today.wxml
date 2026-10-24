@@ -1,0 +1,289 @@
+<view class="page today {{themeClass}}">
+
+  <app-hero />
+
+  <!-- ---------- 日期与操作：压成一行，把首屏留给目标卡 ---------- -->
+  <view class="head">
+    <text class="date">{{dateText}} · {{greeting}}</text>
+    <view class="head-actions">
+      <view wx:if="{{!logged}}" class="login-link" bindtap="goLogin">登录</view>
+      <view class="add-goal" bindtap="goNewGoal">
+        <view class="add-h"></view>
+        <view class="add-v"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 统计条：四张竖排数字卡（对齐基准 #todayStats） ---------- -->
+  <view wx:if="{{hasGoals}}" class="stat-strip">
+    <view wx:for="{{statCards}}" wx:key="k" class="stat-card">
+      <view class="stat-ico {{item.tone}}">
+        <view wx:if="{{item.k === 'hit'}}" class="ico-check"></view>
+        <view wx:elif="{{item.k === 'logs'}}" class="ico-clock"></view>
+        <view wx:elif="{{item.k === 'goals'}}" class="ico-target"></view>
+        <view wx:else class="ico-flame"></view>
+      </view>
+      <view class="stat-text">
+        <text class="stat-num num">{{item.num}}</text>
+        <text class="stat-lbl">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!--
+    今日区：漏卡 / 休息日 / 全部完成。
+    图标全部用 CSS 画（小程序 WXML 里没有 svg 标签，也不引入位图）。
+  -->
+  <view wx:if="{{hasTodayZone}}" class="today-zone">
+
+    <view wx:if="{{allDoneText}}" class="all-done">
+      <view class="tz-check"></view>
+      <text class="all-done-text">{{allDoneText}}</text>
+    </view>
+
+    <block wx:if="{{missedRows.length || restRows.length}}">
+      <view class="tz-title">
+        <view class="tz-dot"></view>
+        <text>今天要处理</text>
+      </view>
+
+      <view wx:for="{{missedRows}}" wx:key="gid" class="missed-card">
+        <view class="tz-icon tz-icon-alert"><view class="tz-bang"></view></view>
+        <view class="tz-info">
+          <text class="tz-name">{{item.name}}</text>
+          <text class="tz-why tz-why-danger">{{item.overdue ? '已逾期 ' + item.overdueDays + ' 天，且昨天没学' : '昨天没学 · 已滚入今日'}}</text>
+        </view>
+        <view class="tz-actions">
+          <view class="tz-btn tz-btn-red" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
+          <view wx:if="{{item.overdue}}" class="tz-btn tz-btn-ghost" data-gid="{{item.gid}}" bindtap="goEditGoal">调整计划</view>
+        </view>
+      </view>
+
+      <view wx:for="{{restRows}}" wx:key="gid" class="rest-card">
+        <view class="tz-icon tz-icon-cal"><view class="tz-cal"></view></view>
+        <view class="tz-info">
+          <text class="tz-name">{{item.name}}</text>
+          <text class="tz-why tz-why-amber">昨天漏打卡 · 已用本周休息日（每周 1 天），连续天数保住了</text>
+        </view>
+        <view class="tz-btn tz-btn-amber" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
+      </view>
+    </block>
+
+  </view>
+
+  <!-- ---------- 目标卡列表：对齐基准 .goal-row ---------- -->
+  <view class="today-grid">
+    <view
+      wx:for="{{rows}}"
+      wx:key="gid"
+      class="goal-row {{item.rowClass}}"
+      style="--gc:{{item.color}}"
+    >
+
+      <view class="goal-head">
+        <view class="goal-color-dot"></view>
+        <text class="goal-name">{{item.name}}</text>
+        <text wx:if="{{item.badge}}" class="badge {{item.badgeClass}}">{{item.badge}}</text>
+        <view class="more-btn" data-gid="{{item.gid}}" catchtap="openMenu">···</view>
+      </view>
+
+      <!-- 进度：凹槽 + 目标色填充 + 前沿白点（对应基准 .mini-progress） -->
+      <view class="mini-progress">
+        <view class="mp-fill {{bumpGid === item.gid ? 'just-hit' : ''}}" style="width:{{item.pct}}%;background:{{item.color}}"></view>
+      </view>
+
+      <!-- 信息行：总量 / 截止 / 连续 / 建议 -->
+      <view class="goal-facts">
+        <text>总量 <text class="num">{{item.total}}</text></text>
+        <text>截止 <text class="num">{{item.deadline}}</text></text>
+        <text wx:if="{{item.streakNum > 0}}" class="streak-flame">连续 <text class="num">{{item.streakNum}}</text> 天</text>
+        <text wx:if="{{!item.complete}}">建议 <text class="num">{{item.quotaNum}}</text> {{item.unit}}</text>
+      </view>
+
+      <!-- 主操作区：整行横条 +1，右侧今日进度（基准手机端形态） -->
+      <view class="goal-action">
+        <view
+          class="plus1 {{bumpGid === item.gid ? popClass : ''}} {{bumpGid === item.gid ? p1Level : ''}}"
+          data-gid="{{item.gid}}"
+          bindtap="onPlus1"
+        >
+          <view class="plus1-glow"></view>
+          <view class="plus1-sheen"></view>
+          <text class="plus1-sign">+1</text>
+          <!-- 基准这里还有一句「长按连打 · 连击有音阶」，长按功能已按你的要求删掉，
+               留着那行字就是在教用户做一件不存在的事，所以整行去掉。 -->
+
+        </view>
+
+        <view class="goal-action-side">
+          <view class="cp-bar">
+            <view class="cp-fill" style="width:{{item.todayPct}}%;background:{{item.color}}"></view>
+          </view>
+          <view class="cp-text">
+            今日 <text class="num">{{item.got}}</text> / {{item.quotaNum}} {{item.unit}}
+          </view>
+          <text wx:if="{{item.gotNum > 0}}" class="link-undo" data-gid="{{item.gid}}" bindtap="onUndo">撤销</text>
+        </view>
+      </view>
+
+    </view>
+  </view>
+
+  <!--
+    已完成目标区（对齐基准 #doneSection）。
+    已完成的目标从主列表挪到这里：主列表只放「今天还要做的」，
+    历史达成有明确去处，也不会把 +1 主操作挤出首屏。
+  -->
+  <view wx:if="{{doneRows.length}}" class="done-sec">
+    <view class="done-sec-title">
+      <view class="done-check"></view>
+      <text>已完成</text>
+      <text class="done-cnt">{{doneRows.length}}</text>
+    </view>
+
+    <view class="today-grid">
+      <view wx:for="{{doneRows}}" wx:key="gid" class="goal-row {{item.rowClass}}" style="--gc:{{item.color}}">
+        <view class="goal-head">
+          <view class="goal-color-dot"></view>
+          <text class="goal-name">{{item.name}}</text>
+          <text wx:if="{{item.badge}}" class="badge {{item.badgeClass}}">{{item.badge}}</text>
+          <view class="more-btn" data-gid="{{item.gid}}" catchtap="openMenu">···</view>
+        </view>
+
+        <view class="mini-progress">
+          <view class="mp-fill" style="width:100%;background:{{item.color}}"></view>
+        </view>
+
+        <view class="goal-facts">
+          <text>共 <text class="num">{{item.done}}</text> {{item.unit}}</text>
+          <text>截止 <text class="num">{{item.deadline}}</text></text>
+        </view>
+
+        <view class="today-note">
+          <view class="note-check"></view>
+          <text>目标已达成</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 本周打卡节奏（对齐基准 #weekRhythm） ---------- -->
+  <view wx:if="{{hasGoals}}" class="card rhythm-card">
+    <view class="card-title">
+      <text>本周打卡节奏</text>
+      <text class="rhythm-sum">已投入 <text class="num">{{rhythmTotal}}</text> 次</text>
+    </view>
+    <view class="rhythm">
+      <view wx:for="{{rhythm}}" wx:key="d" class="rhythm-day {{item.cls}}">
+        <text class="dl">{{item.label}}</text>
+        <view class="dd">
+          <view wx:if="{{item.hit}}" class="rhythm-check"></view>
+          <text wx:else>{{item.dot}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 空态 ---------- -->
+  <view wx:if="{{!hasGoals}}" class="card empty">
+    <view class="empty-title">还没有目标</view>
+    <view class="empty-desc">
+      目标要有总量和终点，才能算出「今天建议做多少」。
+      比如「背 1200 个单词，12 月 20 日前完成」。
+    </view>
+    <view class="empty-actions">
+      <button class="btn btn-primary" bindtap="goNewGoal">新建目标</button>
+    </view>
+  </view>
+
+  <!--
+    过审模式：新建目标 = 从预设里挑一个。
+    这里**没有任何输入框**，四个选项的名称、单位、总量、周期都是定死的。
+  -->
+  <view wx:if="{{presetOn}}" class="mask" bindtap="closePreset">
+    <view class="sheet" catchtap="noopMenu">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">选一个目标</view>
+
+      <view class="preset-list">
+        <view
+          wx:for="{{presets}}"
+          wx:key="name"
+          class="preset-item"
+          data-i="{{index}}"
+          bindtap="pickPreset"
+        >
+          <view class="preset-dot" style="background:{{item.color}}"></view>
+          <view class="preset-main">
+            <text class="preset-name">{{item.name}}</text>
+            <text class="preset-sub">共 {{item.total}} {{item.unit}} · {{item.days}} 天</text>
+          </view>
+          <text class="preset-add">添加</text>
+        </view>
+      </view>
+
+      <view class="sheet-actions">
+        <button class="btn btn-ghost" bindtap="closePreset">取消</button>
+      </view>
+    </view>
+  </view>
+
+  <!--
+    「⋯」目标操作抽屉。对应设计基准的 #goalMenu：
+    遮罩 blur(3px) + 底部磨砂玻璃面板 + 顶部拖拽条 + gmUp 弹出动画。
+  -->
+  <view wx:if="{{menuOn}}" class="goal-menu">
+    <view class="goal-menu-mask" bindtap="closeMenu"></view>
+
+    <view class="goal-menu-sheet" catchtap="noopMenu">
+      <view class="menu-head">{{menuName}}</view>
+
+      <view class="menu-item" bindtap="menuEdit">
+        <view class="mi-ico mi-pencil"></view>
+        <text>编辑目标</text>
+      </view>
+
+      <view wx:if="{{menuOverdue}}" class="menu-item" bindtap="menuEdit">
+        <view class="mi-ico mi-flag"></view>
+        <text>调整计划</text>
+      </view>
+
+      <view class="menu-item menu-item-danger" bindtap="menuDelete">
+        <view class="mi-ico mi-trash"></view>
+        <text>删除目标</text>
+      </view>
+
+      <view class="menu-item menu-item-ghost" bindtap="closeMenu">取消</view>
+    </view>
+  </view>
+
+  <!--
+    +1 爆发层，对应基准的 .p1-ring / .p1-spark / .p1-float。
+    坐标是视口坐标（position:fixed），来自 tap 事件 detail 减去当前滚动量。
+  -->
+  <view wx:for="{{fxList}}" wx:for-item="fx" wx:key="k" class="p1-fx">
+    <view class="p1-ring {{fx.thin ? 'is-thin' : ''}}" style="left:{{fx.x}}px;top:{{fx.y}}px;border-color:{{fx.color}}"></view>
+    <view
+      wx:for="{{fx.sparks}}"
+      wx:for-item="sp"
+      wx:key="k"
+      class="p1-spark"
+      style="left:{{fx.x}}px;top:{{fx.y}}px;background:{{sp.bg}};--dx:{{sp.dx}}px;--dy:{{sp.dy}}px;animation-delay:{{sp.delay}}ms"
+    ></view>
+    <view class="p1-float" style="left:{{fx.x}}px;top:{{fx.y}}px;color:{{fx.color}}">+1</view>
+    <view wx:if="{{fx.combo}}" class="p1-float" style="left:{{fx.x}}px;top:{{fx.y - 34}}px;color:#f59e0b">×{{fx.combo}} 连击</view>
+  </view>
+
+  <!-- 达成彩带 -->
+  <view wx:if="{{confettiOn}}" class="confetti-layer">
+    <view class="confetti-glow"></view>
+    <view
+      wx:for="{{confetti}}"
+      wx:key="k"
+      class="confetti-bit"
+      style="left:{{item.left}}vw;width:{{item.w}}px;height:{{item.h}}px;background:{{item.bg}};border-radius:{{item.round ? '50%' : '2px'}};--drift:{{item.drift}}px;animation-duration:{{item.dur}}s;animation-delay:{{item.delay}}s"
+    ></view>
+  </view>
+
+  <view class="toast {{toastOn ? 'is-on' : ''}}">{{toast}}</view>
+</view>

@@ -1,0 +1,438 @@
+/* 进度看板 —— 数值对齐 design-baseline.html 的看板段（第 1046–1160 行）
+ *
+ * 手机档为默认；≥640px 回退到基准的桌面档（两列网格、更大的内边距）。
+ * 圆环用 conic-gradient 代替基准的 SVG stroke-dasharray：
+ *   小程序没有 <svg>，而 canvas 是原生组件会盖住弹层，conic 是唯一干净的画法。
+ *   代价：环的两端做不到 stroke-linecap:round 的圆头。
+ */
+
+.board{ padding-bottom:calc(var(--pad-nav) + 20rpx); }
+
+/* =====================================================================
+   统计条（两张卡）
+   ===================================================================== */
+/* 与今日页一致：手机端是横向滚动条，不是网格 */
+.stat-strip{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+  margin-bottom:var(--gap-card);
+  margin-left:calc(var(--pad-page) * -1);
+  margin-right:calc(var(--pad-page) * -1);
+  padding:0 var(--pad-page);
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.stat-card{
+  flex:1 1 0;
+  min-width:calc(50% - 4px);
+  display:flex;align-items:center;gap:8px;
+  padding:9px 11px;
+  border-radius:var(--r-md);
+  background:var(--surface);
+  box-shadow:var(--sh-1);
+}
+.stat-ico{
+  flex:none;
+  width:36px;height:36px;
+  border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+}
+.stat-ico.is-amber{ background:var(--amber-50);color:var(--amber-ink); }
+.stat-ico.is-brand{ background:var(--brand-50);color:var(--brand-600); }
+.stat-text{ display:flex;flex-direction:column;min-width:0; }
+.stat-num{
+  font-size:var(--fs-num-lg);
+  font-weight:800;
+  line-height:1.1;
+  letter-spacing:var(--ls-tight);
+  color:var(--text-1);
+}
+.stat-lbl{
+  margin-top:2px;
+  font-size:var(--fs-xs);
+  color:var(--text-3);
+  white-space:nowrap;
+}
+
+/* =====================================================================
+   目标卡
+   ===================================================================== */
+.board-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+.goal-card{
+  position:relative;
+  overflow:hidden;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  box-shadow:var(--sh-2),var(--sh-inset-hi);
+  padding:var(--pad-card);
+}
+/* 卡头一条 4px 通栏目标色 */
+.goal-card::before{
+  content:"";
+  position:absolute;left:0;right:0;top:0;
+  height:4px;
+  background:var(--gc,var(--brand-500));
+  opacity:.9;
+}
+.goal-card.is-done{ background:var(--success-50);border-color:var(--success-100); }
+
+.goal-head{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:12px;
+  padding-top:4px;   /* 让开顶部那条色条 */
+}
+.goal-color-dot{
+  flex:none;
+  width:12px;height:12px;border-radius:4px;
+  background:var(--gc,var(--brand-500));
+}
+.goal-name{
+  flex:1;min-width:0;
+  font-size:var(--fs-body);
+  font-weight:600;
+  letter-spacing:var(--ls-snap);
+  line-height:1.35;
+  color:var(--text-1);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.badge{
+  flex:none;
+  padding:3px 8px;
+  border-radius:999rpx;
+  font-size:var(--fs-nano);
+  font-weight:700;
+}
+.badge-sample{ background:var(--amber-100);color:var(--amber-ink); }
+
+/* ---------- 圆环 + 三行统计 ---------- */
+.ring-wrap{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin-bottom:14px;
+}
+.ring{
+  --size:96px;
+  flex:none;
+  width:var(--size);
+  height:var(--size);
+  border-radius:50%;
+  /* --p 是 0~100 的完成率；从 12 点顺时针铺 --p%，其余用轨道色 */
+  background:conic-gradient(
+    var(--gc,var(--brand-500)) calc(var(--p) * 1%),
+    var(--track) 0
+  );
+  display:flex;align-items:center;justify-content:center;
+}
+/* 环宽 20px（基准 stroke-width 10 / r 40 → 环的内径 70/96） */
+.ring-hole{
+  width:calc(var(--size) - 20px);
+  height:calc(var(--size) - 20px);
+  border-radius:50%;
+  background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.ring-num{
+  font-size:var(--fs-num-lg);
+  font-weight:800;
+  line-height:1.1;
+  letter-spacing:var(--ls-tight);
+  color:var(--text-1);
+}
+.ring-sign{
+  font-size:.62em;
+  font-weight:700;
+  color:var(--text-4);
+  margin-left:1rpx;
+}
+.ring-cap{
+  margin-top:2px;
+  font-size:var(--fs-nano);
+  color:var(--text-3);
+}
+
+.ring-stats{ flex:1;min-width:0; }
+.stat-line{
+  display:flex;align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-bottom:6px;
+  font-size:var(--fs-sm);
+  color:var(--text-2);
+}
+.stat-line:last-child{ margin-bottom:0; }
+.sl-k{ color:var(--text-3); }
+.sl-v{ color:var(--text-1);font-weight:700;font-variant-numeric:tabular-nums; }
+.sl-eta{ color:var(--text-2); }
+.sl-eta.is-ahead{ color:var(--success-ink);font-weight:700; }
+.sl-eta.is-behind{ color:var(--danger-ink);font-weight:700; }
+
+/* ---------- 预案 ---------- */
+.plan-line{
+  display:flex;align-items:flex-start;gap:5px;
+  margin-bottom:10px;
+  padding:8px 10px;
+  border-radius:var(--r-sm);
+  background:var(--surface-2);
+  border:1px solid var(--line-soft);
+  font-size:var(--fs-xs);
+  line-height:1.6;
+  color:var(--text-2);
+}
+.plan-tag{ flex:none;font-weight:700;color:var(--brand-500); }
+.plan-txt{ flex:1;min-width:0; }
+
+/* ---------- 展开记录 ---------- */
+.log-toggle{
+  padding:6px 0;
+  font-size:var(--fs-xs);
+  font-weight:600;
+  color:var(--brand-500);
+}
+.log-toggle:active{ opacity:.6; }
+
+.recent-logs{
+  margin-top:4px;
+  padding-top:10px;
+  border-top:1px dashed var(--line-soft);
+}
+.log-item{
+  display:flex;align-items:center;gap:6px;
+  padding:3px 0;
+  font-size:var(--fs-xs);
+  color:var(--text-2);
+}
+.log-date{ color:var(--text-3);font-variant-numeric:tabular-nums; }
+.log-amt{ color:var(--text-1);font-weight:700;font-variant-numeric:tabular-nums; }
+.log-unit{ color:var(--text-2); }
+.log-min{ color:var(--text-3); }
+.log-makeup{
+  flex:none;
+  padding:1px 6px;
+  border-radius:var(--r-xs);
+  background:var(--surface-sunken,var(--surface-2));
+  color:var(--text-3);
+  font-size:var(--fs-nano);
+  font-weight:700;
+}
+/* 删除：一次点变红、再点确认（与基准的两段式一致，不是长按） */
+.log-del{
+  margin-left:auto;
+  flex:none;
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-xs);
+  color:var(--text-3);
+  font-size:var(--fs-sm);
+  line-height:1;
+}
+.log-del:active{ background:rgba(255,59,48,.14);color:var(--danger-ink); }
+.log-del.is-confirm{
+  width:auto;
+  padding:0 10px;
+  border-radius:999rpx;
+  background:var(--danger-500);
+  color:#fff;
+  font-size:var(--fs-nano);
+  font-weight:600;
+}
+.log-more{ display:block;margin-top:6px;font-size:var(--fs-nano);color:var(--text-4); }
+
+/* ---------- 已完成分区标题 ---------- */
+.board-sec-title{
+  display:flex;align-items:center;gap:8px;
+  grid-column:1/-1;
+  margin:18px 0 10px;
+  padding-top:14px;
+  border-top:1.5px dashed var(--line-soft);
+  font-size:var(--fs-h3);
+  font-weight:700;
+  color:var(--text-2);
+}
+.sec-check{
+  flex:none;
+  width:6px;height:11px;
+  border-right:2.4px solid var(--success-600);
+  border-bottom:2.4px solid var(--success-600);
+  transform:rotate(42deg);
+  margin-top:-3px;
+}
+.board-sec-title .cnt{
+  padding:1px 9px;
+  border-radius:999rpx;
+  background:var(--success-50);
+  color:var(--success-ink);
+  font-size:var(--fs-xs);
+  font-weight:700;
+}
+
+/* =====================================================================
+   近 14 天堆叠图 + 图例
+   ===================================================================== */
+.chart-card{ margin-top:var(--gap-card); }
+.chart{
+  position:relative;
+  display:flex;
+  align-items:flex-end;
+  gap:clamp(3px,1vw,8px);
+  height:170px;
+  margin-top:16px;
+}
+.col{
+  position:relative;
+  flex:1 1 0;
+  min-width:0;
+  height:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  gap:8rpx;
+}
+.col-track{
+  width:100%;flex:1;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.col-stack{
+  width:72%;max-width:22px;
+  display:flex;flex-direction:column;
+  border-radius:5px 5px 3px 3px;
+  overflow:hidden;
+  min-height:2px;
+}
+.col.is-today .col-stack{ box-shadow:0 0 0 2rpx var(--brand-200); }
+.col.is-picked .col-stack{ box-shadow:0 0 0 3rpx var(--brand-300); }
+.seg{
+  width:100%;min-height:2px;
+  background:var(--gc,var(--brand-500));
+  border-top:1px solid var(--surface);
+}
+.seg:first-child{ border-top:none; }
+.col-label{
+  font-size:var(--fs-nano);
+  color:var(--text-4);
+  font-variant-numeric:tabular-nums;
+}
+.col.is-today .col-label{ color:var(--brand-500);font-weight:700; }
+
+/* 点击气泡：挂在柱子下方（上方是卡片标题，不该被盖住） */
+.col-tip{
+  position:absolute;
+  top:calc(100% + 4rpx);
+  left:50%;
+  transform:translateX(-50%);
+  z-index:5;
+  min-width:88px;
+  max-width:140px;
+  padding:8px 10px;
+  border-radius:var(--r-sm);
+  background:#1D1D1F;
+  color:#F2F2F7;
+  box-shadow:0 8px 24px -8px rgba(0,0,0,.45);
+  pointer-events:none;
+}
+.chart .col:first-child .col-tip{ left:0;transform:none; }
+.chart .col:last-child .col-tip{ left:auto;right:0;transform:none; }
+.tip-date{ display:block;margin-bottom:4rpx;font-size:var(--fs-nano);opacity:.72; }
+.tip-empty{ font-size:var(--fs-nano);opacity:.72; }
+.tip-row{ display:flex;align-items:center;gap:6rpx;margin-top:3rpx; }
+.tip-dot{ flex:none;width:8rpx;height:8rpx;border-radius:50%; }
+.tip-name{
+  flex:1;min-width:0;
+  font-size:var(--fs-nano);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tip-amt{ flex:none;font-size:var(--fs-nano);font-weight:600;font-variant-numeric:tabular-nums; }
+
+.legend{
+  display:flex;flex-wrap:wrap;gap:10px;
+  margin-top:12px;
+}
+.legend-item{
+  display:flex;align-items:center;gap:5px;
+  font-size:var(--fs-xs);
+  color:var(--text-2);
+  min-width:0;
+}
+.legend-dot{
+  flex:none;
+  width:10px;height:10px;border-radius:3px;
+  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14);
+}
+.legend-name{
+  max-width:120px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.chart-hint{
+  display:block;
+  margin-top:10px;
+  font-size:var(--fs-nano);
+  color:var(--text-4);
+}
+
+/* =====================================================================
+   近 35 天热力
+   ===================================================================== */
+.heat-days{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:4px;
+  margin-bottom:3px;
+  font-size:var(--fs-nano);
+  color:var(--text-3);
+  text-align:center;
+}
+.heat-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:4px;
+}
+.heat-cell{
+  height:14px;
+  border-radius:4px;
+  background:var(--surface-sunken,var(--track));
+}
+.heat-cell.is-blank{ background:transparent; }
+.heat-cell.l1{ background:rgba(0,122,255,.22); }
+.heat-cell.l2{ background:rgba(0,122,255,.45); }
+.heat-cell.l3{ background:rgba(0,122,255,.72); }
+.heat-cell.l4{ background:var(--brand-500); }
+.heat-cell.is-today{ outline:2px solid var(--text-4);outline-offset:-1px; }
+.heat-legend{
+  display:flex;align-items:center;justify-content:flex-end;gap:4px;
+  margin-top:10px;
+  font-size:var(--fs-nano);
+  color:var(--text-3);
+}
+.heat-legend .heat-cell{ width:11px;height:11px; }
+.legend-k{ margin:0 2rpx; }
+.heat-note{
+  display:block;margin-top:6px;
+  font-size:var(--fs-nano);
+  color:var(--text-4);
+}
+
+/* =====================================================================
+   最近动态
+   ===================================================================== */
+.feed-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;
+  border-bottom:1rpx dashed var(--line-soft);
+}
+.feed-row:last-child{ border-bottom:none; }
+.feed-dot{ flex:none;width:9px;height:9px;border-radius:50%; }
+.feed-main{
+  flex:1;min-width:0;
+  font-size:var(--fs-sm);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.feed-name{ font-weight:600;color:var(--text-1); }
+.feed-plus{ color:var(--text-2); }
+.feed-date{ flex:none;font-size:var(--fs-xs);color:var(--text-3); }
+
+/* =====================================================================
+   平板及以上：两列网格
+   ===================================================================== */
+@media (min-width:640px){
+  .board-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+}

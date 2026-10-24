@@ -1,0 +1,65 @@
+/* 新建 / 编辑目标 */
+
+.goal-edit{ padding-bottom:calc(var(--pad-nav) + 20rpx); }
+.goal-edit .card{ margin-top:var(--gap-card); }
+
+.two-col{ display:flex; gap:14rpx; }
+.col-total{ flex:2; min-width:0; }
+.col-unit{ flex:1; min-width:0; }
+
+.picker-value{
+  display:flex;
+  align-items:center;
+  color:var(--text-1);
+}
+
+/* 体重预览：建档时就把强度摆到台面上 */
+.preview{
+  margin-top:16px;
+  padding:14rpx 18rpx;
+  border-radius:var(--r-sm);
+  background:var(--brand-50);
+  color:var(--brand-600);
+  font-size:var(--fs-sm);
+  line-height:1.55;
+}
+.preview.is-warn{ background:var(--amber-50);color:var(--amber-ink); }
+
+/* ---------- 配色 ---------- */
+.swatches{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14rpx;
+}
+.swatch{
+  width:calc(40px);height:calc(40px);
+  border-radius:50%;
+  background:var(--gc, var(--brand-500));
+  box-shadow:inset 0 0 0 1rpx rgba(0,0,0,.06);
+  transition:transform .14s ease-out;
+}
+.swatch.is-on{
+  transform:scale(1.06);
+  box-shadow:
+    0 0 0 4rpx var(--surface),
+    0 0 0 7rpx var(--gc, var(--brand-500));
+}
+
+/* ---------- 操作区 ---------- */
+.actions{ margin-top:clamp(20px,5vw,26px); }
+
+.danger{ margin-top:14px; }
+.danger-open{
+  text-align:center;
+  padding:16rpx 0;
+  font-size:var(--fs-sm);
+  color:var(--danger-500);
+}
+.danger-note{
+  font-size:var(--fs-xs);
+  color:var(--text-3);
+  line-height:1.6;
+  margin-bottom:14px;
+}
+
+.ph{ color:var(--text-4); }

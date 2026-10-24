@@ -1,0 +1,190 @@
+/* 周报复盘 —— 对齐 design-baseline.html 的 #panel-weekly（第 1256–1290 行）
+ *
+ * 两段式：上面是「这一周的客观数据」，下面是 KPT 纸感复盘。
+ * 输入框只有一条下边线（纸感），不是常见的圆角描边盒子 —— 这是基准的形态。
+ */
+
+.weekly{ padding-bottom:calc(var(--pad-nav) + 20rpx); }
+
+/* =====================================================================
+   周切换
+   ===================================================================== */
+.week-card{ margin-top:var(--gap-card); }
+
+.week-nav{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+/* .btn 是全局类（width:100%），这里要收成自动宽度的胶囊 */
+.week-btn{
+  flex:none;
+  width:auto;
+  min-height:calc(44px);
+  padding:0 14px;
+  font-size:var(--fs-sm);
+}
+.week-btn.is-off{ visibility:hidden; }
+.week-label{
+  flex:1;
+  min-width:0;
+  text-align:center;
+  font-size:var(--fs-sm);
+  font-weight:700;
+  color:var(--text-1);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* =====================================================================
+   本周汇总
+   ===================================================================== */
+.week-empty{
+  padding:20px 0;
+  text-align:center;
+  font-size:var(--fs-sm);
+  color:var(--text-3);
+}
+
+.week-summary-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0;
+  border-bottom:1px solid var(--line-soft);
+  font-size:var(--fs-body);
+}
+.week-summary-row:last-child{ border-bottom:none; }
+
+.wsr-name{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  flex:1;
+}
+.goal-color-dot{
+  flex:none;
+  width:12px;height:12px;
+  border-radius:4px;
+}
+.wsr-text{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--text-1);
+}
+
+.week-summary-row .vals{
+  flex:none;
+  max-width:62%;
+  text-align:right;
+  font-size:var(--fs-sm);
+  color:var(--text-2);
+  line-height:1.5;
+}
+.wsr-sum{
+  color:var(--text-1);
+  font-weight:700;
+}
+.wsr-strong{
+  color:var(--text-1);
+  font-weight:700;
+}
+.week-compare{
+  margin-top:2px;
+  font-size:var(--fs-nano);
+  color:var(--text-3);
+}
+
+.week-total{
+  margin-top:4px;
+  padding-top:12px;
+  border-top:1px solid var(--line);
+  border-bottom:none;
+}
+.wsr-total-k{ font-weight:700;color:var(--text-1); }
+
+/* =====================================================================
+   KPT 纸感复盘
+   ===================================================================== */
+.card-title .title-dot{
+  flex:none;
+  width:3px;height:14px;
+  border-radius:2px;
+  background:#f59e0b;
+}
+
+.kpt-row{ margin-bottom:14px; }
+.kpt-label{
+  display:block;
+  margin-bottom:6px;
+  font-size:var(--fs-sm);
+  font-weight:600;
+  color:var(--text-2);
+}
+.kpt-hint{
+  font-size:var(--fs-xs);
+  font-weight:400;
+  color:var(--text-3);
+}
+/* 只有下边线：像在纸上写，而不是在表单里填 */
+.kpt-input{
+  width:100%;
+  min-height:calc(44px);
+  padding:0 2px;
+  border:none;
+  border-bottom:2px solid var(--line-strong);
+  border-radius:0;
+  background:transparent;
+  font-size:var(--fs-body);
+  color:var(--text-1);
+}
+.kpt-input:focus{
+  border-bottom-color:var(--brand-400);
+  box-shadow:0 6px 0 -4px rgba(0,122,255,.20);
+}
+
+.kpt-actions{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+.kpt-actions .btn{ flex:1; }
+
+/* =====================================================================
+   生成的周报文本
+   ===================================================================== */
+.report-box{ margin-top:12px; }
+.report-preview{
+  padding:16px;
+  border-radius:var(--r-md);
+  background:var(--surface-inverse);
+  color:var(--text-on-inverse);
+  font-family:var(--font-mono,ui-monospace,Menlo,monospace);
+  font-size:var(--fs-sm);
+  line-height:1.85;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.btn-green{
+  width:100%;
+  margin-top:10px;
+  background:var(--success-500);
+  color:#fff;
+  box-shadow:0 6px 16px -8px rgba(52,199,89,.55), inset 0 1px 0 rgba(255,255,255,.28);
+}
+
+.ph{ color:var(--text-4); }
+
+/* =====================================================================
+   平板及以上
+   ===================================================================== */
+@media (min-width:640px){
+  .week-label{ font-size:var(--fs-h3); }
+  .week-card{ margin-top:0; }
+}

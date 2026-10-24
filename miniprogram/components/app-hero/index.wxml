@@ -1,0 +1,22 @@
+<view class="hero">
+  <!--
+    手机形态（final17 的 ≤1023px 档）：
+      · 标题单行，字号 --fs-h3，不是大标题
+      · 副标题隐藏（基准：.hero .tag{display:none}）
+      · 下面一排横向滚动的 chips
+    高度只占状态栏 + 40px，不抢首屏。
+  -->
+  <view
+    class="hero-top"
+    style="height:{{statusBar + 40}}px;padding-top:{{statusBar + 6}}px;padding-right:{{rightPad}}px;box-sizing:border-box"
+  >
+    <text class="hero-title">{{title}}</text>
+  </view>
+
+  <view wx:if="{{chips.length}}" class="hero-chips">
+    <view wx:for="{{chips}}" wx:key="k" class="chip">
+      <text class="chip-k">{{item.label}}</text>
+      <text class="chip-v">{{item.value}}</text>
+    </view>
+  </view>
+</view>

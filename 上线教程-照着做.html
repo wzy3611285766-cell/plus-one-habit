@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>上线教程 · 明天照着做</title>
+<style>
+  /* 这一页是可打勾的清单。勾选状态存在浏览器本地，关掉再打开还在。 */
+
+  * { box-sizing: border-box; }
+
+  :root {
+    --bg: #eef0f4;
+    --card: #ffffff;
+    --ink: #17171b;
+    --ink-2: #565661;
+    --ink-3: #92929e;
+    --line: #dfe1e8;
+    --line-2: #eef0f4;
+    --brand: #0a84ff;
+    --brand-soft: #e8f2ff;
+    --ok: #12a150;
+    --ok-soft: #eaf9ef;
+    --warn: #d97706;
+    --warn-soft: #fff7ea;
+    --danger: #dc2626;
+    --danger-soft: #fef2f2;
+    --code: #f3f4f7;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f13;
+      --card: #1a1a20;
+      --ink: #f2f2f6;
+      --ink-2: #a6a6b2;
+      --ink-3: #6c6c78;
+      --line: #2c2c35;
+      --line-2: #23232b;
+      --brand-soft: #0d2b4a;
+      --ok-soft: #0d2f1c;
+      --warn-soft: #38280e;
+      --danger-soft: #3a1614;
+      --code: #23232b;
+    }
+  }
+
+  body {
+    margin: 0;
+    padding: 0 18px 100px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.78 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  /* ---------- 顶部 ---------- */
+  header { padding: 46px 0 8px; }
+  h1 {
+    font-size: 30px; font-weight: 750;
+    letter-spacing: -.6px; margin: 0 0 10px;
+  }
+  .lead { color: var(--ink-2); margin: 0 0 26px; font-size: 15.5px; }
+
+  .progress-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 34px;
+    position: sticky;
+    top: 12px;
+    z-index: 30;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0,0,0,.06);
+  }
+  .progress-top {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 11px;
+  }
+  .progress-label { font-size: 13px; color: var(--ink-3); font-weight: 600; letter-spacing: .3px; }
+  .progress-count { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .progress-count b { font-size: 17px; color: var(--brand); font-weight: 750; }
+
+  .bar { height: 8px; border-radius: 999px; background: var(--line-2); overflow: hidden; }
+  .bar .fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #34d399, #0a84ff);
+    width: 0%;
+    transition: width .35s cubic-bezier(.2,0,.2,1);
+  }
+  .progress-hint { margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
+
+  /* ---------- 步骤卡 ---------- */
+  .step {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .step.is-done { border-color: var(--ok); background: linear-gradient(0deg, var(--ok-soft), transparent 40%); }
+  .step.is-done .step-title { color: var(--ink-3); text-decoration: line-through; text-decoration-thickness: 1px; }
+
+  .step-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 20px 24px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .step-head:hover { background: var(--line-2); }
+  .is-done .step-head:hover { background: transparent; }
+
+  /* 自定义复选框 */
+  .cb {
+    flex: none;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    border: 2px solid var(--line);
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .16s;
+    position: relative;
+  }
+  @media (prefers-color-scheme: dark) { .cb { background: #23232b; } }
+  .cb::after {
+    content: "";
+    width: 6px; height: 11px;
+    border-right: 2.5px solid #fff;
+    border-bottom: 2.5px solid #fff;
+    transform: rotate(42deg) scale(0);
+    transition: transform .16s;
+    margin-top: -3px;
+  }
+  .is-done .cb { background: var(--ok); border-color: var(--ok); }
+  .is-done .cb::after { transform: rotate(42deg) scale(1); }
+
+  .step-no {
+    flex: none;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 14px; font-weight: 750;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .is-done .step-no { background: var(--ok-soft); color: var(--ok); }
+
+  .step-title {
+    flex: 1; min-width: 0;
+    font-size: 17.5px; font-weight: 650;
+    letter-spacing: -.2px;
+  }
+  .step-title small {
+    display: block;
+    font-size: 12.5px; font-weight: 400;
+    color: var(--ink-3); letter-spacing: 0;
+    margin-top: 2px;
+  }
+  .time {
+    flex: none;
+    font-size: 12px;
+    color: var(--ink-3);
+    background: var(--line-2);
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .step-body {
+    padding: 0 24px 24px 78px;
+    border-top: 1px solid var(--line-2);
+    padding-top: 20px;
+  }
+  @media (max-width: 620px) {
+    .step-body { padding-left: 24px; }
+    .step-head { padding: 16px; gap: 10px; }
+    .step-title { font-size: 16px; }
+  }
+
+  .step-body p { margin: 0 0 14px; color: var(--ink-2); }
+  .step-body p:last-child { margin-bottom: 0; }
+  .step-body b { color: var(--ink); font-weight: 650; }
+
+  ol, ul { margin: 0 0 16px; padding-left: 22px; color: var(--ink-2); }
+  li { margin-bottom: 9px; }
+
+  /* 验证条 */
+  .check-line {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--ok-soft);
+    border-left: 3px solid var(--ok);
+    border-radius: 0 10px 10px 0;
+    padding: 13px 16px;
+    margin: 16px 0 0;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .check-line .ico { flex: none; color: var(--ok); font-weight: 800; }
+  .check-line b { color: var(--ink); }
+
+  /* 警告条 */
+  .warn-line {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
+    border-radius: 0 10px 10px 0;
+    padding: 13px 16px;
+    margin: 16px 0 0;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .warn-line .ico { flex: none; color: var(--warn); font-weight: 800; }
+
+  /* 代码 / 可复制块 */
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--code);
+    padding: 2px 7px;
+    border-radius: 5px;
+    color: var(--ink);
+  }
+  .path-box {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--code);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .path-box code {
+    background: none; padding: 0;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+
+  /* 一键复制的小标签 */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 16px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: var(--code);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    color: var(--ink);
+    transition: all .14s;
+  }
+  .chip:hover { border-color: var(--brand); background: var(--brand-soft); }
+  .chip:active { transform: scale(.97); }
+  .chip .cp {
+    font-size: 10.5px; color: var(--ink-3);
+    font-family: -apple-system, sans-serif;
+    border-left: 1px solid var(--line);
+    padding-left: 7px;
+  }
+  .chip.copied { border-color: var(--ok); background: var(--ok-soft); }
+  .chip.copied .cp { color: var(--ok); }
+
+  /* 表格 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 14px 0 18px;
+  }
+  th {
+    text-align: left;
+    font-size: 11.5px; font-weight: 650;
+    color: var(--ink-3);
+    letter-spacing: .3px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px;
+    border-bottom: 1px solid var(--line-2);
+    color: var(--ink-2);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.m { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; color: var(--ink); }
+  .u { color: var(--ok); font-weight: 700; }
+  .nu { color: var(--ink-3); }
+
+  /* 折叠 */
+  details {
+    margin-top: 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  details summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-2);
+    background: var(--line-2);
+    list-style: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "▸ ";
+    color: var(--ink-3);
+  }
+  details[open] summary::before { content: "▾ "; }
+  details .inner {
+    padding: 16px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  details .inner p:first-child { margin-top: 0; }
+  details .inner p:last-child { margin-bottom: 0; }
+
+  /* 结尾 */
+  .footer-note {
+    margin-top: 40px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 26px 30px;
+  }
+  .footer-note h2 { font-size: 18px; margin: 0 0 14px; }
+
+  .reset {
+    margin-top: 26px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-3);
+  }
+  .reset button {
+    background: none; border: none;
+    color: var(--ink-3);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 12.5px;
+    padding: 4px 8px;
+  }
+  .reset button:hover { color: var(--danger); }
+
+  /* 复制成功的浮动提示 */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 34px;
+    transform: translate(-50%, 20px);
+    background: #1c1c22;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .22s;
+    z-index: 100;
+  }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>上线教程 · 明天照着做</h1>
+    <p class="lead">
+      一共 9 个步骤（第 0 步是准备，看一眼就行），约 50 分钟。
+      做完你手上就是一个<b>能注册、能打卡、能多设备同步</b>的真产品。
+      勾选会记在浏览器里，关掉明天再打开还在。
+    </p>
+
+    <div class="progress-card">
+      <div class="progress-top">
+        <span class="progress-label">今天的进度</span>
+        <span class="progress-count"><b id="doneNum">0</b> / <span id="totalNum">8</span> 步</span>
+      </div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="progress-hint" id="hint">从第 1 步开始，一步一步来</div>
+    </div>
+  </header>
+
+  <!-- ============================================ -->
+  <!-- 准备 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="0">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">0</span>
+      <div class="step-title">确认三样东西都在
+        <small>不用操作，看一眼就行</small>
+      </div>
+      <span class="time">1 分钟</span>
+    </div>
+    <div class="step-body">
+      <p>这三样我已经帮你填进代码了，你确认一下就行：</p>
+
+      <table>
+        <tr><th>项</th><th>值</th><th>在哪</th></tr>
+        <tr><td>AppID</td><td class="m">wx7d33ce79272ca950</td><td>project.config.json</td></tr>
+        <tr><td>环境 ID</td><td class="m">demo-d4ggmg7lf4736fb7c</td><td>miniprogram/utils/config.js</td></tr>
+      </table>
+
+      <p>项目路径（第 1 步要用）：</p>
+      <div class="path-box">
+        <code>C:\Users\Lenovo\WorkBuddy\2026-10-05-12-45-40\v3_work\wxapp</code>
+        <span class="chip" data-copy="C:\Users\Lenovo\WorkBuddy\2026-10-05-12-45-40\v3_work\wxapp">复制<span class="cp">路径</span></span>
+      </div>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>打开这两个文件，能看到上面那两个值就对了。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 1 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="1">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">1</span>
+      <div class="step-title">导入项目
+        <small>把这个产品项目在开发者工具里打开</small>
+      </div>
+      <span class="time">3 分钟</span>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>打开微信开发者工具（你现在应该开着登录 demo 那个项目）</li>
+        <li>左上角 <b>「项目」→「查看所有项目」</b></li>
+        <li>点 <b>「导入项目」</b>，目录粘贴上面那个路径</li>
+        <li>AppID 会自动读出来，直接点「导入」</li>
+      </ol>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>左侧文件树里能看到 <b><code>cloudfunctions</code></b> 下面有
+          <b><code>auth</code></b> 和 <b><code>sync</code></b> 两个文件夹。</span>
+      </div>
+
+      <details>
+        <summary>导入后提示「AppID 不匹配」怎么办？</summary>
+        <div class="inner">
+          <p>说明 <code>project.config.json</code> 里的 AppID 没生效。
+          打开那个文件，第 2 行应该是 <code>"appid": "wx7d33ce79272ca950"</code>。
+          如果不对，手动改掉，保存，然后重新导入。</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 2 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="2">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">2</span>
+      <div class="step-title">建 5 个数据库集合
+        <small>名字必须一字不差，点下面的标签直接复制</small>
+      </div>
+      <span class="time">8 分钟</span>
+    </div>
+    <div class="step-body">
+      <p>路径：开发者工具顶部 <b>「☁ 云开发」</b> → 左侧 <b>「数据库」</b> → <b>「＋ 新建集合」</b>。</p>
+
+      <p><b>点下面这 5 个标签直接复制</b>（别手打，最容易错的就是这里）：</p>
+      <div class="chips">
+        <span class="chip" data-copy="accounts">accounts<span class="cp">复制</span></span>
+        <span class="chip" data-copy="sessions">sessions<span class="cp">复制</span></span>
+        <span class="chip" data-copy="verify_codes">verify_codes<span class="cp">复制</span></span>
+        <span class="chip" data-copy="rate_limits">rate_limits<span class="cp">复制</span></span>
+        <span class="chip" data-copy="sync_docs">sync_docs<span class="cp">复制</span></span>
+      </div>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>数据库列表里<b>正好 5 个</b>，一个不多一个不少。</span>
+      </div>
+
+      <div class="warn-line">
+        <span class="ico">!</span>
+        <span><b>打错了不会立刻报错</b>，但账号功能会莫名其妙失败——这是最难查的一类问题。
+          全部用<b>半角小写字母 + 下划线</b>，别用中文标点。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 3 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="3">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">3</span>
+      <div class="step-title">建 10 个索引
+        <small>最琐碎的一步，重点是「唯一」这个开关</small>
+      </div>
+      <span class="time">15 分钟</span>
+    </div>
+    <div class="step-body">
+      <p>路径：点集合名字进入详情 → 上方 <b>「索引管理」</b> 标签 → <b>「＋ 新建索引」</b>。</p>
+
+      <p><b>索引名称随便起</b>（比如 <code>email_1</code> <code>tokenHash_1</code>），
+      关键是<b>字段名</b>和<b>唯一开关</b>：</p>
+
+      <table>
+        <tr><th>集合</th><th>字段</th><th>要勾「唯一」吗</th></tr>
+        <tr><td class="m">accounts</td><td class="m">email</td><td class="u">✅ 要</td></tr>
+        <tr><td class="m">accounts</td><td class="m">phone</td><td class="u">✅ 要</td></tr>
+        <tr><td class="m">accounts</td><td class="m">openid</td><td class="u">✅ 要</td></tr>
+        <tr><td class="m">sessions</td><td class="m">tokenHash</td><td class="u">✅ 要</td></tr>
+        <tr><td class="m">sessions</td><td class="m">userId</td><td class="nu">不要</td></tr>
+        <tr><td class="m">sessions</td><td class="m">expiresAt</td><td class="nu">不要</td></tr>
+        <tr><td class="m">verify_codes</td><td class="m">target + purpose</td><td class="nu">不要（两个字段）</td></tr>
+        <tr><td class="m">verify_codes</td><td class="m">expiresAt</td><td class="nu">不要</td></tr>
+        <tr><td class="m">rate_limits</td><td class="m">expiresAt</td><td class="nu">不要</td></tr>
+        <tr><td class="m">sync_docs</td><td class="m">userId + key</td><td class="u">✅ 要（两个字段）</td></tr>
+      </table>
+
+      <p>字段名也可以点着复制：</p>
+      <div class="chips">
+        <span class="chip" data-copy="email">email<span class="cp">复制</span></span>
+        <span class="chip" data-copy="phone">phone<span class="cp">复制</span></span>
+        <span class="chip" data-copy="openid">openid<span class="cp">复制</span></span>
+        <span class="chip" data-copy="tokenHash">tokenHash<span class="cp">复制</span></span>
+        <span class="chip" data-copy="userId">userId<span class="cp">复制</span></span>
+        <span class="chip" data-copy="expiresAt">expiresAt<span class="cp">复制</span></span>
+        <span class="chip" data-copy="target">target<span class="cp">复制</span></span>
+        <span class="chip" data-copy="purpose">purpose<span class="cp">复制</span></span>
+        <span class="chip" data-copy="key">key<span class="cp">复制</span></span>
+      </div>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>5 个集合的索引列表加起来，一共 <b>10 个索引</b>。
+          其中 <b>4 个带「唯一」标记</b>：accounts 三个 + sync_docs 一个。</span>
+      </div>
+
+      <div class="warn-line">
+        <span class="ico">!</span>
+        <span><b>漏勾「唯一」不会立刻报错。</b>但「两个人同时用同一个邮箱注册」时会出现两个账号，
+          这类问题事后很难补救。<b>四个唯一的，一个都别漏。</b></span>
+      </div>
+
+      <details>
+        <summary>「索引名称」填什么？会不会报错？</summary>
+        <div class="inner">
+          <p>索引名称只是给你自己看的标识，随便起都行，习惯上叫
+          <code>字段名_1</code>（比如 <code>email_1</code>、<code>tokenHash_1</code>）。
+          组合索引起成 <code>userId_key</code> 这种就行。</p>
+          <p>唯一的要求是<b>同集合内不重名</b>。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>组合索引怎么建？（verify_codes 和 sync_docs）</summary>
+        <div class="inner">
+          <p>在「新建索引」的表单里，填完第一个字段后，点 <b>「＋ 添加字段」</b>，
+          加第二行：</p>
+          <ul>
+            <li><code>verify_codes</code>：第一行 <code>target</code>，第二行 <code>purpose</code>，<b>不勾唯一</b></li>
+            <li><code>sync_docs</code>：第一行 <code>userId</code>，第二行 <code>key</code>，<b>勾唯一</b></li>
+          </ul>
+          <p>两行的排序都选「升序」即可。</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 4 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="4">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">4</span>
+      <div class="step-title">设集合权限
+        <small>不设等于把数据库敞开给所有人</small>
+      </div>
+      <span class="time">3 分钟</span>
+    </div>
+    <div class="step-body">
+      <p>每个集合 → 上方 <b>「权限设置」</b> 标签 → 选 <b>「所有用户不可读写」</b>。</p>
+      <p><b>5 个集合都要设一遍。</b></p>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>5 个集合的权限设置里，都是最后一项「所有用户不可读写」被选中。</span>
+      </div>
+
+      <div class="warn-line">
+        <span class="ico">!</span>
+        <span>所有数据访问都走云函数（云函数有管理员权限）。
+          如果留着默认权限，<b>别人能直接读写你的数据库，绕过全部账号校验</b>——
+          相当于账号系统白做了。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 5 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="5">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">5</span>
+      <div class="step-title">上传两个云函数
+        <small>代码还在你电脑上，要传到微信服务器</small>
+      </div>
+      <span class="time">3 分钟</span>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>左侧文件树展开 <code>cloudfunctions</code></li>
+        <li><b>右键 <code>auth</code></b> → 选 <b>「上传并部署：云端安装依赖（不上传 node_modules）」</b></li>
+        <li>等右下角提示成功（约 30 秒）</li>
+        <li><b>右键 <code>sync</code></b> → 同样操作</li>
+      </ol>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>云开发控制台 → <b>「云函数」</b> → 能看到 <code>auth</code> 和 <code>sync</code> 两个。</span>
+      </div>
+
+      <details>
+        <summary>右键没有「上传并部署」这个菜单？</summary>
+        <div class="inner">
+          <p><b>先做这个 3 秒自检</b>：看左侧文件树第一层。</p>
+          <ul>
+            <li>有 <code>miniprogram</code> 和 <code>cloudfunctions</code> 两个文件夹 → <b>项目开对了</b>，往下查 2、3、4</li>
+            <li>只看到 <code>auth</code>、<code>sync</code> 直接露出来 → <b>项目开错了</b>，见第 1 条</li>
+          </ul>
+          <ol>
+            <li><b>导错目录了（最常见）。</b>你可能把 <code>cloudfunctions</code> 这一层当成项目打开了，
+              而不是它的上一层。<br>
+              判断方法：去看 <code>project.config.json</code>，如果里面<b>没有</b>
+              <code>"cloudfunctionRoot"</code> 这行，而且文件里只有 <code>setting</code> / <code>compileType</code> /
+              <code>appid</code> 几个字段，那这个文件是开发者工具<b>自动生成的</b>，不是项目真正的配置。<br>
+              怎么修：关掉这个窗口 → 重新「导入项目」→ 目录选
+              <code>...\v3_work\wxapp</code>（<b>不要</b>选到它下面的 <code>cloudfunctions</code>）。</li>
+
+            <li><b>点错层级了。</b>要右键 <code>auth</code> / <code>sync</code> 这种<b>具体函数文件夹</b>，
+              不是外面的 <code>cloudfunctions</code>。</li>
+
+            <li><b>云开发没连上。</b>先点一下顶部「☁ 云开发」，能打开控制台才行。</li>
+
+            <li><b>project.config.json 真的少了配置。</b>检查里面有没有
+              <code>"cloudfunctionRoot": "cloudfunctions/"</code> 这一行（在文件里搜一下）。</li>
+          </ol>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 6 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="6">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">6</span>
+      <div class="step-title">配一个环境变量
+        <small>让「找回密码」的验证码直接显示在页面上</small>
+      </div>
+      <span class="time">2 分钟</span>
+    </div>
+    <div class="step-body">
+      <p>云开发控制台 → <b>「云函数」</b> → 点 <code>auth</code> → <b>「配置」</b> →
+      <b>「环境变量」</b> → 添加一条：</p>
+
+      <table>
+        <tr><th>变量名</th><th>值</th></tr>
+        <tr><td class="m">AUTH_DEV_MODE</td><td class="m">1</td></tr>
+      </table>
+
+      <p>改完记得点 <b>保存</b>。</p>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>环境变量列表里能看到 <code>AUTH_DEV_MODE = 1</code>。</span>
+      </div>
+
+      <details>
+        <summary>这个变量是干什么的？会不会有安全隐患？</summary>
+        <div class="inner">
+          <p>个人主体的小程序<b>没有短信资质，云开发也不带邮件能力</b>，所以「找回密码」
+          的验证码没法真的发出去。</p>
+          <p>打开这个开关后，验证码会<b>直接返回给页面显示</b>，你就能把流程自己走完。</p>
+          <p><b>正式上线给外人用之前，应该把它关掉</b>，改用真实的短信/邮件通道
+          （或者干脆不做找回密码，只保留「改密码」）。现在这个阶段开着没问题，
+          因为只有你自己在用。</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 7 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="7">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">7</span>
+      <div class="step-title">冒烟测试
+        <small>四个动作，确认这个产品真的能用</small>
+      </div>
+      <span class="time">10 分钟</span>
+    </div>
+    <div class="step-body">
+      <p>点顶部 <b>「编译」</b>。页面应该是一个<b>今日打卡页</b>，底部四个页签：
+      <b>今日 / 看板 / 周报 / 我的</b>。</p>
+
+      <p>然后按顺序做这四件事：</p>
+
+      <table>
+        <tr><th>#</th><th>做什么</th><th>应该看到</th></tr>
+        <tr>
+          <td>1</td>
+          <td>点「我的」→ 登录/注册 → 用邮箱注册一个账号</td>
+          <td>提示注册成功，跳到今日页</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>回今日页 → 新建一个目标（比如「背单词 100 个」）→ 点几次 +1</td>
+          <td>进度条往前走，连续天数变成 1</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>点「看板」和「周报」看看</td>
+          <td>能看到刚打的数据，不是空白</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>开发者工具左上角 <b>清缓存 → 清除数据缓存</b>，再点「编译」，
+            用同一个邮箱登录</td>
+          <td><b>你的目标、打卡记录全回来了</b> —— 这一条最关键</td>
+        </tr>
+      </table>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>第 4 条过了，说明<b>账号 + 云端同步整条链路是通的</b>。
+          到这儿，你的产品就真的跑起来了 🎉</span>
+      </div>
+
+      <div class="warn-line">
+        <span class="ico">!</span>
+        <span>第 4 条如果数据没回来，先别急着重做。把「我的 → 数据与同步」那里的状态
+          和提示文案发给我，我能判断是集合/索引没建对，还是别的原因。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 8 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="8">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">8</span>
+      <div class="step-title">上传代码，提交审核
+        <small>前提：备案已经通过</small>
+      </div>
+      <span class="time">5 分钟</span>
+    </div>
+    <div class="step-body">
+      <p><b>先确认备案状态。</b>去 mp.weixin.qq.com 看有没有拿到备案号。</p>
+
+      <p>备案通过了才往下做：</p>
+      <ol>
+        <li>开发者工具右上角 <b>「上传」</b>，版本号填 <code>1.0.0</code>，备注写「首个版本」</li>
+        <li>打开 mp.weixin.qq.com → 左侧 <b>「管理」→「版本管理」</b></li>
+        <li>找到刚上传的版本 → <b>「提交审核」</b></li>
+        <li>审核通过后 → <b>「发布」</b></li>
+      </ol>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>发布之后，用别人的微信搜你的小程序名字，能搜到 = 真的上线了。</span>
+      </div>
+
+      <div class="warn-line">
+        <span class="ico">!</span>
+        <span><b>备案没通过是发不出去的。</b>备案要等 2～4 周，
+          最长的一根链条。如果明天还没提交，<b>先花 10 分钟把备案提交了</b>，
+          再回来做前面 7 步。</span>
+      </div>
+
+      <details>
+        <summary>备案提交后要注意什么？</summary>
+        <div class="inner">
+          <p>提交后 1～2 天，会收到工信部发的短信（发送号码 <b>12381</b>）。</p>
+          <p><b>必须在 24 小时内</b>打开 <code>https://beian.miit.gov.cn/</code> 完成短信核验。
+          超时会被自动驳回，要从头再提交一次。</p>
+          <p>所以提交备案那几天，<b>手机别关机、别开短信拦截</b>。</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 结尾 -->
+  <!-- ============================================ -->
+  <div class="footer-note">
+    <h2>卡住了怎么办</h2>
+    <p style="color:var(--ink-2);margin:0 0 14px;">
+      记住这个顺序，90% 的问题都能自己解决：
+    </p>
+    <ol>
+      <li><b>先看报错原文</b>，不要只看第一行，通常后面几行才写真正的原因</li>
+      <li><b>一次只改一个地方</b>，改完立刻点「编译」。连改五处再试，你永远不知道是哪个改对了</li>
+      <li><b>页面代码改了按「编译」，云函数改了必须重新「上传并部署」</b> ——
+        九成的「我明明改了没生效」都是这个</li>
+      <li>卡超过 40 分钟就停下来，把<b>完整报错</b>抄给我</li>
+    </ol>
+    <p style="color:var(--ink-3);font-size:13px;margin:16px 0 0;">
+      另外两份材料可以随时查：
+      <code>云开发控制台-操作图解.html</code>（每步点哪儿）、
+      <code>README.md</code>（完整说明书）。
+    </p>
+  </div>
+
+  <div class="reset">
+    <button id="resetBtn">清空所有勾选，重新开始</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+/* ---------------- 一、勾选与进度 ---------------- */
+
+var KEY = 'lgt.publish.progress.v1';
+var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+var fill = document.getElementById('fill');
+var doneNum = document.getElementById('doneNum');
+var hint = document.getElementById('hint');
+
+document.getElementById('totalNum').textContent = steps.length;
+
+var HINTS = {
+  0: '从第 1 步开始，一步一步来',
+  25: '开局顺利，继续',
+  50: '过半了，最难的就是建索引那步',
+  75: '快到终点了',
+  100: '全部完成 🎉 你的产品上线了'
+};
+
+function load() {
+  try {
+    return JSON.parse(localStorage.getItem(KEY) || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+
+function save(obj) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(obj));
+  } catch (e) { /* 隐私模式写不进去，不影响使用 */ }
+}
+
+/** 当前已完成的步骤 id 列表（不能只存数量：中间取消一步就会错位） */
+function doneIds() {
+  return steps
+    .filter(function (s) { return s.classList.contains('is-done'); })
+    .map(function (s) { return s.getAttribute('data-step'); });
+}
+
+function refresh() {
+  var ids = doneIds();
+  var pct = Math.round(ids.length / steps.length * 100);
+
+  fill.style.width = pct + '%';
+  doneNum.textContent = ids.length;
+
+  // 提示语取「已达成的最接近的整档」
+  var key = pct >= 100 ? 100 : (pct >= 75 ? 75 : (pct >= 50 ? 50 : (pct >= 25 ? 25 : 0)));
+  hint.textContent = HINTS[key] || HINTS[0];
+
+  save({ ids: ids });
+}
+
+function setDone(el, on) {
+  el.classList.toggle('is-done', on);
+  refresh();
+}
+
+steps.forEach(function (step) {
+  var head = step.querySelector('.step-head');
+
+  head.addEventListener('click', function (e) {
+    // 点正文里的链接/按钮时不触发勾选
+    if (e.target.closest('details') || e.target.closest('.chip')) return;
+    setDone(step, !step.classList.contains('is-done'));
+  });
+});
+
+/* 打开时按 data-step 精确恢复，顺序无关 */
+(function restore() {
+  var saved = load();
+  var ids = (saved && saved.ids) || [];
+  if (!ids.length) { refresh(); return; }
+  steps.forEach(function (s) {
+    if (ids.indexOf(s.getAttribute('data-step')) >= 0) s.classList.add('is-done');
+  });
+  refresh();
+})();
+
+document.getElementById('resetBtn').addEventListener('click', function () {
+  if (!confirm('清空所有勾选？这会丢掉进度记录。')) return;
+  steps.forEach(function (s) { s.classList.remove('is-done'); });
+  save({ ids: [] });
+  refresh();
+});
+
+/* ---------------- 二、一键复制 ---------------- */
+
+var toast = document.getElementById('toast');
+var toastTimer = null;
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 1400);
+}
+
+function doCopy(text) {
+  // 优先用标准 API；file:// 打开时它可能不可用，退回 execCommand
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {
+      showToast('已复制：' + text);
+    }).catch(function () {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  showToast(ok ? ('已复制：' + text) : '复制失败，请手动选中');
+}
+
+document.querySelectorAll('.chip[data-copy]').forEach(function (chip) {
+  chip.addEventListener('click', function (e) {
+    e.stopPropagation();
+    doCopy(chip.getAttribute('data-copy'));
+    chip.classList.add('copied');
+    var cp = chip.querySelector('.cp');
+    if (cp) {
+      var old = cp.textContent;
+      cp.textContent = '已复制';
+      setTimeout(function () {
+        chip.classList.remove('copied');
+        cp.textContent = old;
+      }, 1400);
+    }
+  });
+});
+</script>
+</body>
+</html>

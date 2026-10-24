@@ -1,0 +1,194 @@
+<view class="page board {{themeClass}}">
+
+  <app-hero />
+
+  <!-- ---------- 统计条：两张卡（累计打卡 / 累计活跃） ---------- -->
+  <view wx:if="{{hasData}}" class="stat-strip">
+    <view wx:for="{{statCards}}" wx:key="k" class="stat-card">
+      <view class="stat-ico {{item.tone}}">
+        <view wx:if="{{item.k === 'logs'}}" class="ico-check"></view>
+        <view wx:else class="ico-cal"></view>
+      </view>
+      <view class="stat-text">
+        <text class="stat-num num">{{item.num}}</text>
+        <text class="stat-lbl">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!--
+    目标卡分区：进行中在前，已完成单独一段（对齐基准的 .board-sec-title 分组）。
+    卡片只写一次，用 sections 控制「有没有分区标题」。
+  -->
+  <block wx:for="{{sections}}" wx:for-item="sec" wx:key="key">
+    <view wx:if="{{sec.title}}" class="board-sec-title">
+      <view class="sec-check"></view>
+      <text>{{sec.title}}</text>
+      <text class="cnt">{{sec.count}}</text>
+    </view>
+
+    <view class="board-grid">
+      <view
+        wx:for="{{sec.cards}}"
+        wx:for-item="card"
+        wx:key="gid"
+        class="goal-card {{card.isDone ? 'is-done' : ''}}"
+        style="--gc:{{card.color}}"
+      >
+        <view class="goal-head">
+          <view class="goal-color-dot"></view>
+          <text class="goal-name">{{card.name}}</text>
+          <text wx:if="{{card.sample}}" class="badge badge-sample">示例</text>
+        </view>
+
+        <view class="ring-wrap">
+          <!-- 完成率圆环：conic-gradient 画环，中心挖空。不用 canvas（会盖住弹层） -->
+          <view class="ring" style="--p:{{card.pct}}">
+            <view class="ring-hole">
+              <text class="ring-num num">{{card.pct}}<text class="ring-sign">%</text></text>
+              <text class="ring-cap">完成率</text>
+            </view>
+          </view>
+
+          <view class="ring-stats">
+            <view class="stat-line">
+              <text class="sl-k">已投入</text>
+              <text class="sl-v num">{{card.done}}</text>
+              <text class="sl-k">/ {{card.total}} {{card.unit}}</text>
+            </view>
+            <view class="stat-line">
+              <text class="sl-k">连续</text>
+              <text class="sl-v num">{{card.streak}}</text>
+              <text class="sl-k">天</text>
+            </view>
+            <view class="stat-line">
+              <text class="sl-k">预计</text>
+              <text class="sl-eta {{card.etaAhead ? 'is-ahead' : ''}} {{card.etaBehind ? 'is-behind' : ''}}">{{card.etaText}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{card.plan}}" class="plan-line">
+          <text class="plan-tag">预案</text>
+          <text class="plan-txt">{{card.obstacle ? '如果' + card.obstacle + '，我就' : ''}}{{card.plan}}</text>
+        </view>
+
+        <view
+          wx:if="{{card.logCount > 0}}"
+          class="log-toggle {{expanded === card.gid ? 'is-open' : ''}}"
+          data-gid="{{card.gid}}"
+          bindtap="toggleLogs"
+        >{{expanded === card.gid ? '收起记录' : '查看 ' + card.logCount + ' 条记录'}}</view>
+
+        <view wx:if="{{expanded === card.gid}}" class="recent-logs">
+          <view wx:for="{{card.logs}}" wx:for-item="lg" wx:key="id" class="log-item">
+            <text class="log-date num">{{lg.date}}</text>
+            <text class="log-amt num">+{{lg.amount}}</text>
+            <text class="log-unit">{{card.unit}}</text>
+            <text wx:if="{{lg.minutes}}" class="log-min">· {{lg.minutes}} 分钟</text>
+            <text wx:if="{{lg.makeup}}" class="log-makeup">补</text>
+            <view
+              class="log-del {{confirmDel === lg.id ? 'is-confirm' : ''}}"
+              data-id="{{lg.id}}"
+              catchtap="deleteLog"
+            >{{confirmDel === lg.id ? '确认删除' : '×'}}</view>
+          </view>
+          <text wx:if="{{card.logCount > 10}}" class="log-more">仅显示最近 10 条</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ---------- 近 14 天堆叠图 ---------- -->
+  <view wx:if="{{hasData}}" class="card chart-card">
+    <view class="card-title">近 14 天投入</view>
+
+    <view class="chart">
+      <view
+        wx:for="{{chart}}"
+        wx:key="date"
+        class="col {{item.isToday ? 'is-today' : ''}} {{picked === item.date ? 'is-picked' : ''}}"
+        data-date="{{item.date}}"
+        bindtap="pickDay"
+      >
+        <view wx:if="{{picked === item.date}}" class="col-tip">
+          <text class="tip-date">{{item.tipDate}}</text>
+          <view wx:if="{{!item.tipRows.length}}" class="tip-empty">这天没有记录</view>
+          <view wx:for="{{item.tipRows}}" wx:for-item="row" wx:key="k" class="tip-row">
+            <view class="tip-dot" style="background:{{row.color}}"></view>
+            <text class="tip-name">{{row.name}}</text>
+            <text class="tip-amt">{{row.amount}}{{row.unit}}</text>
+          </view>
+        </view>
+
+        <view class="col-track">
+          <view class="col-stack" style="height:{{item.pct}}%">
+            <view
+              wx:for="{{item.segs}}"
+              wx:for-item="seg"
+              wx:key="key"
+              class="seg"
+              style="--gc:{{seg.color}};height:{{seg.pct}}%"
+            ></view>
+          </view>
+        </view>
+        <text class="col-label">{{item.label}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{legend.length}}" class="legend">
+      <view wx:for="{{legend}}" wx:key="key" class="legend-item">
+        <view class="legend-dot" style="background:{{item.color}}"></view>
+        <text class="legend-name">{{item.name}}</text>
+      </view>
+    </view>
+    <text class="chart-hint">每段代表一个目标；点一根柱子看当天明细</text>
+  </view>
+
+  <!-- ---------- 近 35 天热力 ---------- -->
+  <view wx:if="{{hasData && heat.length}}" class="card">
+    <view class="card-title">近 35 天打卡热力</view>
+    <view class="heat-days">
+      <text wx:for="{{weekdays}}" wx:key="*this" class="heat-dow">{{item}}</text>
+    </view>
+    <view class="heat-grid">
+      <view
+        wx:for="{{heat}}"
+        wx:key="k"
+        class="heat-cell {{item.blank ? 'is-blank' : ''}} {{item.lv > 0 ? 'l' + item.lv : ''}} {{item.isToday ? 'is-today' : ''}}"
+      ></view>
+    </view>
+    <view class="heat-legend">
+      <text class="legend-k">少</text>
+      <view class="heat-cell is-blank"></view>
+      <view class="heat-cell l1"></view>
+      <view class="heat-cell l2"></view>
+      <view class="heat-cell l3"></view>
+      <view class="heat-cell l4"></view>
+      <text class="legend-k">多</text>
+    </view>
+    <text class="heat-note">颜色按当天打卡次数分档（不是时长）</text>
+  </view>
+
+  <!-- ---------- 最近动态 ---------- -->
+  <view wx:if="{{hasData && feed.length}}" class="card">
+    <view class="card-title">最近动态</view>
+    <view wx:for="{{feed}}" wx:key="k" class="feed-row">
+      <view class="feed-dot" style="background:{{item.color}}"></view>
+      <view class="feed-main">
+        <text class="feed-name">{{item.name}}</text>
+        <text class="feed-plus"> +{{item.amount}} {{item.unit}}</text>
+      </view>
+      <text class="feed-date">{{item.date}}</text>
+    </view>
+  </view>
+
+  <!-- ---------- 空态 ---------- -->
+  <view wx:if="{{!hasData}}" class="card empty">
+    <view class="empty-title">还没有可统计的数据</view>
+    <view class="empty-desc">先去今日页新建一个目标，打卡几天后这里就会有节奏图。</view>
+    <view class="empty-actions">
+      <button class="btn btn-primary" bindtap="goToday">去今日打卡</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,162 @@
+<view class="page mine {{themeClass}}">
+
+  <app-hero />
+
+  <!-- ---------- 账号（基准没有这一行，但没有它就没有登录入口） ---------- -->
+  <view wx:if="{{!cloudReady}}" class="card setup-card">
+    <view class="card-title">账号功能尚未启用</view>
+    <view class="card-sub">{{cloudError}}。请参照 README 完成云开发环境配置后重新编译。</view>
+  </view>
+
+  <view class="card id-card">
+    <view class="mine-list">
+      <view wx:if="{{logged}}" class="mine-btn" bindtap="openNickname">
+        <view class="mine-ico ico-user"></view>
+        <view class="mine-body">
+          <text class="mine-txt">{{user.nickname || '未设置昵称'}}</text>
+          <text class="mine-sub">已加入 {{joinedDays}} 天</text>
+        </view>
+        <view class="chev chev-right"></view>
+      </view>
+
+      <view wx:else class="mine-btn" bindtap="goLogin">
+        <view class="mine-ico ico-user"></view>
+        <view class="mine-body">
+          <text class="mine-txt">未登录</text>
+          <text class="mine-sub">微信一键登录</text>
+        </view>
+        <view class="chev chev-right"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 偏好设置 ---------- -->
+  <view class="card">
+    <view class="card-title">
+      <view class="title-dot"></view>
+      <text>偏好设置</text>
+    </view>
+
+    <view class="mine-list">
+      <view class="mine-btn" bindtap="toggleSound">
+        <view class="mine-ico ico-sound"></view>
+        <view class="mine-body">
+          <text class="mine-txt">打卡音效</text>
+          <text class="mine-sub">点 +1 时有声音反馈</text>
+        </view>
+        <view class="switch {{soundOn ? 'on' : 'off'}}"><view class="knob"></view></view>
+      </view>
+
+      <view class="mine-vol">
+        <view class="mine-ico ico-vol"></view>
+        <view class="mine-body">
+          <text class="mine-txt">音效音量</text>
+          <text class="mine-sub">{{volume}}%</text>
+        </view>
+        <slider
+          class="vol-range"
+          min="25"
+          max="100"
+          step="5"
+          value="{{volume}}"
+          activeColor="#007AFF"
+          backgroundColor="rgba(120,120,128,.22)"
+          block-size="18"
+          bindchanging="onVolumeChanging"
+          bindchange="onVolumeChange"
+        />
+      </view>
+
+      <view class="mine-btn" bindtap="toggleTheme">
+        <view class="mine-ico ico-theme"></view>
+        <view class="mine-body">
+          <text class="mine-txt">深色模式</text>
+          <text class="mine-sub">{{themeOn ? '始终深色' : '跟随系统'}}</text>
+        </view>
+        <view class="switch {{themeOn ? 'on' : 'off'}}"><view class="knob"></view></view>
+      </view>
+
+      <view class="mine-btn" bindtap="toggleHaptic">
+        <view class="mine-ico ico-vibe"></view>
+        <view class="mine-body">
+          <text class="mine-txt">打卡震动</text>
+          <text class="mine-sub">点 +1 时轻微震动</text>
+        </view>
+        <view class="switch {{haptic ? 'on' : 'off'}}"><view class="knob"></view></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 其他 ---------- -->
+  <view class="card">
+    <view class="card-title">
+      <view class="title-dot"></view>
+      <text>其他</text>
+    </view>
+
+    <view class="mine-list">
+      <view wx:if="{{!hasSample}}" class="mine-btn" bindtap="loadSample">
+        <view class="mine-ico ico-download"></view>
+        <view class="mine-body">
+          <text class="mine-txt">载入示例目标</text>
+          <text class="mine-sub">三个演示目标，随时可移除</text>
+        </view>
+      </view>
+
+      <view wx:if="{{hasSample}}" class="mine-btn" bindtap="clearSample">
+        <view class="mine-ico ico-trash"></view>
+        <view class="mine-body">
+          <text class="mine-txt">移除示例目标</text>
+          <text class="mine-sub">只删带「示例」标记的那几个</text>
+        </view>
+      </view>
+
+      <view wx:if="{{logged}}" class="mine-btn danger" bindtap="openDeleteAccount">
+        <view class="mine-ico ico-out"></view>
+        <view class="mine-body">
+          <text class="mine-txt">注销账号</text>
+          <text class="mine-sub">账号与全部记录将被永久删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 弹层 ================= -->
+
+  <!-- 修改昵称 -->
+  <view wx:if="{{sheet === 'nickname'}}" class="mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">修改昵称</view>
+      <view class="field">
+        <text class="field-label">昵称</text>
+        <input class="input" value="{{form.nickname}}" data-field="nickname" bindinput="onInput" maxlength="20" placeholder="最多 20 字" placeholder-class="ph" />
+      </view>
+      <view wx:if="{{formError}}" class="field-hint is-error">{{formError}}</view>
+      <view class="sheet-actions">
+        <button class="btn btn-ghost" bindtap="closeSheet">取消</button>
+        <button class="btn btn-primary" disabled="{{busy}}" bindtap="submitNickname">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 注销账号 -->
+  <view wx:if="{{sheet === 'deleteAccount'}}" class="mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title danger-text">注销账号</view>
+      <view class="card-sub">账号下的全部目标、打卡记录与复盘会被永久删除，无法恢复。</view>
+      <view class="field">
+        <text class="field-label">输入「注销」两个字以确认</text>
+        <input class="input" value="{{form.confirmDelete}}" data-field="confirmDelete" bindinput="onInput" placeholder="注销" placeholder-class="ph" />
+      </view>
+      <view wx:if="{{formError}}" class="field-hint is-error">{{formError}}</view>
+      <view class="sheet-actions">
+        <button class="btn btn-ghost" bindtap="closeSheet">取消</button>
+        <button class="btn btn-danger" disabled="{{busy}}" bindtap="submitDeleteAccount">确认注销</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="toast {{toastOn ? 'is-on' : ''}}">{{toast}}</view>
+</view>

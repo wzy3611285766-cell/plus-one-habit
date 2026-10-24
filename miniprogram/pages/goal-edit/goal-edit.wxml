@@ -1,0 +1,83 @@
+<view class="page goal-edit {{themeClass}}">
+
+  <view class="page-title">{{isNew ? '新建目标' : '编辑目标'}}</view>
+  <view class="page-sub">有总量、有终点，才能算出今天该做多少</view>
+
+  <view class="card">
+    <view class="field">
+      <text class="field-label">目标名称</text>
+      <input class="input {{errors.name ? 'is-error' : ''}}" value="{{form.name}}" data-field="name" bindinput="onInput" maxlength="30" placeholder="例如：背英语四级单词" placeholder-class="ph" />
+      <view wx:if="{{errors.name}}" class="field-hint is-error">{{errors.name}}</view>
+    </view>
+
+    <view class="two-col">
+      <view class="field col-total">
+        <text class="field-label">总量</text>
+        <input class="input {{errors.total ? 'is-error' : ''}}" type="digit" value="{{form.total}}" data-field="total" bindinput="onInput" placeholder="1200" placeholder-class="ph" />
+      </view>
+      <view class="field col-unit">
+        <text class="field-label">单位</text>
+        <input class="input" value="{{form.unit}}" data-field="unit" bindinput="onInput" maxlength="6" placeholder="个" placeholder-class="ph" />
+      </view>
+    </view>
+    <view wx:if="{{errors.total}}" class="field-hint is-error">{{errors.total}}</view>
+    <view wx:if="{{errors.unit}}" class="field-hint is-error">{{errors.unit}}</view>
+
+    <view class="field">
+      <text class="field-label">截止日期</text>
+      <picker mode="date" value="{{form.deadline}}" start="{{form.deadline}}" bindchange="onDateChange">
+        <view class="input picker-value {{errors.deadline ? 'is-error' : ''}}">{{form.deadline || '请选择'}}</view>
+      </picker>
+      <view wx:if="{{errors.deadline}}" class="field-hint is-error">{{errors.deadline}}</view>
+    </view>
+
+    <view wx:if="{{preview}}" class="preview {{preview.warn ? 'is-warn' : ''}}">{{preview.text}}</view>
+
+    <view class="field">
+      <text class="field-label">配色</text>
+      <view class="swatches">
+        <view
+          wx:for="{{colors}}"
+          wx:key="hex"
+          class="swatch {{form.color === item.hex ? 'is-on' : ''}}"
+          style="--gc:{{item.css}}"
+          data-hex="{{item.hex}}"
+          bindtap="pickColor"
+        ></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 障碍与对策：不做也没关系，但做了的目标明显更容易坚持 -->
+  <view class="card">
+    <view class="card-title">如果卡住了</view>
+    <view class="card-sub">可留空。写下最容易发生的阻碍，以及你打算怎么应对。</view>
+
+    <view class="field">
+      <text class="field-label">可能的阻碍</text>
+      <input class="input" value="{{form.obstacle}}" data-field="obstacle" bindinput="onInput" maxlength="60" placeholder="例如：晚上容易困" placeholder-class="ph" />
+    </view>
+    <view class="field">
+      <text class="field-label">应对方式</text>
+      <input class="input" value="{{form.plan}}" data-field="plan" bindinput="onInput" maxlength="60" placeholder="例如：早上通勤时先背 20 个" placeholder-class="ph" />
+    </view>
+  </view>
+
+  <view class="actions">
+    <button class="btn btn-primary" bindtap="save">{{isNew ? '创建目标' : '保存修改'}}</button>
+  </view>
+
+  <!-- 删除：两段式确认，先展开再确认，避免误触 -->
+  <view wx:if="{{!isNew}}" class="danger">
+    <view wx:if="{{!dangerOpen}}" class="danger-open" bindtap="toggleDanger">删除这个目标</view>
+    <block wx:else>
+      <view class="danger-note">删除会连同它的全部打卡记录一起消失，无法恢复。</view>
+      <view class="sheet-actions">
+        <button class="btn btn-ghost" bindtap="toggleDanger">取消</button>
+        <button class="btn btn-danger" bindtap="confirmDelete">确认删除</button>
+      </view>
+    </block>
+  </view>
+
+  <view class="toast {{toastOn ? 'is-on' : ''}}">{{toast}}</view>
+</view>

@@ -1,0 +1,778 @@
+/* =====================================================================
+   学习目标管理台 · 全局样式
+   ---------------------------------------------------------------------
+   token 体系与 H5 版 `v3_work/work.html` 一一对应（Apple 风：系统灰阶 +
+   System Blue 主色 + 玻璃按键）。迁移到 WXSS 的三点差异：
+     1. `:root` → `page`（小程序没有根元素概念）
+     2. 深色模式由 app.json 的 `darkmode:true` 驱动，
+        WXSS 里用 @media (prefers-color-scheme: dark) 自动生效
+     3. 布局尺寸用 rpx（750rpx = 屏宽），字号沿用 clamp() 保持与 H5 同节奏
+   ===================================================================== */
+
+page{
+  /* ---- 字体（全部系统字体，零网络请求） ---- */
+  --font-sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+
+  /* ---- 字号阶梯 ---- */
+  --fs-display:clamp(40px,12vw,64px);
+  --fs-num-lg:clamp(28px,8vw,40px);
+  --fs-h1:clamp(22px,6.2vw,30px);
+  --fs-h2:clamp(18px,4.6vw,22px);
+  --fs-h3:clamp(16px,4vw,18px);
+  --fs-body:clamp(15px,3.8vw,16px);
+  --fs-sm:clamp(13px,3.2vw,14px);
+  --fs-xs:clamp(11.5px,2.8vw,12.5px);
+  --fs-nano:clamp(10.5px,2.6vw,11.5px);
+  --fs-p1:clamp(40px,11vw,52px);
+
+  /* ---- 字重 / 字距 ---- */
+  --fw-normal:400;--fw-med:500;--fw-semi:600;--fw-bold:700;--fw-black:800;
+  --ls-tight:-.02em;--ls-snap:-.01em;--ls-label:.02em;
+
+  /* ---- 圆角阶梯 ---- */
+  --r-xs:8px;--r-sm:12px;--r-md:16px;--r-lg:20px;--r-xl:28px;--r-pill:999px;
+
+  /* ---- 间距节奏 ---- */
+  --pad-card:clamp(16px,4.2vw,22px);
+  --pad-ctl:clamp(10px,2.6vw,12px);
+  --gap-card:clamp(12px,2.6vw,14px);
+  --gap-block:clamp(22px,5vw,28px);
+  --pad-page:clamp(14px,3.6vw,18px);
+  /* 底部导航实测高度：52(min-height) + 6 + 6 + 1(border) = 65px，
+     留 3px 余量给不同机型的取整差异 */
+  --pad-nav:calc(136rpx + env(safe-area-inset-bottom));
+
+  /* ---- 背景 5 层 ---- */
+  --bg-app:#F2F2F7;
+  --surface:#FFFFFF;
+  --surface-2:#FAFAFF;
+  --surface-sunken:#F2F2F7;
+  --surface-inverse:#1C1C1E;
+
+  /* ---- 文字 4 层 ---- */
+  --text-1:#1D1D1F;
+  --text-2:#3C3C43;
+  --text-3:#6E6E73;
+  --text-4:#8E8E93;
+  --text-on-accent:#FFFFFF;
+  --text-on-inverse:#F2F2F7;
+
+  /* ---- 主色 8 阶（Apple System Blue） ---- */
+  --brand-50:#E8F2FF;
+  --brand-100:#CFE5FF;
+  --brand-200:#9FCBFF;
+  --brand-300:#66ABFF;
+  --brand-400:#2E8DFF;
+  --brand-500:#007AFF;
+  --brand-600:#0064D6;
+  --brand-700:#004FAD;
+  --brand-gradient:linear-gradient(145deg,#2E8DFF 0%,#007AFF 46%,#004FAD 100%);
+  --brand-gradient-soft:linear-gradient(145deg,#66ABFF 0%,#2E8DFF 100%);
+
+  /* ---- 语义色 ---- */
+  --success-50:#E9F9EE;--success-100:#BFE9D7;--success-500:#34C759;--success-600:#30D158;--success-ink:#076B4A;
+  --amber-50:#FFF5E6;--amber-100:#FCE4B0;--amber-500:#FF9500;--amber-600:#FF9500;--amber-ink:#96530A;
+  --danger-50:#FFECEA;--danger-100:#FBC9C9;--danger-500:#FF3B30;--danger-600:#FF453A;--danger-ink:#B42318;
+  --info-50:#E8F2FF;--info-500:#007AFF;--info-ink:#1D4ED8;
+
+  /* ---- 分割线 ---- */
+  --line-soft:#F2F2F7;
+  --line:#E5E5EA;
+  --line-strong:#D1D1D6;
+  --track:#E5E5EA;
+
+  /* ---- 图表 / 分类色板 8 色 ---- */
+  --goal-1:#007AFF;--goal-2:#0EA5E9;--goal-3:#34C759;--goal-4:#FF9500;
+  --goal-5:#FF3B30;--goal-6:#EC4899;--goal-7:#5856D6;--goal-8:#14B8A6;
+  /* 存量数据色的主题适配层：COLORS 里的旧 hex → 主题 token */
+  --gc-6366f1:var(--goal-1);--gc-f59e0b:var(--goal-4);--gc-10b981:var(--goal-3);
+  --gc-0ea5e9:var(--goal-2);--gc-8b5cf6:var(--goal-7);--gc-ef4444:var(--goal-5);
+  --gc-f97316:var(--goal-4);--gc-14b8a6:var(--goal-8);
+
+  /* ---- 阴影 6 档 ---- */
+  --sh-1:0 1px 2px 0 rgba(0,0,0,.04);
+  --sh-2:0 1px 2px 0 rgba(0,0,0,.05), 0 1px 3px -1px rgba(0,0,0,.05);
+  --sh-3:0 2px 4px -1px rgba(0,0,0,.06), 0 1px 2px -1px rgba(0,0,0,.05);
+  --sh-accent:0 8px 24px -8px rgba(0,122,255,.28);
+
+  /* ---- 玻璃按键系统 ---- */
+  --glass-bg:rgba(255,255,255,.80);
+  --glass-bd:rgba(255,255,255,.65);
+  /* 页面顶部的一层极淡色晕：纯色背景上玻璃是无形的，
+     有了它，半透明浮层透过去才有层次。透明度压到 .05 附近，不能当装饰看 */
+  --bg-glow:rgba(0,122,255,.055);
+  --mask-bg:rgba(0,0,0,.35);
+
+  background:var(--bg-app);
+  color:var(--text-1);
+  font-family:var(--font-sans);
+  font-size:var(--fs-body);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  --ls-normal:0;
+  --pad-tight:14px;
+  --pad-cell:12px 14px;
+  --bg-app-2:#E5E5EA;
+  --text-on-dark:#F2F2F7;
+  --info-100:#CFE5FF;
+  --info-600:#0064D6;
+  --line-dash:#C7C7CC;
+  --grid-line:#F2F2F7;
+  --sh-0:0 1px 2px -1px rgba(0,0,0,.04);
+  --sh-inset-hi:inset 0 1px 0 rgba(255,255,255,.62);
+  --sh-inset-lo:inset 0 -1px 0 rgba(0,0,0,.06);
+  --hero-grad:linear-gradient(165deg,#0064D6 0%,#007AFF 58%,#2E8DFF 100%);
+  --hero-halo-1:rgba(46,141,255,.30);
+  --hero-halo-2:rgba(52,199,89,.18);
+  --hero-halo-blur:10px;
+  --hero-dots:rgba(255,255,255,.16);
+  --chip-bg:rgba(255,255,255,.16);
+  --chip-bd:rgba(255,255,255,.25);
+  --noise-op:.018;
+  --noise-blend:overlay;
+  --gb-blur:blur(24px) saturate(190%);
+  --gb-blur-sm:blur(16px) saturate(180%);
+  --gb-face:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.60) 100%);
+  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.74) 0%,rgba(255,255,255,.44) 100%);
+  --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.92);
+  --gb-edge-lo:inset 0 -.5px 0 rgba(15,23,42,.06);
+  --gb-hair:0 0 0 .5px rgba(15,23,42,.08);
+  --gb-drop:0 1px 2px rgba(15,23,42,.06),0 6px 16px -8px rgba(15,23,42,.18);
+  --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.16) 42%,rgba(255,255,255,0) 62%);
+  --gb-press-lift:inset 0 2px 6px rgba(15,23,42,.10);
+  --gb-tint-brand:rgba(0,122,255,.88);
+  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.42);
+  --gb-tint-brand-edge:0 0 0 .5px rgba(0,84,190,.42);
+  --gb-tint-red:rgba(255,59,48,.88);
+  --gb-tint-red-edge:0 0 0 .5px rgba(190,32,24,.42);
+  --gb-tint-green:rgba(52,199,89,.88);
+  --gb-tint-green-edge:0 0 0 .5px rgba(24,150,60,.42);
+  --gb-tint-amber:rgba(255,149,0,.90);
+  --gb-tint-amber-edge:0 0 0 .5px rgba(190,105,0,.42);
+  --bg:var(--bg-app);
+  --card:var(--surface);
+  --ink:var(--text-1);
+  --ink-2:var(--text-2);
+  --ink-3:var(--text-3);
+  --brand:var(--brand-500);
+  --brand-2:var(--brand-600);
+  --green:var(--success-600);
+  --red:var(--danger-600);
+  --amber:var(--amber-600);
+  --radius:var(--r-lg);
+  --shadow:var(--sh-2);
+  --shadow-lg:var(--sh-3);
+
+}
+
+/* ---------- 深色模式（跟随系统，由 app.json darkmode 开关控制） ---------- */
+@media (prefers-color-scheme: dark){
+  page{
+    --bg-app:#000000;
+    --surface:#1C1C1E;
+    --surface-2:#2C2C2E;
+    --surface-sunken:#0B0C14;
+    --surface-inverse:#F2F2F7;
+    --text-1:#F2F2F7;
+    --text-2:#E5E5EA;
+    --text-3:#8E8E93;
+    --text-4:#636366;
+    --text-on-inverse:#1D1D1F;
+    --brand-50:#00275A;
+    --brand-100:#003B82;
+    --brand-200:#004FAD;
+    --brand-300:#0064D6;
+    --brand-400:#2E8DFF;
+    --brand-500:#66ABFF;
+    --brand-600:#2E8DFF;
+    --brand-700:#0064D6;
+    --brand-gradient:linear-gradient(145deg,#0064D6 0%,#2E8DFF 55%,#66ABFF 100%);
+    --success-50:rgba(48,209,88,.13);--success-100:rgba(48,209,88,.28);--success-500:#30D158;--success-ink:#6EE7B7;
+    --amber-50:rgba(255,159,10,.13);--amber-100:rgba(255,159,10,.28);--amber-500:#FFB340;--amber-ink:#FCD34D;
+    --danger-50:rgba(255,69,58,.13);--danger-100:rgba(255,69,58,.28);--danger-500:#FF453A;--danger-ink:#FCA5A5;
+    --info-50:rgba(66,165,255,.13);--info-500:#66ABFF;--info-ink:#93C5FD;
+    --line-soft:#1C1C1E;
+    --line:#2C2C2E;
+    --line-strong:#3A3A3C;
+    --track:#2C2C2E;
+    --goal-1:#66ABFF;--goal-2:#38BDF8;--goal-3:#30D158;--goal-4:#FF9F0A;
+    --goal-5:#FF453A;--goal-6:#F472B6;--goal-7:#A5B4FC;--goal-8:#5EEAD4;
+    --sh-1:0 1px 2px 0 rgba(0,0,0,.30);
+    --sh-2:0 1px 2px 0 rgba(0,0,0,.36), 0 1px 3px -1px rgba(0,0,0,.36);
+    --sh-3:0 2px 4px -1px rgba(0,0,0,.40), 0 1px 2px -1px rgba(0,0,0,.36);
+    --sh-accent:0 8px 26px -6px rgba(46,141,255,.55);
+    --glass-bg:rgba(28,28,30,.74);
+    --glass-bd:rgba(255,255,255,.06);
+    --bg-glow:rgba(102,171,255,.09);
+    --mask-bg:rgba(0,0,0,.62);
+    --bg-app-2:#0B0C14;
+    --text-on-accent:#FFFFFF;
+    --text-on-dark:#F2F2F7;
+    --brand-gradient-soft:linear-gradient(145deg,#2E8DFF 0%,#66ABFF 100%);
+    --success-600:#34C759;
+    --amber-600:#FF9F0A;
+    --danger-600:#FF3B30;
+    --info-100:rgba(66,165,255,.28);
+    --info-600:#2E8DFF;
+    --line-dash:#48484A;
+    --grid-line:rgba(255,255,255,.06);
+    --sh-0:0 1px 2px -1px rgba(0,0,0,.30);
+    --sh-inset-hi:inset 0 1px 0 rgba(255,255,255,.055);
+    --sh-inset-lo:inset 0 -1px 0 rgba(0,0,0,.30);
+    --hero-grad:linear-gradient(165deg,#00275A 0%,#003B82 55%,#004FAD 100%);
+    --hero-halo-1:rgba(46,141,255,.22);
+    --hero-halo-2:rgba(52,199,89,.14);
+    --hero-halo-blur:16px;
+    --hero-dots:rgba(255,255,255,.07);
+    --chip-bg:rgba(255,255,255,.07);
+    --chip-bd:rgba(255,255,255,.12);
+    --noise-op:.035;
+    --noise-blend:soft-light;
+    --gb-face:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.08) 100%);
+    --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.11) 0%,rgba(255,255,255,.05) 100%);
+    --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.18);
+    --gb-edge-lo:inset 0 -.5px 0 rgba(0,0,0,.34);
+    --gb-hair:0 0 0 .5px rgba(255,255,255,.10);
+    --gb-drop:0 1px 2px rgba(0,0,0,.34),0 8px 20px -10px rgba(0,0,0,.55);
+    --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 42%,rgba(255,255,255,0) 62%);
+    --gb-press-lift:inset 0 2px 6px rgba(0,0,0,.40);
+    --gb-tint-brand:rgba(10,132,255,.88);
+    --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.26);
+    --gb-tint-brand-edge:0 0 0 .5px rgba(102,171,255,.34);
+    --gb-tint-red:rgba(255,69,58,.88);
+    --gb-tint-red-edge:0 0 0 .5px rgba(255,138,128,.32);
+    --gb-tint-green:rgba(48,209,88,.86);
+    --gb-tint-green-edge:0 0 0 .5px rgba(110,231,183,.30);
+    --gb-tint-amber:rgba(255,159,10,.88);
+    --gb-tint-amber-edge:0 0 0 .5px rgba(252,211,77,.30);
+
+  }
+}
+
+view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
+
+/* ---------- 手动主题覆盖 ----------
+   小程序没有「强制指定配色方案」的官方 API：app.json 的 darkmode 只能跟随系统。
+   要在系统是浅色时强制深色（或反之），只能自己把 token 再声明一遍。
+   这两份 token 与上面的 @media 块内容相同 —— 有意的重复：
+   采用「重复声明」而不是「提取公共类」，是因为 WXSS 不支持 token 集的复用语法，
+   而把每一档都写成独立、完整、可直接对照的整块，比拆成互相覆盖的碎片更好维护。
+   改动其中一处时必须同步另外两处（tests/static.test.mjs 会检查三处的 token 数量一致）。 */
+.theme-dark{
+  --bg-app:#000000;
+  --surface:#1C1C1E;
+  --surface-2:#2C2C2E;
+  --surface-sunken:#0B0C14;
+  --surface-inverse:#F2F2F7;
+  --text-1:#F2F2F7;
+  --text-2:#E5E5EA;
+  --text-3:#8E8E93;
+  --text-4:#636366;
+  --text-on-inverse:#1D1D1F;
+  --brand-50:#00275A;
+  --brand-100:#003B82;
+  --brand-200:#004FAD;
+  --brand-300:#0064D6;
+  --brand-400:#2E8DFF;
+  --brand-500:#66ABFF;
+  --brand-600:#2E8DFF;
+  --brand-700:#0064D6;
+  --brand-gradient:linear-gradient(145deg,#0064D6 0%,#2E8DFF 55%,#66ABFF 100%);
+  --success-50:rgba(48,209,88,.13);--success-100:rgba(48,209,88,.28);--success-500:#30D158;--success-ink:#6EE7B7;
+  --amber-50:rgba(255,159,10,.13);--amber-100:rgba(255,159,10,.28);--amber-500:#FFB340;--amber-ink:#FCD34D;
+  --danger-50:rgba(255,69,58,.13);--danger-100:rgba(255,69,58,.28);--danger-500:#FF453A;--danger-ink:#FCA5A5;
+  --info-50:rgba(66,165,255,.13);--info-500:#66ABFF;--info-ink:#93C5FD;
+  --line-soft:#1C1C1E;
+  --line:#2C2C2E;
+  --line-strong:#3A3A3C;
+  --track:#2C2C2E;
+  --goal-1:#66ABFF;--goal-2:#38BDF8;--goal-3:#30D158;--goal-4:#FF9F0A;
+  --goal-5:#FF453A;--goal-6:#F472B6;--goal-7:#A5B4FC;--goal-8:#5EEAD4;
+  --sh-1:0 1px 2px 0 rgba(0,0,0,.30);
+  --sh-2:0 1px 2px 0 rgba(0,0,0,.36), 0 1px 3px -1px rgba(0,0,0,.36);
+  --sh-3:0 2px 4px -1px rgba(0,0,0,.40), 0 1px 2px -1px rgba(0,0,0,.36);
+  --sh-accent:0 8px 26px -6px rgba(46,141,255,.55);
+  --glass-bg:rgba(28,28,30,.74);
+  --glass-bd:rgba(255,255,255,.06);
+  --bg-glow:rgba(102,171,255,.09);
+  --mask-bg:rgba(0,0,0,.62);
+  --bg-app-2:#0B0C14;
+  --text-on-accent:#FFFFFF;
+  --text-on-dark:#F2F2F7;
+  --brand-gradient-soft:linear-gradient(145deg,#2E8DFF 0%,#66ABFF 100%);
+  --success-600:#34C759;
+  --amber-600:#FF9F0A;
+  --danger-600:#FF3B30;
+  --info-100:rgba(66,165,255,.28);
+  --info-600:#2E8DFF;
+  --line-dash:#48484A;
+  --grid-line:rgba(255,255,255,.06);
+  --sh-0:0 1px 2px -1px rgba(0,0,0,.30);
+  --sh-inset-hi:inset 0 1px 0 rgba(255,255,255,.055);
+  --sh-inset-lo:inset 0 -1px 0 rgba(0,0,0,.30);
+  --hero-grad:linear-gradient(165deg,#00275A 0%,#003B82 55%,#004FAD 100%);
+  --hero-halo-1:rgba(46,141,255,.22);
+  --hero-halo-2:rgba(52,199,89,.14);
+  --hero-halo-blur:16px;
+  --hero-dots:rgba(255,255,255,.07);
+  --chip-bg:rgba(255,255,255,.07);
+  --chip-bd:rgba(255,255,255,.12);
+  --noise-op:.035;
+  --noise-blend:soft-light;
+  --gb-face:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.08) 100%);
+  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.11) 0%,rgba(255,255,255,.05) 100%);
+  --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.18);
+  --gb-edge-lo:inset 0 -.5px 0 rgba(0,0,0,.34);
+  --gb-hair:0 0 0 .5px rgba(255,255,255,.10);
+  --gb-drop:0 1px 2px rgba(0,0,0,.34),0 8px 20px -10px rgba(0,0,0,.55);
+  --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 42%,rgba(255,255,255,0) 62%);
+  --gb-press-lift:inset 0 2px 6px rgba(0,0,0,.40);
+  --gb-tint-brand:rgba(10,132,255,.88);
+  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.26);
+  --gb-tint-brand-edge:0 0 0 .5px rgba(102,171,255,.34);
+  --gb-tint-red:rgba(255,69,58,.88);
+  --gb-tint-red-edge:0 0 0 .5px rgba(255,138,128,.32);
+  --gb-tint-green:rgba(48,209,88,.86);
+  --gb-tint-green-edge:0 0 0 .5px rgba(110,231,183,.30);
+  --gb-tint-amber:rgba(255,159,10,.88);
+  --gb-tint-amber-edge:0 0 0 .5px rgba(252,211,77,.30);
+
+}
+.theme-light{
+  --bg-app:#F2F2F7;
+  --surface:#FFFFFF;
+  --surface-2:#FAFAFF;
+  --surface-sunken:#F2F2F7;
+  --surface-inverse:#1C1C1E;
+  --text-1:#1D1D1F;
+  --text-2:#3C3C43;
+  --text-3:#6E6E73;
+  --text-4:#8E8E93;
+  --text-on-inverse:#F2F2F7;
+  --brand-50:#E8F2FF;
+  --brand-100:#CFE5FF;
+  --brand-200:#9FCBFF;
+  --brand-300:#66ABFF;
+  --brand-400:#2E8DFF;
+  --brand-500:#007AFF;
+  --brand-600:#0064D6;
+  --brand-700:#004FAD;
+  --brand-gradient:linear-gradient(145deg,#2E8DFF 0%,#007AFF 46%,#004FAD 100%);
+  --success-50:#E9F9EE;--success-100:#BFE9D7;--success-500:#34C759;--success-ink:#076B4A;
+  --amber-50:#FFF5E6;--amber-100:#FCE4B0;--amber-500:#FF9500;--amber-ink:#96530A;
+  --danger-50:#FFECEA;--danger-100:#FBC9C9;--danger-500:#FF3B30;--danger-ink:#B42318;
+  --info-50:#E8F2FF;--info-500:#007AFF;--info-ink:#1D4ED8;
+  --line-soft:#F2F2F7;
+  --line:#E5E5EA;
+  --line-strong:#D1D1D6;
+  --track:#E5E5EA;
+  --goal-1:#007AFF;--goal-2:#0EA5E9;--goal-3:#34C759;--goal-4:#FF9500;
+  --goal-5:#FF3B30;--goal-6:#EC4899;--goal-7:#5856D6;--goal-8:#14B8A6;
+  --sh-1:0 1px 2px 0 rgba(0,0,0,.04);
+  --sh-2:0 1px 2px 0 rgba(0,0,0,.05), 0 1px 3px -1px rgba(0,0,0,.05);
+  --sh-3:0 2px 4px -1px rgba(0,0,0,.06), 0 1px 2px -1px rgba(0,0,0,.05);
+  --sh-accent:0 8px 24px -8px rgba(0,122,255,.28);
+  --glass-bg:rgba(255,255,255,.80);
+  --glass-bd:rgba(255,255,255,.65);
+  /* 页面顶部的一层极淡色晕：纯色背景上玻璃是无形的，
+     有了它，半透明浮层透过去才有层次。透明度压到 .05 附近，不能当装饰看 */
+  --bg-glow:rgba(0,122,255,.055);
+  --mask-bg:rgba(0,0,0,.35);
+  --font-sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --fs-display:clamp(40px,12vw,64px);
+  --fs-num-lg:clamp(28px,8vw,40px);
+  --fs-h1:clamp(22px,6.2vw,30px);
+  --fs-h2:clamp(18px,4.6vw,22px);
+  --fs-h3:clamp(16px,4vw,18px);
+  --fs-body:clamp(15px,3.8vw,16px);
+  --fs-sm:clamp(13px,3.2vw,14px);
+  --fs-xs:clamp(11.5px,2.8vw,12.5px);
+  --fs-nano:clamp(10.5px,2.6vw,11.5px);
+  --fs-p1:clamp(40px,11vw,52px);
+  --fw-normal:400;
+  --fw-med:500;
+  --fw-semi:600;
+  --fw-bold:700;
+  --fw-black:800;
+  --ls-tight:-.02em;
+  --ls-snap:-.01em;
+  --ls-normal:0;
+  --ls-label:.02em;
+  --r-xs:8px;
+  --r-sm:12px;
+  --r-md:16px;
+  --r-lg:20px;
+  --r-xl:28px;
+  --r-pill:999px;
+  --pad-card:clamp(16px,4.2vw,22px);
+  --pad-tight:14px;
+  --pad-ctl:clamp(10px,2.6vw,12px);
+  --pad-cell:12px 14px;
+  --gap-card:clamp(12px,2.6vw,14px);
+  --gap-block:clamp(22px,5vw,28px);
+  --bg-app-2:#E5E5EA;
+  --text-on-accent:#FFFFFF;
+  --text-on-dark:#F2F2F7;
+  --brand-gradient-soft:linear-gradient(145deg,#66ABFF 0%,#2E8DFF 100%);
+  --success-600:#30D158;
+  --amber-600:#FF9500;
+  --danger-600:#FF453A;
+  --info-100:#CFE5FF;
+  --info-600:#0064D6;
+  --line-dash:#C7C7CC;
+  --grid-line:#F2F2F7;
+  --gc-6366f1:var(--goal-1);
+  --gc-f59e0b:var(--goal-4);
+  --gc-10b981:var(--goal-3);
+  --gc-0ea5e9:var(--goal-2);
+  --gc-8b5cf6:var(--goal-7);
+  --gc-ef4444:var(--goal-5);
+  --gc-f97316:var(--goal-4);
+  --gc-14b8a6:var(--goal-8);
+  --sh-0:0 1px 2px -1px rgba(0,0,0,.04);
+  --sh-inset-hi:inset 0 1px 0 rgba(255,255,255,.62);
+  --sh-inset-lo:inset 0 -1px 0 rgba(0,0,0,.06);
+  --hero-grad:linear-gradient(165deg,#0064D6 0%,#007AFF 58%,#2E8DFF 100%);
+  --hero-halo-1:rgba(46,141,255,.30);
+  --hero-halo-2:rgba(52,199,89,.18);
+  --hero-halo-blur:10px;
+  --hero-dots:rgba(255,255,255,.16);
+  --chip-bg:rgba(255,255,255,.16);
+  --chip-bd:rgba(255,255,255,.25);
+  --noise-op:.018;
+  --noise-blend:overlay;
+  --gb-blur:blur(24px) saturate(190%);
+  --gb-blur-sm:blur(16px) saturate(180%);
+  --gb-face:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.60) 100%);
+  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.74) 0%,rgba(255,255,255,.44) 100%);
+  --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.92);
+  --gb-edge-lo:inset 0 -.5px 0 rgba(15,23,42,.06);
+  --gb-hair:0 0 0 .5px rgba(15,23,42,.08);
+  --gb-drop:0 1px 2px rgba(15,23,42,.06),0 6px 16px -8px rgba(15,23,42,.18);
+  --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.16) 42%,rgba(255,255,255,0) 62%);
+  --gb-press-lift:inset 0 2px 6px rgba(15,23,42,.10);
+  --gb-tint-brand:rgba(0,122,255,.88);
+  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.42);
+  --gb-tint-brand-edge:0 0 0 .5px rgba(0,84,190,.42);
+  --gb-tint-red:rgba(255,59,48,.88);
+  --gb-tint-red-edge:0 0 0 .5px rgba(190,32,24,.42);
+  --gb-tint-green:rgba(52,199,89,.88);
+  --gb-tint-green-edge:0 0 0 .5px rgba(24,150,60,.42);
+  --gb-tint-amber:rgba(255,149,0,.90);
+  --gb-tint-amber-edge:0 0 0 .5px rgba(190,105,0,.42);
+  --bg:var(--bg-app);
+  --card:var(--surface);
+  --ink:var(--text-1);
+  --ink-2:var(--text-2);
+  --ink-3:var(--text-3);
+  --brand:var(--brand-500);
+  --brand-2:var(--brand-600);
+  --green:var(--success-600);
+  --red:var(--danger-600);
+  --amber:var(--amber-600);
+  --radius:var(--r-lg);
+  --shadow:var(--sh-2);
+  --shadow-lg:var(--sh-3);
+
+}
+
+/* ---------- 页面骨架 ----------
+   .page 自己带底色：手动主题覆盖时 page 元素本身的背景改不了
+   （配色方案由系统决定），所以由这个容器撑满视口并铺底色。 */
+.page{
+  min-height:100vh;
+  background-color:var(--bg-app);
+  /* 顶部一层几乎看不见的色晕。纯色背景上的玻璃是「无色可透」的，
+     有了它，半透明浮层透过去才有层次；透明度压在 .05~.09，不当装饰用 */
+  background-image:radial-gradient(120% 70% at 50% 0%, var(--bg-glow), transparent 68%);
+  background-repeat:no-repeat;
+  padding:calc(var(--gap-block) * .7) var(--pad-page) var(--pad-nav);
+}
+.page-title{
+  font-size:var(--fs-h1);
+  font-weight:800;
+  letter-spacing:var(--ls-tight);
+  line-height:1.2;
+  color:var(--text-1);
+}
+.page-sub{
+  margin-top:6rpx;
+  font-size:var(--fs-xs);
+  color:var(--text-3);
+}
+.section-title{
+  font-size:var(--fs-xs);
+  font-weight:600;
+  letter-spacing:var(--ls-label);
+  color:var(--text-3);
+  margin:var(--gap-block) 0 clamp(8px,2vw,10px) 2px;
+}
+
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--surface);
+  border-radius:var(--r-lg);
+  box-shadow:var(--sh-2);
+  padding:var(--pad-card);
+}
+.card + .card{ margin-top:var(--gap-card); }
+.card-title{
+  display:flex;
+  align-items:center;
+  gap:8rpx;
+  font-size:var(--fs-h3);
+  font-weight:700;
+  letter-spacing:var(--ls-snap);
+  color:var(--text-1);
+}
+.card-title::before{
+  content:"";
+  width:6rpx;height:28rpx;border-radius:2px;
+  background:currentColor;opacity:.85;flex:none;
+}
+.card-sub{
+  margin-top:6rpx;
+  font-size:var(--fs-sm);
+  color:var(--text-3);
+  line-height:1.6;
+}
+.card-body{ margin-top:14px; }
+
+/* ---------- 设置行 / 行式按钮 ---------- */
+.row{
+  display:flex;
+  align-items:center;
+  gap:12rpx;
+  min-height:calc(52px + 0rpx);
+  padding:14rpx 0;
+  border-bottom:1rpx solid var(--line-soft);
+}
+.row:last-child{ border-bottom:none; }
+.row-label{ flex:1; min-width:0; font-size:var(--fs-body); color:var(--text-1); }
+.row-sub{ margin-top:2rpx; font-size:var(--fs-xs); color:var(--text-3); }
+.row-value{ font-size:var(--fs-sm); color:var(--text-3); }
+
+/* ---------- 按钮 ---------- */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8rpx;
+  width:100%;height:calc(48px);
+  border-radius:var(--r-sm);
+  border:none;
+  font-size:var(--fs-body);
+  font-weight:600;
+  line-height:1;
+  transition:transform .12s ease-out,opacity .12s ease-out;
+}
+.btn::after{ border:none; }
+.btn:active{ transform:scale(.985); }
+.btn-primary{ background:var(--brand-gradient); color:var(--text-on-accent); box-shadow:var(--sh-accent); }
+/* 次级按钮走玻璃面：面本身是渐变的半透明白，不支持模糊时仍然是一块浅色按钮 */
+.btn-ghost{
+  background:var(--gb-face-2);
+  color:var(--text-1);
+  -webkit-backdrop-filter:var(--gb-blur-sm);
+  backdrop-filter:var(--gb-blur-sm);
+  box-shadow:var(--gb-edge-hi),var(--gb-hair);
+}
+.btn-plain{ background:transparent; color:var(--brand-500); box-shadow:none; }
+.btn-danger{ background:var(--danger-50); color:var(--danger-ink); }
+.btn[disabled]{ opacity:.45; box-shadow:none; }
+.btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-xs); width:auto; padding:0 20rpx; }
+
+/* ---------- 输入 ---------- */
+.field{ margin-top:16px; }
+.field-label{
+  display:block;
+  font-size:var(--fs-xs);
+  font-weight:600;
+  color:var(--text-3);
+  margin-bottom:6px;
+}
+.input{
+  width:100%;
+  height:calc(46px);
+  padding:0 14px;
+  background:var(--surface-sunken);
+  border-radius:var(--r-sm);
+  border:1.5rpx solid transparent;
+  font-size:var(--fs-body);
+  color:var(--text-1);
+  transition:border-color .18s ease-out,box-shadow .18s ease-out;
+}
+.input.is-focus,
+.input:focus{
+  border-color:var(--brand-400);
+  box-shadow:0 0 0 6rpx rgba(0,122,255,.14);
+  outline:none;
+}
+.input.is-error{ border-color:var(--danger-500); }
+.field-hint{ margin-top:6px; font-size:var(--fs-xs); color:var(--text-3); line-height:1.5; }
+.field-hint.is-error{ color:var(--danger-ink); }
+
+/* 分段控件（登录 / 注册 / 找回） */
+.segmented{
+  display:flex;
+  padding:2px;
+  background:var(--surface-sunken);
+  border-radius:var(--r-sm);
+  gap:2px;
+}
+.segmented-item{
+  flex:1;
+  height:calc(38px);
+  display:flex;align-items:center;justify-content:center;
+  border-radius:calc(var(--r-sm) - 1px);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  color:var(--text-3);
+  transition:background .18s ease-out,color .18s ease-out;
+}
+.segmented-item.is-on{ background:var(--surface); color:var(--brand-500); box-shadow:var(--sh-1); }
+
+/* ---------- 徽标 / 圆点 ---------- */
+.dot{ width:14rpx;height:14rpx;border-radius:50%;flex:none;background:var(--text-4); }
+.dot.ok{ background:var(--success-500); }
+.dot.sync{ background:var(--brand-500); }
+.dot.warn{ background:var(--amber-500); }
+.dot.err{ background:var(--danger-500); }
+.dot.off{ background:var(--text-4); }
+
+.badge{
+  display:inline-flex;align-items:center;gap:8rpx;
+  height:calc(24px);
+  padding:0 12rpx;
+  border-radius:var(--r-pill);
+  font-size:var(--fs-nano);
+  font-weight:600;
+  background:var(--surface-sunken);
+  color:var(--text-3);
+}
+.badge-ok{ background:var(--success-50); color:var(--success-ink); }
+.badge-warn{ background:var(--amber-50); color:var(--amber-ink); }
+.badge-err{ background:var(--danger-50); color:var(--danger-ink); }
+.badge-brand{ background:var(--brand-50); color:var(--brand-600); }
+
+/* ---------- 进度条 ---------- */
+.bar{
+  height:10px;border-radius:var(--r-pill);
+  background:var(--surface-sunken);
+  overflow:hidden;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.06);
+}
+.bar > .fill{
+  height:100%;border-radius:var(--r-pill);
+  background:linear-gradient(90deg,var(--brand-400),var(--brand-600));
+  transition:width .5s cubic-bezier(.22,1,.36,1);
+}
+.bar > .fill.is-done{ background:linear-gradient(90deg,var(--success-500),var(--success-600)); }
+.bar > .fill.is-over{ background:linear-gradient(90deg,var(--danger-500),var(--danger-600)); }
+
+/* ---------- 空态 ---------- */
+.empty{
+  padding:clamp(28px,7vw,40px) 16px;
+  text-align:center;
+}
+.empty-title{ font-size:var(--fs-h3); font-weight:700; color:var(--text-1); }
+.empty-desc{ margin-top:8px; font-size:var(--fs-sm); color:var(--text-3); line-height:1.65; }
+.empty-actions{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
+
+/* ---------- 列表项（目标） ---------- */
+.goal{
+  background:var(--surface);
+  border-radius:var(--r-lg);
+  box-shadow:var(--sh-2);
+  padding:var(--pad-card);
+  position:relative;
+  overflow:hidden;
+}
+.goal::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:6rpx;
+  background:var(--gc,var(--brand-500));
+}
+.goal-head{ display:flex;align-items:flex-start;gap:12rpx; }
+.goal-name{
+  flex:1;min-width:0;
+  font-size:var(--fs-body);font-weight:600;letter-spacing:var(--ls-snap);
+  color:var(--text-1);
+}
+.goal-meta{ margin-top:8rpx;font-size:var(--fs-xs);color:var(--text-3); }
+.goal-meta .sep{ margin:0 6rpx;opacity:.5; }
+.goal-bar{ margin-top:14rpx; }
+.goal-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:10rpx;font-size:var(--fs-xs);color:var(--text-3);
+}
+.goal-foot .num{ font-variant-numeric:tabular-nums;color:var(--text-2);font-weight:600; }
+
+/* ---------- 数字 ---------- */
+.num{ font-variant-numeric:tabular-nums lining-nums; }
+
+/* ---------- 分隔 ---------- */
+.hr{ height:1rpx;background:var(--line);margin:14px 0; }
+.hr-soft{ height:1rpx;background:var(--line-soft); }
+
+/* ---------- 玻璃遮罩层（弹层） ---------- */
+.mask{
+  position:fixed;inset:0;z-index:900;
+  background:var(--mask-bg);
+  /* 虚化身后的页面：这是「弹出层」最便宜也最有效的一层玻璃语言。
+     不支持 backdrop-filter 时只是没有虚化，遮罩底色仍在，不会破版 */
+  -webkit-backdrop-filter:blur(3px);
+  backdrop-filter:blur(3px);
+  display:flex;align-items:flex-end;
+}
+/**
+ * 底部弹层：磨砂玻璃面板。
+ * 降级是「自带」的，不需要 @supports：
+ *   - 不支持 backdrop-filter 时，只剩 --glass-bg 这层 80% 不透明的底色
+ *     （浅色主题 rgba(255,255,255,.80)、深色 rgba(28,28,30,.74)），文字照样可读；
+ *   - 上缘高光与投影是普通 box-shadow，任何机型都在。
+ */
+.sheet{
+  width:100%;
+  max-height:88vh;
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:var(--gb-blur);
+  backdrop-filter:var(--gb-blur);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.65), 0 -14px 44px -14px rgba(15,23,42,.26);
+  padding:var(--pad-card) var(--pad-page) calc(var(--pad-card) + env(safe-area-inset-bottom));
+  animation:sheetUp .26s cubic-bezier(.22,1,.36,1);
+}
+@keyframes sheetUp{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+.sheet-grab{
+  width:72rpx;height:8rpx;border-radius:var(--r-pill);
+  background:var(--line-strong);margin:0 auto 16rpx;
+}
+.sheet-title{ font-size:var(--fs-h2);font-weight:700;letter-spacing:var(--ls-snap); }
+.sheet-actions{ margin-top:22px;display:flex;gap:12px; }
+.sheet-actions .btn{ flex:1; }
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;
+  left:50%;bottom:calc(var(--pad-nav) + 20rpx);
+  transform:translateX(-50%) translateY(8px);
+  max-width:80vw;
+  padding:14rpx 26rpx;
+  border-radius:var(--r-pill);
+  background:var(--surface-inverse);
+  color:var(--text-on-inverse);
+  font-size:var(--fs-sm);
+  box-shadow:var(--sh-3);
+  z-index:1000;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease-out,transform .18s ease-out;
+}
+.toast.is-on{ opacity:1;transform:translateX(-50%) translateY(0); }
+
+/* ---------- 动画降级 ---------- */
+@media (prefers-reduced-motion: reduce){
+  .sheet{ animation:none; }
+  .toast{ transition:none; }
+  .bar > .fill{ transition:none; }
+  .btn:active{ transform:none; }
+}

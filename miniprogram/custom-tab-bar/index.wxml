@@ -1,0 +1,27 @@
+<view class="tabbar {{themeClass}}">
+  <view class="tabbar-inner">
+    <!--
+      每个页签最多 5 个几何块（g1~g5），多余的用 display:none 关掉。
+      形状对齐设计基准 .nav 里的四个 24×24 线性图标：
+        今日 → 方框 + 勾    看板 → 坐标轴 + 三根柱
+        周报 → 日历 + 挂耳  我的 → 头 + 肩
+    -->
+    <view
+      wx:for="{{list}}"
+      wx:key="key"
+      class="tab {{active === item.key ? 'on' : ''}}"
+      data-key="{{item.key}}"
+      data-path="{{item.path}}"
+      bindtap="onTap"
+    >
+      <view class="ico ico-{{item.key}}">
+        <view class="g g1"></view>
+        <view class="g g2"></view>
+        <view class="g g3"></view>
+        <view class="g g4"></view>
+        <view class="g g5"></view>
+      </view>
+      <text class="lb">{{item.text}}</text>
+    </view>
+  </view>
+</view>
