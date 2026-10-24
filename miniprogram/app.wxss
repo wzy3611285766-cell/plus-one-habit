@@ -558,7 +558,11 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 .btn{
   display:flex;align-items:center;justify-content:center;gap:8rpx;
   width:100%;height:calc(48px);
-  border-radius:var(--r-sm);
+  /* 圆边：整枚胶囊（液态玻璃按键的形状） */
+  border-radius:var(--r-pill);
+  /* 液态玻璃的镜面高光层挂在 ::after 上，这里要给它定位基准 */
+  position:relative;
+  overflow:hidden;
   border:none;
   font-size:var(--fs-body);
   font-weight:600;
@@ -590,6 +594,26 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   backdrop-filter:var(--gb-blur-sm);
   box-shadow:var(--gb-tint-red-edge),var(--gb-drop);
  }
+
+/* 液态玻璃的「湿感」来自顶部镜面反光：所有染色/清玻璃按键统一挂这层。
+   app.wxss 对全部页面生效，一处写完，页面不再各配一份。 */
+.btn-primary::after,
+.btn-danger::after,
+.btn-green::after,
+.btn-wx::after,
+.fk-btn::after,
+.tz-btn-red::after,
+.tz-btn-amber::after,
+.tz-btn-ghost::after,
+.add-goal::after,
+.more-btn::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.10) 38%,rgba(255,255,255,0) 58%);
+}
 .btn[disabled]{ opacity:.45; box-shadow:none; }
 .btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-xs); width:auto; padding:0 20rpx; }
 

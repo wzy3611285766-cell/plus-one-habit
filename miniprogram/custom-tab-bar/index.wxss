@@ -34,10 +34,11 @@
 
 /* 深色下玻璃换成「暗面上的薄雾」：不能照抄浅色的白，否则整条栏发灰 */
 .tabbar.theme-dark .tab{
-  background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.07) 100%);
+  background:linear-gradient(180deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.05) 100%);
   box-shadow:
-    inset 0 .5px 0 rgba(255,255,255,.20),
+    inset 0 .5px 0 rgba(255,255,255,.26),
     inset 0 0 14px rgba(255,255,255,.08),
+    inset 0 0 0 .5px rgba(255,255,255,.14),
     0 0 0 .5px rgba(255,255,255,.08),
     0 2px 6px rgba(0,0,0,.35);
 }
@@ -67,9 +68,9 @@
   --glass-bg:rgba(255,255,255,.60);
   padding:6px 8px calc(6px + env(safe-area-inset-bottom));
   background:var(--glass-bg);
-  /* saturation 140% 取自 liquid-glass-react 的默认值（它也是 Apple 那套的 Web 复刻） */
-  -webkit-backdrop-filter:blur(20px) saturate(140%);
-  backdrop-filter:blur(20px) saturate(140%);
+  /* saturation 160%：液态玻璃的颜色渗出感比毛玻璃更湿润（母本 140%，液态档 +20） */
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  backdrop-filter:blur(20px) saturate(160%);
   border-top:1px solid var(--line);
   box-shadow:var(--sh-inset-hi);
   color:var(--text-3);
@@ -115,13 +116,14 @@
   font-size:10px;
   font-weight:var(--fw-semi);
   color:var(--text-3);
-  /* 饱满：玻璃体加厚（.22→.10），内发光扩到 14px，
-     再加一道底部投影把胶囊从栏身里托起来 */
-  background:linear-gradient(180deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.10) 100%);
+  /* 液态：核心更透（.16→.06，透出栏身磨砂后的内容色），
+     边缘聚光（整圈亮 rim .30 + 顶线 .70）—— 光在玻璃边缘聚集才是「液态」 */
+  background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.06) 100%);
   box-shadow:
-    inset 0 .5px 0 rgba(255,255,255,.60),
-    inset 0 -.5px 0 rgba(255,255,255,.12),
+    inset 0 .5px 0 rgba(255,255,255,.70),
+    inset 0 -.5px 0 rgba(255,255,255,.14),
     inset 0 0 14px rgba(255,255,255,.14),
+    inset 0 0 0 .5px rgba(255,255,255,.30),
     0 0 0 .5px rgba(15,23,42,.05),
     0 2px 6px rgba(15,23,42,.08);
   overflow:hidden;
@@ -147,7 +149,7 @@
     linear-gradient(180deg,rgba(255,255,255,.40) 0%,rgba(255,255,255,.08) 42%,rgba(255,255,255,0) 62%),
     linear-gradient(135deg,rgba(0,200,255,.10) 0%,rgba(0,200,255,0) 38%),
     linear-gradient(-45deg,rgba(255,0,128,.07) 0%,rgba(255,0,128,0) 42%);
-  opacity:.75;
+  opacity:.9;
 }
 
 /* interactive：按下时塌陷 + 提亮 */
@@ -169,7 +171,8 @@
     inset 0 .5px 0 rgba(255,255,255,.78),
     inset 0 -.5px 0 rgba(255,255,255,.18),
     inset 0 0 14px rgba(120,200,255,.22),
-    inset 0 0 0 .5px rgba(0,122,255,.25),
+    inset 0 0 0 .5px rgba(255,255,255,.26),
+    inset 0 0 0 1px rgba(0,122,255,.25),
     0 2px 8px rgba(0,84,190,.20);
 }
 .tab.on::after{

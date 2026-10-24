@@ -545,19 +545,21 @@ test('底部导航对齐基准 .nav：玻璃胶囊选中态 + 容器发丝边', 
   const js = read(path.join(MP, 'custom-tab-bar', 'index.js'));
 
   /* saturation 140 取自 liquid-glass-react 的默认值 */
-  assert(/\.tabbar\{[\s\S]*?blur\(20px\) saturate\(140%\)/.test(css), '容器应是 blur(20px) saturate(140%)');
+  assert(/\.tabbar\{[\s\S]*?blur\(20px\) saturate\(160%\)/.test(css), '容器应是 blur(20px) saturate(160%)（液态档的湿润渗色）');
   assert(/\.tabbar\{[\s\S]*?border-top:1px solid var\(--line\)/.test(css), '容器应有发丝上边');
   assert(/\.tab\.on\{[\s\S]*?linear-gradient\(180deg,rgba\(0,122,255,\.26\)/.test(css), '选中态应是品牌色渐变胶囊');
   assert(/\.tab\.on\{[\s\S]*?inset 0 \.5px 0 rgba\(255,255,255,\.78\)/.test(css), '选中态应有玻璃上缘高光');
   /* 每一格是 Liquid Glass 语义的按键（参照 @callstack/liquid-glass）：
      clear 档未选中 / regular+tint 选中 / interactive 按压 / spacing 融合 */
-  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.22\)/.test(css),
-    '未选中应是饱满玻璃体（底面 .22 → .10，不是隐形）');
+  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.16\)/.test(css),
+    '未选中应是液态玻璃体（核心透 .16 → .06）');
+  assert(/\.tab\{[\s\S]*?inset 0 0 0 \.5px rgba\(255,255,255,\.30\)/.test(css), '液态边缘聚光：整圈亮 rim');
   assert(/\.tab\{[\s\S]*?border-radius:999rpx/.test(css), '每枚按键应是全圆边胶囊');
   assert(/\.tab\{[\s\S]*?0 2px 6px rgba\(15,23,42,\.08\)/.test(css), '饱满胶囊应有底部投影托起');
   assert(/\.tabbar-inner\{[\s\S]*?gap:6px/.test(css), '胶囊之间应拉开间距（分体，不是融合）');
   assert(/\.tabbar\{[\s\S]*?--glass-bg:rgba\(255,255,255,\.60\)/.test(css), '栏身毛玻璃底色应压到 .60');
   assert(css.indexOf('.tab::after') >= 0, '每格应有镜面高光层');
+  assert(/\.tab::after\{[\s\S]*?opacity:\.9/.test(css), '液态档镜面高光应开到 .9');
   assert(/\.tab:active\{[\s\S]*?filter:brightness\(1\.06\)/.test(css),
     '按下应提亮（interactive 是「响应手指」，不是只变暗）');
   assert(/\.tab:active\{[\s\S]*?inset 0 2px 6px/.test(css), '按下应有内阴影（塌陷感）');
@@ -743,6 +745,9 @@ test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键�
   // 染色玻璃三件套：tint 底（半透明，可降级）+ 模糊 + tint 边光
   assert(/\.btn-primary\{[\s\S]*?background:var\(--gb-tint-brand\)/.test(app), '主键应是品牌染色玻璃');
   assert(/\.btn-primary\{[\s\S]*?backdrop-filter:var\(--gb-blur-sm\)/.test(app), '主键应带模糊');
+  assert(app.indexOf('.btn-primary::after') >= 0 && app.indexOf('.tz-btn-red::after') >= 0,
+    '染色/清玻璃按键应统一挂镜面高光层（液态的湿感）');
+  assert(/\.btn\{[\s\S]*?border-radius:var\(--r-pill\)/.test(app), '按键应是全圆边胶囊');
   assert(/\.btn-danger\{[\s\S]*?--gb-tint-red/.test(app), '危险键应是红染色玻璃');
   assert(/\.tz-btn-red\{[\s\S]*?--gb-tint-red/.test(today), '立即打卡应是红染色玻璃');
   assert(/\.tz-btn-ghost\{[\s\S]*?--gb-face-2/.test(today), '调整计划应是清玻璃');

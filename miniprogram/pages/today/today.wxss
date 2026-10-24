@@ -35,9 +35,10 @@
 /* 新建目标：42×42 方键，不与 +1 抢注意力 */
 .add-goal{
   position:relative;
+  overflow:hidden;
   flex:none;
   width:calc(42px);height:calc(42px);
-  border-radius:var(--r-sm);
+  border-radius:var(--r-md);
   background:var(--gb-face-2);
   -webkit-backdrop-filter:var(--gb-blur-sm);
   backdrop-filter:var(--gb-blur-sm);
@@ -347,6 +348,8 @@
   width:32px;height:32px;min-height:0;
   margin:-4px -4px -4px auto;
   display:flex;align-items:center;justify-content:center;
+  position:relative;
+  overflow:hidden;
   border-radius:var(--r-sm);
   background:var(--gb-face-2);
   -webkit-backdrop-filter:var(--gb-blur-sm);
