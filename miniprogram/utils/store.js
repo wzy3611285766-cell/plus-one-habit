@@ -30,6 +30,7 @@ const M = require('./model.js');
 const U = require('./util.js');
 const api = require('./api.js');
 const auth = require('./auth.js');
+const fork = require('./fork.js');
 
 const K = CFG.K;
 
@@ -395,6 +396,8 @@ function sync(opts) {
  */
 function onLoggedIn() {
   setPhase('syncing', '正在与账号数据对齐…');
+  // 分叉记录到此完成使命：游客期的目标与打卡并入账号，此后数据跟账号走
+  fork.clearOnLogin();
   return pull({ force: true })
     .then(() => {
       // 本机全部标脏，确保合并后的结果完整回传
@@ -432,8 +435,66 @@ function clearLocalOnly() {
   shards = {};
   save();
   saveShards();
+  // 「重置这台手机」对分叉记录同样成立：回到全新状态，之后的分享卡片可以重新分叉
+  fork.clear();
   emit({ type: 'state' });
 }
+
+/* ================= 分享分叉（模仿 H5 第 17 轮） ================= */
+
+/** 把模板种成这位同学自己的目标。只写本机（同 installSample 的取向）：
+ *  游客期不标记脏分片，登录时 onLoggedIn 会统一补推。 */
+function seedForkGoals(goals) {
+  goals.forEach((g, i) => {
+    g.order = i + 1;
+    M.touch(g);
+    state.goals.push(g);
+  });
+  commit();
+}
+
+/**
+ * 处理一次带 ?fr= 的打开（分享卡片进入）。
+ * 判定逻辑在 fork.planIncoming（纯函数），这里只负责落地：
+ * 先回到空白再种入 —— 模板是唯一来源，本机残留的示例目标不混进来
+ * （对齐 H5 第 17 轮 C 补丁「首次分叉前清掉本机残留」）。
+ */
+function applyShareQuery(query, logged) {
+  const plan = fork.planIncoming(query, logged, state);
+  if (!plan.apply) return { applied: false, reason: plan.reason };
+
+  state = M.blankState();
+  shards = {};
+  save();
+  saveShards();
+  seedForkGoals(plan.goals);
+  fork.write({ forked: true, at: Date.now(), welcomed: false, tpl: plan.tpl });
+  return { applied: true, goals: plan.goals.length };
+}
+
+/**
+ * 重新载入分享时的那份数据：丢弃这台手机上的全部改动，重新种一次模板。
+ * 欢迎横幅不再弹（H5 同款：一辈子只打一次招呼）。
+ */
+function reforkFromShare() {
+  if (auth.isLogged()) return { ok: false };
+  const rec = fork.read();
+  if (!rec || !rec.tpl) return { ok: false };
+  const goals = fork.goalsFromTpl(fork.decodeTpl(rec.tpl));
+  if (!goals.length) return { ok: false };
+
+  state = M.blankState();
+  shards = {};
+  save();
+  saveShards();
+  seedForkGoals(goals);
+  fork.write({ forked: true, at: Date.now(), welcomed: true, tpl: rec.tpl });
+  return { ok: true, goals: goals.length };
+}
+
+function forkWelcomePending() { return fork.pendingWelcome(); }
+function forkMarkWelcomed() { fork.markWelcomed(); }
+function forkInfo() { return fork.info(); }
 
 /* ================= 演示数据 =================
    示例目标带 sample:true：卡片显示琥珀底与「示例」徽标，和真实目标一眼分得开。
@@ -495,6 +556,12 @@ module.exports = {
   resetToRemote: resetToRemote,
   clearLocalOnly: clearLocalOnly,
   scheduled: scheduled,
+
+  applyShareQuery: applyShareQuery,
+  reforkFromShare: reforkFromShare,
+  forkWelcomePending: forkWelcomePending,
+  forkMarkWelcomed: forkMarkWelcomed,
+  forkInfo: forkInfo,
 
   addGoal: addGoal,
   updateGoal: updateGoal,

@@ -2,6 +2,18 @@
 
   <app-hero />
 
+  <!-- ---------- 分叉欢迎横幅：一辈子只打一次（参数取自基准 .sync-banner.fork） ---------- -->
+  <view wx:if="{{forkBanner}}" class="fk-banner" style="top:{{bannerTop}}px">
+    <view class="fk-ico"><view class="fk-ico-dot"></view><view class="fk-ico-stem"></view></view>
+    <view class="fk-body">
+      <text class="fk-title">已经复制一份给你</text>
+      <text class="fk-text">这些目标来自同学的分享，从今天起的进度由你自己记录。</text>
+      <view class="fk-act">
+        <button class="fk-btn" bindtap="dismissForkBanner">知道了</button>
+      </view>
+    </view>
+  </view>
+
   <!-- ---------- 日期与操作：压成一行，把首屏留给目标卡 ---------- -->
   <view class="head">
     <text class="date">{{dateText}} · {{greeting}}</text>

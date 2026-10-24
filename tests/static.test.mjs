@@ -673,4 +673,61 @@ test('界面不解释数据流向：隐私说明只留在文档里', () => {
   assert(login.indexOf('数据存在哪') < 0, 'login.wxml 不应有「数据存在哪」入口');
 });
 
+
+/* ================================================================= */
+
+group('分享分叉（模仿 H5 第 17 轮）');
+
+/**
+ * 分叉的正确性最终由 fork.test.mjs 的行为测试保证；
+ * 这里只钉「结构没被改坏」：四个页签都能转发、入口和横幅还在。
+ */
+test('分叉模块存在，store 暴露完整入口', () => {
+  const f = path.join(MP, 'utils', 'fork.js');
+  assert(fs.existsSync(f), '缺少 utils/fork.js');
+  const src = read(f);
+  ['planIncoming', 'shareConfig', 'pendingWelcome', 'clearOnLogin'].forEach((k) => {
+    assert(src.indexOf(k) >= 0, 'fork.js 缺少 ' + k);
+  });
+
+  const store = read(path.join(MP, 'utils', 'store.js'));
+  ['applyShareQuery', 'reforkFromShare', 'forkWelcomePending', 'forkMarkWelcomed', 'forkInfo'].forEach((k) => {
+    assert(store.indexOf(k) >= 0, 'store.js 缺少 ' + k);
+  });
+  assert(store.indexOf('fork.clearOnLogin()') >= 0, 'onLoggedIn 应清分叉记录');
+});
+
+test('四个页签都支持转发，路径由 fork.shareConfig 统一构造', () => {
+  ['today', 'board', 'weekly', 'mine'].forEach((p) => {
+    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    assert(js.indexOf('onShareAppMessage') >= 0, p + '.js 应定义 onShareAppMessage');
+    assert(js.indexOf('fork.shareConfig') >= 0, p + '.js 应使用 fork.shareConfig');
+  });
+});
+
+test('「我的」页有分享入口与（分叉态的）重新载入入口', () => {
+  const wxml = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
+  assert(wxml.indexOf('分享给同学') >= 0, '缺少「分享给同学」');
+  assert(wxml.indexOf('open-type="share"') >= 0, '分享入口必须是 open-type=share 的 button');
+  assert(wxml.indexOf('重新载入分享的目标') >= 0, '缺少「重新载入分享的目标」');
+  assert(wxml.indexOf('wx:if="{{forked}}"') >= 0, '重新载入入口只在分叉态渲染');
+});
+
+test('今日页分叉欢迎横幅：品牌蓝配色 + 一辈子一次的闸门', () => {
+  const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
+  const css = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const js = read(path.join(MP, 'pages', 'today', 'today.js'));
+
+  assert(wxml.indexOf('class="fk-banner"') >= 0, '缺少横幅节点 .fk-banner');
+  assert(wxml.indexOf('bindtap="dismissForkBanner"') >= 0, '横幅应可关闭');
+  assert(js.indexOf('forkWelcomePending') >= 0 && js.indexOf('forkMarkWelcomed') >= 0,
+    '横幅显隐必须走 store 的 welcomed 记录（一辈子只打一次）');
+
+  // 参数取自基准 .sync-banner.fork：品牌蓝，不是错误红
+  assert(/\.fk-banner\{[\s\S]*?background:var\(--brand-50\)/.test(css), '横幅底色应是 --brand-50');
+  assert(!/\.fk-banner\{[\s\S]*?--danger-50/.test(css), '横幅不得用错误红配色');
+  assert(/\.fk-banner\{[\s\S]*?blur\(16px\)/.test(css), '横幅应保留基准的 blur(16px)');
+  assert(/\.fk-btn:active\{[\s\S]*?scale\(\.96\)/.test(css), '横幅按键按压应 scale(.96)（基准参数）');
+});
+
 export const suite = '小程序静态检查';

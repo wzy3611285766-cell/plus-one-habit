@@ -8,6 +8,7 @@
 
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -31,6 +32,11 @@ Page({
     report: '',
     hasReport: false,
     savedTip: ''
+  },
+
+  /** 转发卡片带目标模板：同学点开即可得到一份自己的副本（见 utils/fork.js） */
+  onShareAppMessage() {
+    return fork.shareConfig(store.get());
   },
 
   onLoad() {

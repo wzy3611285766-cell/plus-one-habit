@@ -27,6 +27,16 @@
         </view>
         <view class="chev chev-right"></view>
       </view>
+
+      <!-- 分享给同学：卡片里带一份目标模板，对方打开就有了同样的目标，进度各记各的 -->
+      <button class="mine-btn mine-btn-share" open-type="share">
+        <view class="mine-ico ico-share"></view>
+        <view class="mine-body">
+          <text class="mine-txt">分享给同学</text>
+          <text class="mine-sub">把我的目标复制一份给他，进度各记各的</text>
+        </view>
+        <view class="chev chev-right"></view>
+      </button>
     </view>
   </view>
 
@@ -108,6 +118,14 @@
         <view class="mine-body">
           <text class="mine-txt">移除示例目标</text>
           <text class="mine-sub">只删带「示例」标记的那几个</text>
+        </view>
+      </view>
+
+      <view wx:if="{{forked}}" class="mine-btn" bindtap="refork">
+        <view class="mine-ico ico-refresh"></view>
+        <view class="mine-body">
+          <text class="mine-txt">重新载入分享的目标</text>
+          <text class="mine-sub">放弃这台手机上的改动，重新复制一份</text>
         </view>
       </view>
 

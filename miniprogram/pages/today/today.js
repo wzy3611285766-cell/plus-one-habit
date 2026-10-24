@@ -13,6 +13,7 @@
 
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -66,12 +67,19 @@ Page({
     popClass: '',
     p1Level: '',
     confettiOn: false,
-    confetti: []
+    confetti: [],
+
+    /* 分享分叉的一次性欢迎横幅（模仿 H5 第 17 轮，参数取自基准 .sync-banner） */
+    forkBanner: false,
+    bannerTop: 108
   },
 
   onLoad() {
     this.unsub = store.on((e) => { if (e.type === 'state' || e.type === 'sync') this.render(); });
     this.unsubAuth = auth.on(() => this.render());
+    // 横幅贴在自绘 hero 下方：位置由胶囊量出来的导航高度决定（app.measureNav）
+    const nav = getApp().globalData.nav || {};
+    this.setData({ bannerTop: (nav.statusBar || 20) + (nav.navH || 44) + 10 });
     this.render();
   },
 
@@ -295,7 +303,10 @@ Page({
       missedRows: missedRows,
       restRows: restRows,
       allDoneText: allDoneText,
-      hasTodayZone: !!(missedRows.length || restRows.length || allDoneText)
+      hasTodayZone: !!(missedRows.length || restRows.length || allDoneText),
+
+      // 分叉欢迎横幅：记录里「还没打过招呼」才显示，一辈子一次
+      forkBanner: store.forkWelcomePending()
     });
     /* 只有当天建议量的快照真的被写入了才落盘。
        这一页会因为同步事件被反复重绘，无条件 save 等于每次同步都整份写一次本地存储。 */
@@ -505,6 +516,19 @@ Page({
   /* ================= 导航 ================= */
 
   goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
+
+  /* ================= 分享分叉 ================= */
+
+  /** 转发卡片：路径带目标模板，同学点开即可得到一份自己的副本。
+      四个页签共用 fork.shareConfig，保证从任何一页转发出去的体验一致。 */
+  onShareAppMessage() {
+    return fork.shareConfig(store.get());
+  },
+
+  dismissForkBanner() {
+    store.forkMarkWelcomed();
+    this.setData({ forkBanner: false });
+  },
 
   /** 顶部状态条点进来：同步明细在「我的」页 */
   goSync() { wx.switchTab({ url: '/pages/mine/mine' }); },

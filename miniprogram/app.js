@@ -27,10 +27,11 @@ App({
     nav: { statusBar: 20, navH: 44, rightPad: 96 }
   },
 
-  onLaunch() {
+  onLaunch(options) {
     this.measureNav();
     this.initCloud();
     this.loadLocal();
+    this.handleShareEntry(options);
     this.applyTheme();
     this.globalData.bootPromise = this.restoreSession();
   },
@@ -82,11 +83,29 @@ App({
     }
   },
 
-  onShow() {
+  onShow(options) {
     // 从后台切回来：另一台设备可能刚改过数据，静默对齐一次（store 内部有 20s 节流）
     if (this.globalData.dataReady && auth.isLogged()) {
       store.pull().catch(() => { });
     }
+    // 热启动也可能带着新的分享参数（点了另一张分享卡片）
+    this.handleShareEntry(options);
+  },
+
+  /**
+   * 分享卡片进入口。冷启动（onLaunch）与热启动（onShow）都会走这里；
+   * store.applyShareQuery 内部自带闸门（已登录 / 已分叉 / 已有进度都不动），
+   * 重复调用天然幂等。
+   */
+  handleShareEntry(options) {
+    if (!this.globalData.dataReady) return;
+    if (!options || !options.query) return;
+    try {
+      const r = store.applyShareQuery(options.query, auth.isLogged());
+      if (r && r.applied) {
+        console.log('[分享] 已为这位访客复制目标模板：' + r.goals + ' 个');
+      }
+    } catch (e) { /* 模板有问题就当普通打开处理，不阻断启动 */ }
   },
 
   /** 初始化云开发。ENV_ID 未配置时不报错，只是把云端能力整体降级 */

@@ -18,6 +18,8 @@ const K = {
   STATE: 'lgt.state.v1',
   SHARDS: 'lgt.shards.v1',
   PENDING: 'lgt.pending.v1',
+  /** 分享分叉记录：{ forked, at, welcomed, tpl } —— 见 utils/fork.js */
+  FORK: 'lgt.fork.v1',
   LEGACY: ['goal_workspace_v1', 'learning-goal-tracker-v1']
 };
 

@@ -10,6 +10,7 @@
 
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
 const api = require('../../utils/api.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
@@ -25,6 +26,8 @@ Page({
     user: null,
     joinedDays: 0,
     hasSample: false,
+    /* 分叉态（未登录 + 从分享卡片种入过目标）才显示「重新载入」入口 */
+    forked: false,
     themeOn: false,
     stats: { records: 0, streak: 0, goals: 0, logs: 0 },
 
@@ -101,6 +104,7 @@ Page({
       user: user,
       joinedDays: joinedDays,
       hasSample: store.hasSample(),
+      forked: !logged && store.forkInfo().forked,
       stats: {
         records: logs.length,
         streak: M.globalStreak(st),
@@ -133,6 +137,32 @@ Page({
   /* ================= 登录 / 登出 ================= */
 
   goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
+
+  /* ================= 分享分叉 ================= */
+
+  /** 「分享给同学」按钮（open-type="share"）走这里，与右上角 ⋯ 转发同一条路 */
+  onShareAppMessage() {
+    return fork.shareConfig(store.get());
+  },
+
+  /**
+   * 重新载入分享时的那份数据（仅分叉态可见）。
+   * 确认方式与「重置这台手机」一致：系统弹窗两段式，不用输入框。
+   */
+  refork() {
+    wx.showModal({
+      title: '重新载入分享的目标？',
+      content: '这台手机上的目标和打卡记录会丢失，换成分享时复制来的那份。',
+      confirmText: '重新载入',
+      confirmColor: '#FF3B30',
+      success: (res) => {
+        if (!res.confirm) return;
+        const r = store.reforkFromShare();
+        this.render();
+        this.toast(r.ok ? '已重新载入' : '分享的数据不完整，没有载入');
+      }
+    });
+  },
 
   logout() {
     wx.showModal({
