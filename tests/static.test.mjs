@@ -547,18 +547,22 @@ test('底部导航对齐基准 .nav：玻璃胶囊选中态 + 容器发丝边', 
   /* saturation 140 取自 liquid-glass-react 的默认值 */
   assert(/\.tabbar\{[\s\S]*?blur\(20px\) saturate\(140%\)/.test(css), '容器应是 blur(20px) saturate(140%)');
   assert(/\.tabbar\{[\s\S]*?border-top:1px solid var\(--line\)/.test(css), '容器应有发丝上边');
-  assert(/\.tab\.on\{[\s\S]*?linear-gradient\(180deg,rgba\(0,122,255,\.16\)/.test(css), '选中态应是品牌色渐变胶囊');
+  assert(/\.tab\.on\{[\s\S]*?linear-gradient\(180deg,rgba\(0,122,255,\.26\)/.test(css), '选中态应是品牌色渐变胶囊');
   assert(/\.tab\.on\{[\s\S]*?inset 0 \.5px 0 rgba\(255,255,255,\.78\)/.test(css), '选中态应有玻璃上缘高光');
   /* 每一格是 Liquid Glass 语义的按键（参照 @callstack/liquid-glass）：
      clear 档未选中 / regular+tint 选中 / interactive 按压 / spacing 融合 */
-  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.14\)/.test(css),
-    '未选中应是 clear 档（更透明，底面 .14 → .05）');
+  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.22\)/.test(css),
+    '未选中应是饱满玻璃体（底面 .22 → .10，不是隐形）');
+  assert(/\.tab\{[\s\S]*?border-radius:999rpx/.test(css), '每枚按键应是全圆边胶囊');
+  assert(/\.tab\{[\s\S]*?0 2px 6px rgba\(15,23,42,\.08\)/.test(css), '饱满胶囊应有底部投影托起');
+  assert(/\.tabbar-inner\{[\s\S]*?gap:6px/.test(css), '胶囊之间应拉开间距（分体，不是融合）');
+  assert(/\.tabbar\{[\s\S]*?--glass-bg:rgba\(255,255,255,\.60\)/.test(css), '栏身毛玻璃底色应压到 .60');
   assert(css.indexOf('.tab::after') >= 0, '每格应有镜面高光层');
   assert(/\.tab:active\{[\s\S]*?filter:brightness\(1\.06\)/.test(css),
     '按下应提亮（interactive 是「响应手指」，不是只变暗）');
   assert(/\.tab:active\{[\s\S]*?inset 0 2px 6px/.test(css), '按下应有内阴影（塌陷感）');
   assert(css.indexOf('.tabbar.theme-dark .tab{') >= 0, '深色下玻璃要换一套，不能照抄白色');
-  assert(/\.tabbar-inner\{[\s\S]*?gap:2px/.test(css), 'container spacing：格子间距要收到 2px 才有融合感');
+  /* 融合间距已由 gap:6px 的分体断言取代（饱满胶囊方案） */
 
   /* 今日图标必须是「右上角开口」的清单：四段拼出来，勾从缺口穿出 */
   ['.ico-today .g1', '.ico-today .g2', '.ico-today .g3', '.ico-today .g4']
@@ -567,8 +571,8 @@ test('底部导航对齐基准 .nav：玻璃胶囊选中态 + 容器发丝边', 
   assert(/\.ico-today \.g2\{[\s\S]*?top:1\.4px/.test(css), '上边应是独立短段');
 
   /* 折射做不到，用边缘内发光近似 —— 这条防止有人把它当装饰删掉 */
-  assert(/\.tab\{[\s\S]*?inset 0 0 12px rgba\(255,255,255,\.10\)/.test(css),
-    '每格应有边缘内发光（折射的近似）');
+  assert(/\.tab\{[\s\S]*?inset 0 0 14px rgba\(255,255,255,\.14\)/.test(css),
+    '每格应有边缘内发光（折射的近似，饱满档 14px）');
 
   /* 基准手机端：选中项 = 玻璃胶囊 + 底部一条 18px 短横线（缺一都不像） */
   assert(css.indexOf('.tab.on::before') >= 0, '选中态应有一条短横线');

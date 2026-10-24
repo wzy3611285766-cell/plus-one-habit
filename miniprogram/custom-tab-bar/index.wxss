@@ -16,7 +16,7 @@
  * 所以必须在本文件里补一份本组件用到的深色 token。
  */
 .tabbar.theme-dark{
-  --glass-bg:rgba(28,28,30,.74);
+  --glass-bg:rgba(28,28,30,.68);
   --glass-bd:rgba(255,255,255,.06);
   --line:#2C2C2E;
   --text-3:#8E8E93;
@@ -24,7 +24,7 @@
   --sh-inset-hi:inset 0 1px 0 rgba(255,255,255,.055);
 }
 .tabbar.theme-light{
-  --glass-bg:rgba(255,255,255,.80);
+  --glass-bg:rgba(255,255,255,.60);
   --glass-bd:rgba(255,255,255,.65);
   --line:#E5E5EA;
   --text-3:#6E6E73;
@@ -34,21 +34,23 @@
 
 /* 深色下玻璃换成「暗面上的薄雾」：不能照抄浅色的白，否则整条栏发灰 */
 .tabbar.theme-dark .tab{
-  background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.04) 100%);
+  background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.07) 100%);
   box-shadow:
-    inset 0 .5px 0 rgba(255,255,255,.16),
-    0 0 0 .5px rgba(255,255,255,.06);
+    inset 0 .5px 0 rgba(255,255,255,.20),
+    inset 0 0 14px rgba(255,255,255,.08),
+    0 0 0 .5px rgba(255,255,255,.08),
+    0 2px 6px rgba(0,0,0,.35);
 }
 .tabbar.theme-dark .tab::after{
   background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.03) 42%,rgba(255,255,255,0) 62%);
   opacity:.7;
 }
 .tabbar.theme-dark .tab.on{
-  background:linear-gradient(180deg,rgba(10,132,255,.28),rgba(10,132,255,.10));
+  background:linear-gradient(180deg,rgba(10,132,255,.34),rgba(10,132,255,.14));
   box-shadow:
     inset 0 .5px 0 rgba(255,255,255,.30),
-    inset 0 0 0 .5px rgba(102,171,255,.30),
-    0 1px 3px rgba(0,0,0,.30);
+    inset 0 0 0 .5px rgba(102,171,255,.34),
+    0 2px 8px rgba(0,0,0,.40);
 }
 .tabbar.theme-dark .tab:active{
   box-shadow:
@@ -60,8 +62,10 @@
   position:fixed;
   left:0;right:0;bottom:0;
   z-index:200;
-  /* final17 的手机档：5px 8px，不是 6px 12px —— 底部栏更薄、更贴边 */
-  padding:5px 8px calc(5px + env(safe-area-inset-bottom));
+  /* 一栏毛玻璃：底色压到 .60，让 blur(20px) 真正读得出来；
+     上下 6px 给胶囊留出「坐上去」的空气感 */
+  --glass-bg:rgba(255,255,255,.60);
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
   background:var(--glass-bg);
   /* saturation 140% 取自 liquid-glass-react 的默认值（它也是 Apple 那套的 Web 复刻） */
   -webkit-backdrop-filter:blur(20px) saturate(140%);
@@ -71,11 +75,12 @@
   color:var(--text-3);
 }
 
-/* spacing 融合：相邻玻璃靠到 2px，视觉上几乎相接 —— 
-   这是 Liquid Glass 区别于普通毛玻璃的标志性行为 */
+/* spacing 分体：每枚胶囊都要「饱满成立」，间距拉开到 6px。
+   融合（2px 相接）是老方案；改版后按键自身有玻璃体量和投影，
+   再贴在一起会糊成一片 */
 .tabbar-inner{
   display:flex;
-  gap:2px;
+  gap:6px;
 }
 
 /**
@@ -100,7 +105,8 @@
   position:relative;
   flex:1;
   min-height:54px;
-  border-radius:var(--r-md);
+  /* 圆边：整枚胶囊（999rpx = 高度的一半封顶），iOS 饱满玻璃按键的形状 */
+  border-radius:999rpx;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -109,15 +115,15 @@
   font-size:10px;
   font-weight:var(--fw-semi);
   color:var(--text-3);
-  /* effect="clear"：极淡的一层，靠底栏的模糊透出内容 */
-  background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.05) 100%);
+  /* 饱满：玻璃体加厚（.22→.10），内发光扩到 14px，
+     再加一道底部投影把胶囊从栏身里托起来 */
+  background:linear-gradient(180deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.10) 100%);
   box-shadow:
-    inset 0 .5px 0 rgba(255,255,255,.55),
-    inset 0 -.5px 0 rgba(255,255,255,.10),
-    /* 边缘内发光：真折射做不了，但「光在玻璃边缘聚集」是它最明显的观感，
-       这一圈极淡的内发光能补上大半 */
-    inset 0 0 12px rgba(255,255,255,.10),
-    0 0 0 .5px rgba(15,23,42,.04);
+    inset 0 .5px 0 rgba(255,255,255,.60),
+    inset 0 -.5px 0 rgba(255,255,255,.12),
+    inset 0 0 14px rgba(255,255,255,.14),
+    0 0 0 .5px rgba(15,23,42,.05),
+    0 2px 6px rgba(15,23,42,.08);
   overflow:hidden;
   /* elasticity：回弹用带过冲的曲线，0.15 的量感是「有点弹，但不晃」 */
   transition:color .18s ease-out,background .18s ease-out,box-shadow .18s ease-out,
@@ -158,13 +164,13 @@
 /* effect="regular" + tintColor：选中项 = 品牌色玻璃 + 更强的边缘光 */
 .tab.on{
   color:var(--brand-600);
-  background:linear-gradient(180deg,rgba(0,122,255,.16),rgba(0,122,255,.06));
+  background:linear-gradient(180deg,rgba(0,122,255,.26),rgba(0,122,255,.12));
   box-shadow:
     inset 0 .5px 0 rgba(255,255,255,.78),
     inset 0 -.5px 0 rgba(255,255,255,.18),
-    inset 0 0 14px rgba(120,200,255,.18),
-    inset 0 0 0 .5px rgba(0,122,255,.22),
-    0 1px 3px rgba(0,84,190,.12);
+    inset 0 0 14px rgba(120,200,255,.22),
+    inset 0 0 0 .5px rgba(0,122,255,.25),
+    0 2px 8px rgba(0,84,190,.20);
 }
 .tab.on::after{
   background:
