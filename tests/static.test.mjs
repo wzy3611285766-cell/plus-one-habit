@@ -677,9 +677,12 @@ test('过审模式：用户能走到的页面上没有输入框', () => {
   assert(weekly.indexOf('wx:if="{{!safeMode}}"') >= 0, '周报四栏应在过审模式下隐藏');
 
   const mine = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
+  assert(mine.indexOf('<input') < 0, '「我的」页不该有任何输入框');
+  assert(mine.indexOf('openNickname') < 0, '昵称行不该再有编辑入口');
+
+  /* 注销账号也不能靠输入确认词 —— 改成两段式点击 */
   const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
-  assert(mineJs.indexOf('SAFE_MODE') >= 0, '改昵称入口应在过审模式下被拦住');
-  assert(mine.indexOf('openNickname') >= 0, '昵称行仍要显示（只读）');
+  assert(mineJs.indexOf('confirmWipe') >= 0, '注销应是两段式点击确认');
 });
 
 test('界面不解释数据流向：隐私说明只留在文档里', () => {

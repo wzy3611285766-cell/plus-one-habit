@@ -739,7 +739,7 @@ await test('生成的文本对齐基准格式：标题 / 每目标一行 / 四�
 
 group('注销账号');
 
-await test('确认词不对时拦下，不发请求也不动登录态', async () => {
+await test('第一次点只是上膛：不发请求，也不动登录态', async () => {
   const UD = freshUtils();
   await boot(UD);
   await UD.auth.login();
@@ -752,12 +752,11 @@ await test('确认词不对时拦下，不发请求也不动登录态', async ()
   page.openDeleteAccount();
   eq(page.data.sheet, 'deleteAccount', '应打开注销弹层');
 
-  page.setData({ form: { confirmDelete: '删除' } });
   const before = env.callCount.auth;
   page.submitDeleteAccount();
 
-  eq(page.data.formError, '请输入「注销」两个字以确认');
-  eq(env.callCount.auth, before, '确认词不对时不该发云函数请求');
+  eq(page.data.confirmWipe, true, '应进入待确认状态（按钮变成「再点一次」）');
+  eq(env.callCount.auth, before, '第一次点不该发云函数请求');
   eq(UD.auth.isLogged(), true, '也不该动登录态');
 });
 
@@ -773,8 +772,9 @@ await test('注销成功后：账号没了、云端分片清零、本机回到�
   const page = mount('mine');
   page.onLoad();
   page.render();
+  /* 两段式：第一次上膛，第二次才真的删 */
   page.openDeleteAccount();
-  page.setData({ form: { confirmDelete: '注销' } });
+  page.submitDeleteAccount();
   page.submitDeleteAccount();
   await new Promise((r) => setTimeout(r, 400));
 

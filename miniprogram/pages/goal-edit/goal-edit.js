@@ -15,6 +15,8 @@ const COLORS = M.COLORS;
 
 Page({
   data: {
+    /* 过审版：整页只显示一句「不支持自定义目标」，表单不渲染 */
+    safeMode: require('../../utils/config.js').SAFE_MODE,
     themeClass: '',
     id: '',
     isNew: true,
