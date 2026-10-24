@@ -17,7 +17,6 @@ const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
 const sfx = require('../../utils/sfx.js');
-const CFG = require('../../utils/config.js');
 
 /* ================= 打卡反馈的常量 =================
    数值取自设计基准的 plus1Burst / celebrate。
@@ -47,11 +46,6 @@ Page({
     statCards: [],
     rhythm: [],
     rhythmTotal: 0,
-
-    /* 过审模式：新建目标是「选预设」而不是「填表单」 */
-    safeMode: CFG.SAFE_MODE,
-    presets: CFG.PRESETS,
-    presetOn: false,
     toast: '',
     toastOn: false,
 
@@ -515,41 +509,7 @@ Page({
   /** 顶部状态条点进来：同步明细在「我的」页 */
   goSync() { wx.switchTab({ url: '/pages/mine/mine' }); },
 
-  /**
-   * 过审模式：不跳编辑页（那里全是输入框），改成弹预设列表。
-   * 用户只需要挑一个，不需要打字。
-   */
-  goNewGoal() {
-    if (CFG.SAFE_MODE) { this.setData({ presetOn: true }); return; }
-    wx.navigateTo({ url: '/pages/goal-edit/goal-edit' });
-  },
-
-  closePreset() { this.setData({ presetOn: false }); },
-
-  pickPreset(e) {
-    const idx = Number(e.currentTarget.dataset.i);
-    const p = CFG.PRESETS[idx];
-    if (!p) return;
-
-    const t = U.todayStr();
-    store.addGoal({
-      id: 'g' + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36),
-      name: p.name,
-      unit: p.unit,
-      total: p.total,
-      deadline: U.addDays(t, p.days),
-      createdAt: t,
-      color: p.color,
-      sample: false,
-      obstacle: '',
-      plan: ''
-    });
-
-    this.setData({ presetOn: false });
-    this.render();
-    sfx.saved();
-    this.toast('已添加「' + p.name + '」');
-  },
+  goNewGoal() { wx.navigateTo({ url: '/pages/goal-edit/goal-edit' }); },
 
   goEditGoal(e) {
     const gid = e.currentTarget.dataset.gid;

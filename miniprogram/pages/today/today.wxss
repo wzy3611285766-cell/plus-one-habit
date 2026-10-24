@@ -660,47 +660,6 @@
 }
 
 /* =====================================================================
-   预设目标（过审模式的新建入口）
-   ===================================================================== */
-.preset-list{ display:flex;flex-direction:column;gap:8px;margin-top:6px; }
-
-.preset-item{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:12px 14px;
-  border-radius:var(--r-md);
-  background:var(--surface-2);
-  box-shadow:inset 0 0 0 1rpx var(--line);
-}
-.preset-item:active{ background:var(--brand-50); }
-
-.preset-dot{
-  flex:none;
-  width:12px;height:12px;
-  border-radius:4px;
-}
-.preset-main{
-  flex:1;min-width:0;
-  display:flex;flex-direction:column;gap:2px;
-}
-.preset-name{
-  font-size:var(--fs-body);
-  font-weight:600;
-  color:var(--text-1);
-}
-.preset-sub{
-  font-size:var(--fs-xs);
-  color:var(--text-3);
-}
-.preset-add{
-  flex:none;
-  font-size:var(--fs-sm);
-  font-weight:600;
-  color:var(--brand-500);
-}
-
-/* =====================================================================
    本周打卡节奏（对应基准 .rhythm）
    ===================================================================== */
 .rhythm-card{ margin-top:var(--gap-card); }

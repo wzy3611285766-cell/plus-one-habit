@@ -42,9 +42,8 @@ Page({
     // 弹层
     sheet: '',            // '' | 'nickname' | 'deleteAccount'
     busy: false,
+    form: { nickname: '', confirmDelete: '' },
     formError: '',
-    /** 注销账号的「上膛」状态：第一次点只变色，四秒内再点才删 */
-    confirmWipe: false,
 
     toast: '',
     toastOn: false
@@ -170,8 +169,6 @@ Page({
   /* ================= 修改昵称 ================= */
 
   openNickname() {
-    /* 过审模式：不提供改昵称（那是一个文本输入框） */
-    if (require('../../utils/config.js').SAFE_MODE) return;
     if (!this.data.logged) { this.goLogin(); return; }
     this.setData({
       sheet: 'nickname',
@@ -204,19 +201,12 @@ Page({
     });
   },
 
-  /**
-   * 两段式确认，不用输入框。
-   * 第一次点只是「上膛」，按钮文案不变但弹出警示行；四秒内再点才真的删。
-   */
   submitDeleteAccount() {
-    if (!this.data.confirmWipe) {
-      this.setData({ confirmWipe: true, formError: '' });
-      if (this.confirmTimer) clearTimeout(this.confirmTimer);
-      this.confirmTimer = setTimeout(() => this.setData({ confirmWipe: false }), 4000);
+    if (String(this.data.form.confirmDelete || '').trim() !== '注销') {
+      this.setData({ formError: '请输入「注销」两个字以确认' });
       return;
     }
-    if (this.confirmTimer) clearTimeout(this.confirmTimer);
-    this.setData({ busy: true, formError: '', confirmWipe: false });
+    this.setData({ busy: true, formError: '' });
 
     auth.deleteAccount()
       .then((r) => {
@@ -372,11 +362,7 @@ Page({
     this.setData(patch);
   },
 
-  closeSheet() {
-    if (this.data.busy) return;
-    if (this.confirmTimer) clearTimeout(this.confirmTimer);
-    this.setData({ sheet: '', formError: '', confirmWipe: false });
-  },
+  closeSheet() { if (!this.data.busy) this.setData({ sheet: '' }); },
   noop() { },
 
   /** tabBar 是独立组件，外观变了要主动通知它一次 */

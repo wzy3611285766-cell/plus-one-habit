@@ -15,8 +15,6 @@ const COLORS = M.COLORS;
 
 Page({
   data: {
-    /* 过审版：整页只显示一句「不支持自定义目标」，表单不渲染 */
-    safeMode: require('../../utils/config.js').SAFE_MODE,
     themeClass: '',
     id: '',
     isNew: true,
@@ -32,14 +30,6 @@ Page({
   onLoad(query) {
     // 二级页有系统浅色导航栏，状态栏回到黑字
     prefs.setStatusBarLight(false);
-
-    /* 过审模式：这一页全是输入框，直接不允许进入。
-       从今日页进来的入口已经改成「选预设」，这里是兜底（比如从旧链接进来）。 */
-    if (require('../../utils/config.js').SAFE_MODE) {
-      wx.showToast({ title: '这个版本不支持自定义目标', icon: 'none' });
-      setTimeout(() => wx.navigateBack(), 900);
-      return;
-    }
 
     const st = store.get();
     this.setData({ themeClass: prefs.themeClassOf(st && st.settings && st.settings.theme) });

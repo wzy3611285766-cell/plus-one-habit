@@ -658,33 +658,6 @@ test('「我的」页不出现云端 / 本机 / 清空这类词', () => {
   });
 });
 
-/**
- * 过审模式（config.SAFE_MODE）下，用户路径上不能出现任何文本框。
- * 审核驳回理由是「不支持用户自定义输入」，所以这条是硬线：
- * 宁可少一个功能，也不要再被打回一次。
- */
-test('过审模式：用户能走到的页面上没有输入框', () => {
-  /* 这个套件是 ESM，没有 require，直接读源码判断 */
-  const cfgSrc = read(path.join(MP, 'utils', 'config.js'));
-  assert(/const SAFE_MODE = true/.test(cfgSrc), '当前应为过审模式');
-  const presetCount = (cfgSrc.match(/\{ name: '/g) || []).length;
-  eq(presetCount, 4, '应提供 4 个预设目标');
-
-  const today = read(path.join(MP, 'pages', 'today', 'today.wxml'));
-  assert(today.indexOf('<input') < 0, '今日页不该有任何输入框');
-
-  const weekly = read(path.join(MP, 'pages', 'weekly', 'weekly.wxml'));
-  assert(weekly.indexOf('wx:if="{{!safeMode}}"') >= 0, '周报四栏应在过审模式下隐藏');
-
-  const mine = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
-  assert(mine.indexOf('<input') < 0, '「我的」页不该有任何输入框');
-  assert(mine.indexOf('openNickname') < 0, '昵称行不该再有编辑入口');
-
-  /* 注销账号也不能靠输入确认词 —— 改成两段式点击 */
-  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
-  assert(mineJs.indexOf('confirmWipe') >= 0, '注销应是两段式点击确认');
-});
-
 test('界面不解释数据流向：隐私说明只留在文档里', () => {
   const mine = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
   ['修改密码', '登录设备', '微信绑定', '关于你的数据', '数据跟着', '数据存在哪']

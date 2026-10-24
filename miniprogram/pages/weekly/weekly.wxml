@@ -43,8 +43,6 @@
       <text>本周复盘</text>
     </view>
 
-    <!-- 过审模式：四栏是文本输入框，整块隐藏；上面那块自动汇总保留 -->
-    <block wx:if="{{!safeMode}}">
     <view class="kpt-row">
       <text class="kpt-label">保持 Keep<text class="kpt-hint"> · 做得好的，下周继续</text></text>
       <input
@@ -97,10 +95,8 @@
       />
     </view>
 
-    </block>
-
     <view class="kpt-actions">
-      <button wx:if="{{!safeMode}}" class="btn btn-ghost" bindtap="save">保存复盘</button>
+      <button class="btn btn-ghost" bindtap="save">保存复盘</button>
       <button class="btn btn-primary" bindtap="generate">生成周报文本</button>
     </view>
 

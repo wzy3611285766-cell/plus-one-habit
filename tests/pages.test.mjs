@@ -631,37 +631,7 @@ await test('新建目标：实时算出每日强度，日期早于今天会被�
   includes(page.data.preview.text, '每天 5', '应算出每天的量');
 });
 
-/** 过审模式下编辑页被拦住，下面两条用例只在完整版有意义 */
-const SAFE = require(path.join(HERE, '..', 'miniprogram', 'utils', 'config.js')).SAFE_MODE;
-
-await test('过审模式：新建目标不跳编辑页，改为打开预设选择', async () => {
-  await boot(freshUtils());
-
-  const page = mount('today');
-  page.onLoad();
-  page.render();
-  eq(page.data.safeMode, true, '应处于过审模式');
-  eq(page.data.presets.length, 4, '应提供 4 个预设目标');
-
-  let jumped = false;
-  const backup = wx.navigateTo;
-  wx.navigateTo = () => { jumped = true; };
-
-  page.goNewGoal();
-  eq(jumped, false, '过审模式不该跳到有输入框的页面');
-  eq(page.data.presetOn, true, '应打开预设选择弹层');
-
-  const before = page.data.rows.length;
-  page.pickPreset({ currentTarget: { dataset: { i: 0 } } });
-  eq(page.data.presetOn, false, '选完应关闭弹层');
-  eq(page.data.rows.length, before + 1, '应真的加了一个目标');
-
-  wx.navigateTo = backup;
-});
-
 await test('编辑已有目标会把改动写回并标记为待同步', async () => {
-  if (SAFE) return;   // 过审模式下这一页不可进入
-
   const U19 = freshUtils();
   await boot(U19);
   const page = mount('goalEdit');
@@ -739,7 +709,7 @@ await test('生成的文本对齐基准格式：标题 / 每目标一行 / 四�
 
 group('注销账号');
 
-await test('第一次点只是上膛：不发请求，也不动登录态', async () => {
+await test('确认词不对时拦下，不发请求也不动登录态', async () => {
   const UD = freshUtils();
   await boot(UD);
   await UD.auth.login();
@@ -752,11 +722,12 @@ await test('第一次点只是上膛：不发请求，也不动登录态', async
   page.openDeleteAccount();
   eq(page.data.sheet, 'deleteAccount', '应打开注销弹层');
 
+  page.setData({ form: { confirmDelete: '删除' } });
   const before = env.callCount.auth;
   page.submitDeleteAccount();
 
-  eq(page.data.confirmWipe, true, '应进入待确认状态（按钮变成「再点一次」）');
-  eq(env.callCount.auth, before, '第一次点不该发云函数请求');
+  eq(page.data.formError, '请输入「注销」两个字以确认');
+  eq(env.callCount.auth, before, '确认词不对时不该发云函数请求');
   eq(UD.auth.isLogged(), true, '也不该动登录态');
 });
 
@@ -772,9 +743,8 @@ await test('注销成功后：账号没了、云端分片清零、本机回到�
   const page = mount('mine');
   page.onLoad();
   page.render();
-  /* 两段式：第一次上膛，第二次才真的删 */
   page.openDeleteAccount();
-  page.submitDeleteAccount();
+  page.setData({ form: { confirmDelete: '注销' } });
   page.submitDeleteAccount();
   await new Promise((r) => setTimeout(r, 400));
 

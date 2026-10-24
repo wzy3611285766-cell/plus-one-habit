@@ -10,7 +10,7 @@
 
   <view class="card id-card">
     <view class="mine-list">
-      <view wx:if="{{logged}}" class="mine-btn">
+      <view wx:if="{{logged}}" class="mine-btn" bindtap="openNickname">
         <view class="mine-ico ico-user"></view>
         <view class="mine-body">
           <text class="mine-txt">{{user.nickname || '未设置昵称'}}</text>
@@ -123,22 +123,37 @@
 
   <!-- ================= 弹层 ================= -->
 
-  <!--
-    注销账号。
-    原来要求输入「注销」两个字，但那是一个文本输入框 —— 过审版不能有。
-    改成两段式点击：第一次点按钮变红并提示「再点一次」，四秒内再点才真的执行。
-    危险程度不变，输入框消失。
-  -->
+  <!-- 修改昵称 -->
+  <view wx:if="{{sheet === 'nickname'}}" class="mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">修改昵称</view>
+      <view class="field">
+        <text class="field-label">昵称</text>
+        <input class="input" value="{{form.nickname}}" data-field="nickname" bindinput="onInput" maxlength="20" placeholder="最多 20 字" placeholder-class="ph" />
+      </view>
+      <view wx:if="{{formError}}" class="field-hint is-error">{{formError}}</view>
+      <view class="sheet-actions">
+        <button class="btn btn-ghost" bindtap="closeSheet">取消</button>
+        <button class="btn btn-primary" disabled="{{busy}}" bindtap="submitNickname">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 注销账号 -->
   <view wx:if="{{sheet === 'deleteAccount'}}" class="mask" bindtap="closeSheet">
     <view class="sheet" catchtap="noop">
       <view class="sheet-grab"></view>
       <view class="sheet-title danger-text">注销账号</view>
       <view class="card-sub">账号下的全部目标、打卡记录与复盘会被永久删除，无法恢复。</view>
-      <view wx:if="{{confirmWipe}}" class="confirm-tip">再点一次「确认注销」就会删除</view>
+      <view class="field">
+        <text class="field-label">输入「注销」两个字以确认</text>
+        <input class="input" value="{{form.confirmDelete}}" data-field="confirmDelete" bindinput="onInput" placeholder="注销" placeholder-class="ph" />
+      </view>
       <view wx:if="{{formError}}" class="field-hint is-error">{{formError}}</view>
       <view class="sheet-actions">
         <button class="btn btn-ghost" bindtap="closeSheet">取消</button>
-        <button class="btn btn-danger" disabled="{{busy}}" bindtap="submitDeleteAccount">{{confirmWipe ? '确认注销' : '注销账号'}}</button>
+        <button class="btn btn-danger" disabled="{{busy}}" bindtap="submitDeleteAccount">确认注销</button>
       </view>
     </view>
   </view>

@@ -197,38 +197,6 @@
   </view>
 
   <!--
-    过审模式：新建目标 = 从预设里挑一个。
-    这里**没有任何输入框**，四个选项的名称、单位、总量、周期都是定死的。
-  -->
-  <view wx:if="{{presetOn}}" class="mask" bindtap="closePreset">
-    <view class="sheet" catchtap="noopMenu">
-      <view class="sheet-grab"></view>
-      <view class="sheet-title">选一个目标</view>
-
-      <view class="preset-list">
-        <view
-          wx:for="{{presets}}"
-          wx:key="name"
-          class="preset-item"
-          data-i="{{index}}"
-          bindtap="pickPreset"
-        >
-          <view class="preset-dot" style="background:{{item.color}}"></view>
-          <view class="preset-main">
-            <text class="preset-name">{{item.name}}</text>
-            <text class="preset-sub">共 {{item.total}} {{item.unit}} · {{item.days}} 天</text>
-          </view>
-          <text class="preset-add">添加</text>
-        </view>
-      </view>
-
-      <view class="sheet-actions">
-        <button class="btn btn-ghost" bindtap="closePreset">取消</button>
-      </view>
-    </view>
-  </view>
-
-  <!--
     「⋯」目标操作抽屉。对应设计基准的 #goalMenu：
     遮罩 blur(3px) + 底部磨砂玻璃面板 + 顶部拖拽条 + gmUp 弹出动画。
   -->

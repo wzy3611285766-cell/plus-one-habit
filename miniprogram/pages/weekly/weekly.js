@@ -30,10 +30,7 @@ Page({
     dirty: false,
     report: '',
     hasReport: false,
-    savedTip: '',
-
-    /* 过审模式：四栏输入整体隐藏，只留自动汇总 */
-    safeMode: require('../../utils/config.js').SAFE_MODE
+    savedTip: ''
   },
 
   onLoad() {

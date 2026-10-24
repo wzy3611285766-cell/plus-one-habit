@@ -1,19 +1,5 @@
 <view class="page goal-edit {{themeClass}}">
 
-  <!--
-    过审版：这一页**不渲染任何输入框**。
-    正常入口已经被今日页改成「选预设」，这里是第二道闸 ——
-    即使有人从分享链接或历史栈进来，看到的也只是这句话，不是表单。
-  -->
-  <block wx:if="{{safeMode}}">
-    <view class="page-title">自定义目标</view>
-    <view class="card setup-card">
-      <view class="card-title">这个版本不支持自定义目标</view>
-      <view class="card-sub">请从今日页选择要打卡的目标。</view>
-    </view>
-  </block>
-
-  <block wx:else>
   <view class="page-title">{{isNew ? '新建目标' : '编辑目标'}}</view>
   <view class="page-sub">有总量、有终点，才能算出今天该做多少</view>
 
@@ -94,5 +80,4 @@
   </view>
 
   <view class="toast {{toastOn ? 'is-on' : ''}}">{{toast}}</view>
-  </block>
 </view>
