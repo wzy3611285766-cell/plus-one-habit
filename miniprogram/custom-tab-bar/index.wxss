@@ -47,7 +47,9 @@
   opacity:.7;
 }
 .tabbar.theme-dark .tab.on{
-  background:linear-gradient(180deg,rgba(10,132,255,.34),rgba(10,132,255,.14));
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 55%),
+    linear-gradient(180deg,rgba(10,132,255,.42),rgba(10,132,255,.20));
   box-shadow:
     inset 0 .5px 0 rgba(255,255,255,.30),
     inset 0 0 0 .5px rgba(102,171,255,.34),
@@ -118,7 +120,7 @@
   color:var(--text-3);
   /* 液态：核心更透（.16→.06，透出栏身磨砂后的内容色），
      边缘聚光（整圈亮 rim .30 + 顶线 .70）—— 光在玻璃边缘聚集才是「液态」 */
-  background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.06) 100%);
+  background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.03) 100%);
   box-shadow:
     inset 0 .5px 0 rgba(255,255,255,.70),
     inset 0 -.5px 0 rgba(255,255,255,.14),
@@ -146,7 +148,7 @@
   border-radius:inherit;
   pointer-events:none;
   background:
-    linear-gradient(180deg,rgba(255,255,255,.40) 0%,rgba(255,255,255,.08) 42%,rgba(255,255,255,0) 62%),
+    linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.10) 32%,rgba(255,255,255,0) 55%),
     linear-gradient(135deg,rgba(0,200,255,.10) 0%,rgba(0,200,255,0) 38%),
     linear-gradient(-45deg,rgba(255,0,128,.07) 0%,rgba(255,0,128,0) 42%);
   opacity:.9;
@@ -166,7 +168,9 @@
 /* effect="regular" + tintColor：选中项 = 品牌色玻璃 + 更强的边缘光 */
 .tab.on{
   color:var(--brand-600);
-  background:linear-gradient(180deg,rgba(0,122,255,.26),rgba(0,122,255,.12));
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 55%),
+    linear-gradient(180deg,rgba(0,122,255,.34),rgba(0,122,255,.16));
   box-shadow:
     inset 0 .5px 0 rgba(255,255,255,.78),
     inset 0 -.5px 0 rgba(255,255,255,.18),

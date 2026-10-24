@@ -547,12 +547,12 @@ test('底部导航对齐基准 .nav：玻璃胶囊选中态 + 容器发丝边', 
   /* saturation 140 取自 liquid-glass-react 的默认值 */
   assert(/\.tabbar\{[\s\S]*?blur\(20px\) saturate\(160%\)/.test(css), '容器应是 blur(20px) saturate(160%)（液态档的湿润渗色）');
   assert(/\.tabbar\{[\s\S]*?border-top:1px solid var\(--line\)/.test(css), '容器应有发丝上边');
-  assert(/\.tab\.on\{[\s\S]*?linear-gradient\(180deg,rgba\(0,122,255,\.26\)/.test(css), '选中态应是品牌色渐变胶囊');
+  assert(/\.tab\.on\{[\s\S]*?rgba\(0,122,255,\.34\)/.test(css), '选中态应是品牌染色玻璃（半透 ~.34，不是实心）');
   assert(/\.tab\.on\{[\s\S]*?inset 0 \.5px 0 rgba\(255,255,255,\.78\)/.test(css), '选中态应有玻璃上缘高光');
   /* 每一格是 Liquid Glass 语义的按键（参照 @callstack/liquid-glass）：
      clear 档未选中 / regular+tint 选中 / interactive 按压 / spacing 融合 */
-  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.16\)/.test(css),
-    '未选中应是液态玻璃体（核心透 .16 → .06）');
+  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.10\)/.test(css),
+    '未选中应是液态玻璃体（核心透 .10 → .03，真透明）');
   assert(/\.tab\{[\s\S]*?inset 0 0 0 \.5px rgba\(255,255,255,\.30\)/.test(css), '液态边缘聚光：整圈亮 rim');
   assert(/\.tab\{[\s\S]*?border-radius:999rpx/.test(css), '每枚按键应是全圆边胶囊');
   assert(/\.tab\{[\s\S]*?0 2px 6px rgba\(15,23,42,\.08\)/.test(css), '饱满胶囊应有底部投影托起');
@@ -747,6 +747,9 @@ test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键�
   assert(/\.btn-primary\{[\s\S]*?backdrop-filter:var\(--gb-blur-sm\)/.test(app), '主键应带模糊');
   assert(app.indexOf('.btn-primary::after') >= 0 && app.indexOf('.tz-btn-red::after') >= 0,
     '染色/清玻璃按键应统一挂镜面高光层（液态的湿感）');
+  assert(app.indexOf('rgba(0,122,255,.54)') >= 0, '染色层应半透（.54，真玻璃不是实心塑料）');
+  assert(app.indexOf('rgba(255,255,255,.55) 0%,rgba(255,255,255,.16) 30%') >= 0, '镜面高光应又亮又窄（.55 → 30% 收光）');
+  assert(app.indexOf('.fk-btn,') >= 0 && app.indexOf('text-shadow:0 1px 2px rgba(0,0,0,.18)') >= 0, '染色玻璃上的白字应有轻投影');
   assert(/\.btn\{[\s\S]*?border-radius:var\(--r-pill\)/.test(app), '按键应是全圆边胶囊');
   assert(/\.btn-danger\{[\s\S]*?--gb-tint-red/.test(app), '危险键应是红染色玻璃');
   assert(/\.tz-btn-red\{[\s\S]*?--gb-tint-red/.test(today), '立即打卡应是红染色玻璃');

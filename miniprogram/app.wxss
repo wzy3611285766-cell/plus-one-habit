@@ -134,21 +134,24 @@ page{
   --gb-blur:blur(24px) saturate(190%);
   --gb-blur-sm:blur(16px) saturate(180%);
   --gb-face:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.60) 100%);
-  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.74) 0%,rgba(255,255,255,.44) 100%);
+  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.16) 100%);
   --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.92);
   --gb-edge-lo:inset 0 -.5px 0 rgba(15,23,42,.06);
   --gb-hair:0 0 0 .5px rgba(15,23,42,.08);
-  --gb-drop:0 1px 2px rgba(15,23,42,.06),0 6px 16px -8px rgba(15,23,42,.18);
+  --gb-drop:0 2px 8px rgba(15,23,42,.10),0 8px 20px -8px rgba(15,23,42,.24);
   --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.16) 42%,rgba(255,255,255,0) 62%);
   --gb-press-lift:inset 0 2px 6px rgba(15,23,42,.10);
-  --gb-tint-brand:rgba(0,122,255,.88);
-  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.42);
+  /* tint 是「染色玻璃」不是实心底：上层白玻璃提亮（光感），下层染色只到 ~52%，
+     底下内容经 blur 后的颜色能透上来 —— 这才是 iOS 液态玻璃的透明度 */
+  --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(0,122,255,.54),rgba(0,122,255,.38));
+  --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,59,48,.54),rgba(255,59,48,.38));
+  --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(52,199,89,.54),rgba(52,199,89,.38));
+  --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,149,0,.56),rgba(255,149,0,.40));
+  /* hi 三件：顶缘亮线（1px，玻璃上最亮的一笔）+ 底缘反光 + 底部内弹光 */
+  --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.58),inset 0 -.5px 0 rgba(255,255,255,.22),inset 0 -8px 14px -8px rgba(255,255,255,.30);
   --gb-tint-brand-edge:0 0 0 .5px rgba(0,84,190,.42);
-  --gb-tint-red:rgba(255,59,48,.88);
   --gb-tint-red-edge:0 0 0 .5px rgba(190,32,24,.42);
-  --gb-tint-green:rgba(52,199,89,.88);
   --gb-tint-green-edge:0 0 0 .5px rgba(24,150,60,.42);
-  --gb-tint-amber:rgba(255,149,0,.90);
   --gb-tint-amber-edge:0 0 0 .5px rgba(190,105,0,.42);
   --bg:var(--bg-app);
   --card:var(--surface);
@@ -237,14 +240,14 @@ page{
     --gb-drop:0 1px 2px rgba(0,0,0,.34),0 8px 20px -10px rgba(0,0,0,.55);
     --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 42%,rgba(255,255,255,0) 62%);
     --gb-press-lift:inset 0 2px 6px rgba(0,0,0,.40);
-    --gb-tint-brand:rgba(10,132,255,.88);
-    --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.26);
+    --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(10,132,255,.62),rgba(10,132,255,.46));
+    --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,69,58,.62),rgba(255,69,58,.46));
+    --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(48,209,88,.58),rgba(48,209,88,.42));
+    --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,159,10,.62),rgba(255,159,10,.46));
+    --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -.5px 0 rgba(255,255,255,.12),inset 0 -8px 14px -8px rgba(255,255,255,.16);
     --gb-tint-brand-edge:0 0 0 .5px rgba(102,171,255,.34);
-    --gb-tint-red:rgba(255,69,58,.88);
     --gb-tint-red-edge:0 0 0 .5px rgba(255,138,128,.32);
-    --gb-tint-green:rgba(48,209,88,.86);
     --gb-tint-green-edge:0 0 0 .5px rgba(110,231,183,.30);
-    --gb-tint-amber:rgba(255,159,10,.88);
     --gb-tint-amber-edge:0 0 0 .5px rgba(252,211,77,.30);
 
   }
@@ -328,14 +331,14 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   --gb-drop:0 1px 2px rgba(0,0,0,.34),0 8px 20px -10px rgba(0,0,0,.55);
   --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 42%,rgba(255,255,255,0) 62%);
   --gb-press-lift:inset 0 2px 6px rgba(0,0,0,.40);
-  --gb-tint-brand:rgba(10,132,255,.88);
-  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.26);
+  --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(10,132,255,.62),rgba(10,132,255,.46));
+  --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,69,58,.62),rgba(255,69,58,.46));
+  --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(48,209,88,.58),rgba(48,209,88,.42));
+  --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,159,10,.62),rgba(255,159,10,.46));
+  --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -.5px 0 rgba(255,255,255,.12),inset 0 -8px 14px -8px rgba(255,255,255,.16);
   --gb-tint-brand-edge:0 0 0 .5px rgba(102,171,255,.34);
-  --gb-tint-red:rgba(255,69,58,.88);
   --gb-tint-red-edge:0 0 0 .5px rgba(255,138,128,.32);
-  --gb-tint-green:rgba(48,209,88,.86);
   --gb-tint-green-edge:0 0 0 .5px rgba(110,231,183,.30);
-  --gb-tint-amber:rgba(255,159,10,.88);
   --gb-tint-amber-edge:0 0 0 .5px rgba(252,211,77,.30);
 
 }
@@ -446,21 +449,24 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   --gb-blur:blur(24px) saturate(190%);
   --gb-blur-sm:blur(16px) saturate(180%);
   --gb-face:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.60) 100%);
-  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.74) 0%,rgba(255,255,255,.44) 100%);
+  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.16) 100%);
   --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.92);
   --gb-edge-lo:inset 0 -.5px 0 rgba(15,23,42,.06);
   --gb-hair:0 0 0 .5px rgba(15,23,42,.08);
-  --gb-drop:0 1px 2px rgba(15,23,42,.06),0 6px 16px -8px rgba(15,23,42,.18);
+  --gb-drop:0 2px 8px rgba(15,23,42,.10),0 8px 20px -8px rgba(15,23,42,.24);
   --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.16) 42%,rgba(255,255,255,0) 62%);
   --gb-press-lift:inset 0 2px 6px rgba(15,23,42,.10);
-  --gb-tint-brand:rgba(0,122,255,.88);
-  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.42);
+  /* tint 是「染色玻璃」不是实心底：上层白玻璃提亮（光感），下层染色只到 ~52%，
+     底下内容经 blur 后的颜色能透上来 —— 这才是 iOS 液态玻璃的透明度 */
+  --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(0,122,255,.54),rgba(0,122,255,.38));
+  --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,59,48,.54),rgba(255,59,48,.38));
+  --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(52,199,89,.54),rgba(52,199,89,.38));
+  --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,149,0,.56),rgba(255,149,0,.40));
+  /* hi 三件：顶缘亮线（1px，玻璃上最亮的一笔）+ 底缘反光 + 底部内弹光 */
+  --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.58),inset 0 -.5px 0 rgba(255,255,255,.22),inset 0 -8px 14px -8px rgba(255,255,255,.30);
   --gb-tint-brand-edge:0 0 0 .5px rgba(0,84,190,.42);
-  --gb-tint-red:rgba(255,59,48,.88);
   --gb-tint-red-edge:0 0 0 .5px rgba(190,32,24,.42);
-  --gb-tint-green:rgba(52,199,89,.88);
   --gb-tint-green-edge:0 0 0 .5px rgba(24,150,60,.42);
-  --gb-tint-amber:rgba(255,149,0,.90);
   --gb-tint-amber-edge:0 0 0 .5px rgba(190,105,0,.42);
   --bg:var(--bg-app);
   --card:var(--surface);
@@ -612,7 +618,18 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   inset:0;
   border-radius:inherit;
   pointer-events:none;
-  background:linear-gradient(180deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.10) 38%,rgba(255,255,255,0) 58%);
+  background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.16) 30%,rgba(255,255,255,0) 55%);
+}
+
+/* 半透染色玻璃上的白字要立得住：轻投影是 iOS 的做法 */
+.btn-primary,
+.btn-danger,
+.btn-green,
+.btn-wx,
+.fk-btn,
+.tz-btn-red,
+.tz-btn-amber{
+  text-shadow:0 1px 2px rgba(0,0,0,.18);
 }
 .btn[disabled]{ opacity:.45; box-shadow:none; }
 .btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-xs); width:auto; padding:0 20rpx; }
