@@ -28,11 +28,11 @@
         <view class="chev chev-right"></view>
       </view>
 
-      <!-- 分享给同学：卡片里带一份目标模板，对方打开就有了同样的目标，进度各记各的 -->
+      <!-- 分享：卡片里带一份目标模板，对方打开就有了同样的目标，进度各记各的 -->
       <button class="mine-btn mine-btn-share" open-type="share">
         <view class="mine-ico ico-share"></view>
         <view class="mine-body">
-          <text class="mine-txt">分享给同学</text>
+          <text class="mine-txt">分享</text>
           <text class="mine-sub">把我的目标复制一份给他，进度各记各的</text>
         </view>
         <view class="chev chev-right"></view>

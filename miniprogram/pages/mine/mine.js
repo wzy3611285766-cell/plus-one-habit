@@ -165,7 +165,7 @@ Page({
 
   /* ================= 分享分叉 ================= */
 
-  /** 「分享给同学」按钮（open-type="share"）走这里，与右上角 ⋯ 转发同一条路 */
+  /** 「分享」按钮（open-type="share"）走这里，与右上角 ⋯ 转发同一条路 */
   onShareAppMessage() {
     return fork.shareConfig(store.get());
   },
