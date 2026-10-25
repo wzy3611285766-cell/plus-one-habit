@@ -768,4 +768,89 @@ test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键�
   assert(body.indexOf('backdrop-filter') < 0, '+1 主键不应使用毛玻璃');
 });
 
+/* ================================================================= */
+
+group('按键样式块级校验（括号配平后逐块匹配）');
+
+/**
+ * 先前的若干断言用 `selector{[\s\S]*?xxx` 跨规则匹配 —— 文件后部任何位置
+ * 出现同串都会被算进去：正向断言可能「因错误的原因通过」，
+ * 取反断言（如 fk-banner 不得出现 danger-50）更会被无关用途误伤。
+ * 这里做括号配平，把断言严格限制在目标规则块的正文里。
+ */
+function ruleBodies(css, selector) {
+  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 边界取行首（含缩进）：`.tabbar.theme-dark .tab{` 里的后代段 `.tab`
+  // 不应被当成独立规则 —— 否则「第一处」会抓到深色覆盖而不是基础块。
+  const re = new RegExp('(?:^|[\\n;}])\\s*' + esc + '\\s*\\{', 'g');
+  const bodies = [];
+  let m;
+  while ((m = re.exec(css))) {
+    const i = m.index + m[0].length - 1;
+    let depth = 0;
+    let j = i;
+    while (j < css.length) {
+      if (css[j] === '{') depth += 1;
+      else if (css[j] === '}') { depth -= 1; if (depth === 0) break; }
+      j += 1;
+    }
+    bodies.push(css.slice(i + 1, j));
+  }
+  return bodies;
+}
+
+function firstBody(css, selector) {
+  // 取文档顺序第一处（基础声明块）。同名选择器在媒体查询里的覆盖块
+  // （深色档 / reduced-motion / 平板档）不算「恰好一次」的违规。
+  const bodies = ruleBodies(css, selector);
+  assert(bodies.length >= 1, selector + ' 应至少声明一次');
+  return bodies[0];
+}
+
+test('.btn 家族：高度/圆边/字距/按压/灰底都在各自块内', () => {
+  const app = stripCssComments(read(path.join(MP, 'app.wxss')));
+  const body = firstBody(app, '.btn');
+  ['height:calc(50px)', 'border-radius:var(--r-pill)', 'letter-spacing:var(--ls-snap)'].forEach((k) => {
+    assert(body.indexOf(k) >= 0, '.btn 块内缺少 ' + k);
+  });
+  const press = firstBody(app, '.btn:active');
+  assert(press.indexOf('opacity:.85') >= 0, '.btn:active 应是透明度衰减');
+  const ghost = firstBody(app, '.btn-ghost');
+  assert(ghost.indexOf('background:var(--surface-sunken)') >= 0, '.btn-ghost 应是灰底');
+  assert(ghost.indexOf('backdrop-filter') < 0, '.btn-ghost 不应是玻璃面');
+});
+
+test('today：灰底次级键、图标键灰高亮、横幅配色逐块成立', () => {
+  const today = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const ghost = firstBody(today, '.tz-btn-ghost');
+  assert(ghost.indexOf('background:var(--surface-sunken)') >= 0, '调整计划应是灰底');
+  assert(firstBody(today, '.add-goal:active').indexOf('rgba(120,120,128,.18)') >= 0, '+ 键按下应有灰高亮');
+  assert(firstBody(today, '.more-btn:active').indexOf('rgba(120,120,128,.18)') >= 0, '⋯ 键按下应有灰高亮');
+
+  const banner = firstBody(today, '.fk-banner');
+  assert(banner.indexOf('background:var(--brand-50)') >= 0, '横幅底色应是品牌蓝 50');
+  assert(banner.indexOf('--danger-50') < 0, '横幅块内不得出现错误红');
+  assert(banner.indexOf('blur(16px)') >= 0, '横幅应保留 blur(16px)');
+});
+
+test('tabBar：液态参数逐块成立', () => {
+  const css = stripCssComments(read(path.join(MP, 'custom-tab-bar', 'index.wxss')));
+  const bar = firstBody(css, '.tabbar');
+  assert(bar.indexOf('saturate(160%)') >= 0, '栏身应 saturate(160%)');
+  assert(bar.indexOf('--glass-bg:rgba(255,255,255,.60)') >= 0, '栏身底色应 .60');
+  const tab = firstBody(css, '.tab');
+  assert(tab.indexOf('border-radius:999rpx') >= 0, '胶囊圆边');
+  assert(tab.indexOf('rgba(255,255,255,.10) 0%,rgba(255,255,255,.03)') >= 0, '核心透 .10 → .03');
+  assert(tab.indexOf('inset 0 0 0 .5px rgba(255,255,255,.30)') >= 0, '整圈亮 rim');
+  const on = firstBody(css, '.tab.on');
+  assert(on.indexOf('rgba(0,122,255,.34)') >= 0, '选中品牌染色应 .34');
+});
+
+test('我的页：列表行按压是中性灰（块级）', () => {
+  const css = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
+  const press = firstBody(css, '.mine-btn:active');
+  assert(press.indexOf('rgba(120,120,128,.16)') >= 0, '按下应是中性灰');
+  assert(press.indexOf('rgba(0,122,255') < 0, '不应是品牌蓝');
+});
+
 export const suite = '小程序静态检查';

@@ -57,6 +57,15 @@ const utilFiles = [
 ];
 
 function freshUtils() {
+  // 换模块实例前，先掐掉旧 store 的 debounce 推送定时器：
+  // 否则它会在之后某个用例的 await 间隙开火，向共享的 env.callCount 写入，
+  // 让「不应发起云调用」这类精确增量断言偶发假失败。
+  try {
+    const prevStore = require.cache[require.resolve(utilFiles[4])];
+    if (prevStore && prevStore.exports && prevStore.exports.cancelScheduled) {
+      prevStore.exports.cancelScheduled();
+    }
+  } catch (e) { /* 首次调用时还没有旧实例 */ }
   utilFiles.forEach((f) => { delete require.cache[require.resolve(f)]; });
   return {
     auth: require(utilFiles[2]),
@@ -727,7 +736,7 @@ await test('确认词不对时拦下，不发请求也不动登录态', async ()
   page.submitDeleteAccount();
 
   eq(page.data.formError, '请输入「注销」两个字以确认');
-  eq(env.callCount.auth, before, '确认词不对时不该发云函数请求');
+  eq(env.callCount.auth, before, '第一次点只是上膛，不该发云函数请求');
   eq(UD.auth.isLogged(), true, '也不该动登录态');
 });
 

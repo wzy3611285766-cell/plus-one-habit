@@ -339,4 +339,52 @@ await test('普通打开（无 fr）：不横幅、不种目标', () => {
   eq(UD.store.forkWelcomePending(), false);
 });
 
+/* ================================================================= */
+
+group('分叉 · app 层入口（handleShareEntry）');
+
+/**
+ * 此前 app 层只有语法检查，分享卡片的核心接线没有行为测试。
+ * 这里手动驱动 app 的启动切片：measureNav → initCloud → loadLocal → handleShareEntry。
+ */
+await test('冷启动带 fr：种入目标；不带 fr：不动；重复点同一张卡：幂等', () => {
+  env.storage.clear();
+  const MP_ROOT = path.join(HERE, '..', 'miniprogram');
+  // app.js 与整条 utils 链换新实例（和 app.js 实际 require 到的是同一批）
+  ['config.js', 'api.js', 'auth.js', 'fork.js', 'store.js', 'prefs.js', 'util.js', 'model.js', 'sfx.js']
+    .forEach((f) => {
+      const p = path.join(UTILS, f);
+      if (require.cache[require.resolve(p)]) delete require.cache[require.resolve(p)];
+    });
+  if (require.cache[require.resolve(path.join(MP_ROOT, 'app.js'))]) {
+    delete require.cache[require.resolve(path.join(MP_ROOT, 'app.js'))];
+  }
+  require(path.join(MP_ROOT, 'app.js'));   // 副作用：mock App() 捕获配置
+  const app = env.appOptions;
+  assert(app && typeof app.handleShareEntry === 'function', '应捕获到 App 配置');
+
+  const fork2 = require(path.join(UTILS, 'fork.js'));
+  const store2 = require(path.join(UTILS, 'store.js'));
+
+  app.measureNav();
+  app.initCloud();
+  // dataReady 还是 false：入口必须直接返回，什么都不种
+  const tplState = { goals: [goal('背单词')], logs: [] };
+  app.handleShareEntry({ query: { fr: fork2.encodeTpl(fork2.tplFromState(tplState)) } });
+  const virgin = store2.get();
+  eq(virgin ? virgin.goals.length : 0, 0, 'loadLocal 之前不得动数据');
+
+  app.loadLocal();
+  const enc = fork2.encodeTpl(fork2.tplFromState(tplState));
+  app.handleShareEntry({ query: { fr: enc } });
+  eq(store2.get().goals.length, 1, '带 fr 的冷启动应种入目标');
+  eq(fork2.read().forked, true, '应写下分叉记录');
+
+  app.handleShareEntry({ query: {} });
+  eq(store2.get().goals.length, 1, '不带 fr 不得动数据');
+
+  app.handleShareEntry({ query: { fr: enc } });
+  eq(store2.get().goals.length, 1, '同一张卡重复打开应被「已分叉」闸门挡住');
+});
+
 export const suite = '分享分叉（模仿 H5 第 17 轮）';

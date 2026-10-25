@@ -252,6 +252,12 @@ function replaceAll(nextState) {
 
 function scheduled() { return !!pushTimer; }
 
+/** 取消尚未触发的 debounce 推送。测试换模块实例前调用，避免旧实例的
+ *  定时器在共享 mock 上开火污染后续用例的调用计数。 */
+function cancelScheduled() {
+  if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+}
+
 function schedulePush() {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
@@ -556,6 +562,7 @@ module.exports = {
   resetToRemote: resetToRemote,
   clearLocalOnly: clearLocalOnly,
   scheduled: scheduled,
+  cancelScheduled: cancelScheduled,
 
   applyShareQuery: applyShareQuery,
   reforkFromShare: reforkFromShare,
