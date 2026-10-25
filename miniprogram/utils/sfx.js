@@ -6,8 +6,11 @@
  * 两边 API 形状一致（createOscillator / createGain / createBiquadFilter），
  * 所以合成逻辑几乎是逐行移植，而不是「听起来差不多」的重写。
  *
- * 增益：主增益 = volume / 100（volume 是相对基准的百分比，默认 60）。
- *   所以 60 就是基准幅度的 0.6 倍（-4.44 dB）。
+ * 增益：主增益 = volume / 100 × MASTER_BOOST（volume 是相对基准的百分比，默认 60）。
+ *   音色里的 vol 是 H5 基准的绝对幅度（0.03~0.11），那个量级在手机扬声器上
+ *   几乎听不见，所以在主增益上做整体补益（×3，约 +9.5 dB）：
+ *   60% 时主增益 1.8，最响的 achieve 和弦叠峰约 0.83，仍有余量不削波；
+ *   拉满 100% 时叠峰会到 1.38， celebration 一瞬的轻削波可接受。
  *   不要为了调小声去改音色里的 vol —— 那是基准的绝对幅度，改了以后
  *   所有用户的听感都会跟着漂移。
  *
@@ -25,6 +28,14 @@ const FALLBACK_SRC = '/assets/sounds/tap.wav';
 const MIN_PCT = 25;
 const MAX_PCT = 100;
 
+/**
+ * 主增益补益：音色振幅是 H5 基准的绝对幅度，手机扬声器上偏小，
+ * 这里在 WebAudio 主增益上一级补齐（×3 ≈ +9.5 dB）。
+ * 只作用于合成链路 —— 兜底 wav 的 InnerAudioContext.volume 上限是 1，
+ * 不吃补益（否则映射不单调）。
+ */
+const MASTER_BOOST = 3;
+
 /** 连击音阶：C 大调五声音阶向上走一轮（基准 COMBO_STEPS） */
 const COMBO_STEPS = [0, 2, 4, 7, 9, 12, 14, 16];
 
@@ -36,6 +47,11 @@ const BASE_HZ = 659.25;
 function gainFromVolume(pct) {
   const n = typeof pct === 'number' && isFinite(pct) ? pct : MAX_PCT;
   return Math.max(0, Math.min(MAX_PCT, n)) / MAX_PCT;
+}
+
+/** 实际写进 WebAudio 主增益的值：用户百分比 × 补益（保持单调，不设上限盖子） */
+function masterGain(pct) {
+  return gainFromVolume(pct) * MASTER_BOOST;
 }
 
 function clampVolume(pct) {
@@ -105,7 +121,7 @@ function masterOf(ctx) {
   try {
     const g = ctx.createGain();
     if (g && g.gain) {
-      try { g.gain.value = gainFromVolume(volumePct()); } catch (e) { /* 只读实现 */ }
+      try { g.gain.value = masterGain(volumePct()); } catch (e) { /* 只读实现 */ }
     }
     if (g && ctx.destination) g.connect(ctx.destination);
     MASTER = g;
@@ -119,7 +135,7 @@ function masterOf(ctx) {
 /** 每次发声前把主增益对齐当前音量（用户可能刚拖过滑块） */
 function applyGain(ctx, pct) {
   const g = masterOf(ctx);
-  const target = gainFromVolume(typeof pct === 'number' && isFinite(pct) ? pct : volumePct());
+  const target = masterGain(typeof pct === 'number' && isFinite(pct) ? pct : volumePct());
   if (!g || !g.gain) return;
   try {
     if (typeof g.gain.setTargetAtTime === 'function' && typeof ctx.currentTime === 'number') {
@@ -393,6 +409,7 @@ module.exports = {
 
   /* 纯函数（测试与 UI 用） */
   gainFromVolume: gainFromVolume,
+  masterGain: masterGain,
   clampVolume: clampVolume,
   volumePct: volumePct,
   soundEnabled: soundEnabled,
