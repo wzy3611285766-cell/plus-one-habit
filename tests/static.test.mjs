@@ -849,6 +849,18 @@ test('tabBar：液态参数逐块成立', () => {
   assert(on.indexOf('rgba(0,122,255,.34)') >= 0, '选中品牌染色应 .34');
 });
 
+test('弹层与自定义 tabBar：组件级 hidden 收起（z-index 对自定义 tabBar 不可靠）', () => {
+  const barJs = read(path.join(MP, 'custom-tab-bar', 'index.js'));
+  const barWxml = read(path.join(MP, 'custom-tab-bar', 'index.wxml'));
+  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
+  assert(barJs.indexOf('hidden: false') >= 0, 'tabBar 组件应有 hidden 状态');
+  assert(barJs.indexOf('setVisible(visible)') >= 0, 'tabBar 组件应有 setVisible 方法');
+  assert(barWxml.indexOf('wx:if="{{!hidden}}"') >= 0, 'tabBar 根节点应受 hidden 控制');
+  assert(mineJs.indexOf('bar.setVisible(visible)') >= 0, '弹层开合应走组件主通道');
+  assert(mineJs.indexOf('setTabBarVisible(false)') >= 0 && mineJs.indexOf('setTabBarVisible(true)') >= 0,
+    '打开与关闭弹层都要调 setTabBarVisible');
+});
+
 test('我的页：列表行按压是中性灰（块级）', () => {
   const css = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
   const press = firstBody(css, '.mine-btn:active');

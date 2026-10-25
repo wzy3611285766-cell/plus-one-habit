@@ -17,6 +17,9 @@ const sfx = require('../utils/sfx.js');
 Component({
   data: {
     active: 'today',
+    /** 弹层打开时由页面置真：自定义 tabBar 的显隐只能自己控制，
+        wx.hideTabBar 对 custom:true 的 tabBar 无效（官方文档明示） */
+    hidden: false,
     themeClass: '',
     list: [
       { key: 'today', text: '今日打卡', path: '/pages/today/today' },
@@ -31,6 +34,12 @@ Component({
   },
 
   methods: {
+    /** 供页面在弹层开合时调用：收起 / 恢复整条栏 */
+    setVisible(visible) {
+      if (this.data.hidden === !visible) return;
+      this.setData({ hidden: !visible });
+    },
+
     /** 供页面在 onShow 里调用，同时同步选中态与外观 */
     setActive(key) {
       const patch = {};

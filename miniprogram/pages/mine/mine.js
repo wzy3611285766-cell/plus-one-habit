@@ -93,10 +93,16 @@ Page({
    * 压住弹层底部确认按钮是已知问题；官方 hide/showTabBar 跨机型稳定。
    */
   setTabBarVisible(visible) {
+    // 主通道：直接切自定义 tabBar 组件的 hidden（wx.hideTabBar 对 custom:true 无效）
+    try {
+      const bar = this.getTabBar && this.getTabBar();
+      if (bar && typeof bar.setVisible === 'function') bar.setVisible(visible);
+    } catch (e) { /* 无 tabBar 实例时静默 */ }
+    // 兜底通道：万一某些基础库上还有原生 tabBar 容器，一并处理
     try {
       const fn = visible ? wx.showTabBar : wx.hideTabBar;
       if (typeof fn === 'function') fn({ animated: false });
-    } catch (e) { /* 非 tab 页 / 重复隐藏等场景静默 */ }
+    } catch (e) { /* 静默 */ }
   },
 
   /* ================= 渲染 ================= */
