@@ -1,7 +1,6 @@
 <view class="page goal-edit {{themeClass}}">
 
   <view class="page-title">{{isNew ? '新建目标' : '编辑目标'}}</view>
-  <view class="page-sub">有总量、有终点，才能算出今天该做多少</view>
 
   <view class="card">
     <view class="field">
@@ -50,18 +49,23 @@
     </view>
   </view>
 
-  <!-- 障碍与对策：不做也没关系，但做了的目标明显更容易坚持 -->
+  <!-- 障碍与对策：可选项，默认收起不占屏；编辑已填过的目标时自动展开 -->
   <view class="card">
-    <view class="card-title">如果卡住了</view>
-    <view class="card-sub">可留空。写下最容易发生的阻碍，以及你打算怎么应对。</view>
-
-    <view class="field">
-      <text class="field-label">可能的阻碍</text>
-      <input class="input" value="{{form.obstacle}}" data-field="obstacle" bindinput="onInput" maxlength="60" placeholder="例如：晚上容易困" placeholder-class="ph" />
+    <view class="plan-head" aria-role="button" aria-label="如果卡住了，点按展开" bindtap="togglePlan">
+      <text class="plan-title">如果卡住了</text>
+      <text class="plan-opt">可不填</text>
+      <view class="plan-caret {{planOpen ? 'is-open' : ''}}"></view>
     </view>
-    <view class="field">
-      <text class="field-label">应对方式</text>
-      <input class="input" value="{{form.plan}}" data-field="plan" bindinput="onInput" maxlength="60" placeholder="例如：早上通勤时先背 20 个" placeholder-class="ph" />
+
+    <view wx:if="{{planOpen}}" class="plan-body">
+      <view class="field">
+        <text class="field-label">可能的阻碍</text>
+        <input class="input" value="{{form.obstacle}}" data-field="obstacle" bindinput="onInput" maxlength="60" placeholder="例如：晚上容易困" placeholder-class="ph" />
+      </view>
+      <view class="field">
+        <text class="field-label">应对方式</text>
+        <input class="input" value="{{form.plan}}" data-field="plan" bindinput="onInput" maxlength="60" placeholder="例如：早上通勤时先背 20 个" placeholder-class="ph" />
+      </view>
     </view>
   </view>
 

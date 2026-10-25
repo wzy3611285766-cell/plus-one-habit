@@ -27,6 +27,8 @@ Page({
     errors: {},
     preview: null,
     dangerOpen: false,
+    /** 「如果卡住了」折叠态：可选项默认收起，编辑已填过的目标时自动展开 */
+    planOpen: false,
     toast: '',
     toastOn: false
   },
@@ -55,6 +57,7 @@ Page({
       id: id,
       isNew: false,
       minDate: g.createdAt || U.todayStr(),
+      planOpen: !!(g.obstacle || g.plan),
       form: {
         name: g.name,
         unit: g.unit,
@@ -163,6 +166,8 @@ Page({
   },
 
   toggleDanger() { this.setData({ dangerOpen: !this.data.dangerOpen }); },
+
+  togglePlan() { this.setData({ planOpen: !this.data.planOpen }); },
 
   confirmDelete() {
     ui.confirmDeleteGoal(store.get(), this.data.id, () => {

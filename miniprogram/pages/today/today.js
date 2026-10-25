@@ -216,7 +216,7 @@ Page({
 
     let allDoneText = '';
     if (activeList.length === 0 && st.goals.length > 0) {
-      allDoneText = '所有目标都已达成。去「进度看板」回顾成果，或新建目标继续。';
+      allDoneText = '所有目标都已达成';
     } else if (st.goals.length > 0 && !missedRows.length && !restRows.length && pendingCount === 0) {
       allDoneText = '今天全部目标都已打卡，保持住这个节奏。';
     }

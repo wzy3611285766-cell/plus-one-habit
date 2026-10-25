@@ -45,6 +45,31 @@
     0 0 0 7rpx var(--gc, var(--brand-500));
 }
 
+/* ---------- 如果卡住了：可选项默认收起，一行抬头 + 展开箭头（同「往期复盘」的语言） ---------- */
+.plan-head{
+  display:flex;
+  align-items:center;
+  gap:10rpx;
+  font-size:var(--fs-h3);
+  font-weight:800;
+  color:var(--text-1);
+}
+.plan-opt{
+  font-size:var(--fs-xs);
+  font-weight:400;
+  color:var(--text-4);
+}
+.plan-caret{
+  width:8px;height:8px;
+  margin-left:auto;
+  border-right:1.6px solid var(--text-3);
+  border-bottom:1.6px solid var(--text-3);
+  transform:rotate(45deg);
+  transition:transform .18s ease-out;
+}
+.plan-caret.is-open{ transform:rotate(-135deg); }
+.plan-body .field:first-child{ margin-top:14px; }
+
 /* ---------- 操作区 ---------- */
 .actions{ margin-top:clamp(20px,5vw,26px); }
 
