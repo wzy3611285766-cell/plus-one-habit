@@ -92,19 +92,16 @@ Page({
 
   /**
    * 弹层期间隐藏自定义 tabBar：真机上它的渲染层级不完全受页面 z-index 控制，
-   * 压住弹层底部确认按钮是已知问题；官方 hide/showTabBar 跨机型稳定。
+   * 压住弹层底部确认按钮是已知问题。
    */
   setTabBarVisible(visible) {
-    // 主通道：直接切自定义 tabBar 组件的 hidden（wx.hideTabBar 对 custom:true 无效）
+    // 只走组件级 hidden。绝不能补调 wx.showTabBar / wx.hideTabBar：
+    // custom:true 下原生栏被框架压住不渲染，真机上 showTabBar 会把它重新
+    // 拉起，玻璃栏底下从此多出一栏原生 tabBar（开发者工具里不复现）。
     try {
       const bar = this.getTabBar && this.getTabBar();
       if (bar && typeof bar.setVisible === 'function') bar.setVisible(visible);
     } catch (e) { /* 无 tabBar 实例时静默 */ }
-    // 兜底通道：万一某些基础库上还有原生 tabBar 容器，一并处理
-    try {
-      const fn = visible ? wx.showTabBar : wx.hideTabBar;
-      if (typeof fn === 'function') fn({ animated: false });
-    } catch (e) { /* 静默 */ }
   },
 
   /* ================= 渲染 ================= */
