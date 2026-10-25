@@ -16,7 +16,7 @@ const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
 
-const LOG_ROWS = 10;   // 基准：仅显示最近 10 条
+const LOG_ROWS = 10;   // 按天聚合后：仅显示最近 10 天
 
 Page({
   data: {
@@ -94,17 +94,32 @@ Page({
       else if (e.diff >= 0) etaText = U.fmtShort(e.date) + ' · 提前 ' + e.diff + ' 天';
       else etaText = U.fmtShort(e.date) + ' · 拖后 ' + (-e.diff) + ' 天';
 
-      const rows = logs
-        .filter((l) => l.goalId === g.id)
-        .sort((a, b) => (a.date < b.date ? 1 : (a.date > b.date ? -1 : (b.ts || 0) - (a.ts || 0))))
+      /* 记录按天聚合：一行 = 这一天在该目标上的合计（连点几次的 +1 不再逐条刷屏）。
+         复盘要看的是「哪天加了多少」；删除也按天整删（ids 串，两段式确认不变）。 */
+      const byDay = {};
+      logs.forEach((l) => {
+        if (l.goalId !== g.id) return;
+        const d = byDay[l.date] || (byDay[l.date] = { date: l.date, amount: 0, count: 0, minutes: 0, makeup: false, ids: [] });
+        d.amount += l.amount;
+        d.count += 1;
+        d.minutes += l.minutes || 0;
+        if (l.makeup) d.makeup = true;
+        d.ids.push(l.id);
+      });
+      const rows = Object.keys(byDay)
+        .sort((a, b) => (a < b ? 1 : -1))
         .slice(0, LOG_ROWS)
-        .map((l) => ({
-          id: l.id,
-          date: U.fmtShort(l.date),
-          amount: U.trimNum(l.amount),
-          minutes: l.minutes || 0,
-          makeup: !!l.makeup
-        }));
+        .map((date) => {
+          const d = byDay[date];
+          return {
+            id: d.ids.join(','),
+            date: U.fmtShort(date),
+            amount: U.trimNum(d.amount),
+            count: d.count,
+            minutes: d.minutes,
+            makeup: d.makeup
+          };
+        });
 
       return {
         gid: g.id,
@@ -122,7 +137,7 @@ Page({
         etaBehind: e.status === 'ok' && e.diff < 0,
         plan: g.plan || '',
         obstacle: g.obstacle || '',
-        logCount: logs.filter((l) => l.goalId === g.id).length,
+        logCount: Object.keys(byDay).length,
         logs: rows
       };
     };
@@ -248,18 +263,20 @@ Page({
    * 基准用的是同一套「点一次变色、再点确认」的交互，不是长按。
    */
   deleteLog(e) {
-    const id = e.currentTarget.dataset.id;
-    if (!id) return;
+    const raw = String(e.currentTarget.dataset.id || '');
+    if (!raw) return;
 
-    if (this.data.confirmDel !== id) {
-      this.setData({ confirmDel: id });
+    if (this.data.confirmDel !== raw) {
+      this.setData({ confirmDel: raw });
       if (this.confirmTimer) clearTimeout(this.confirmTimer);
       this.confirmTimer = setTimeout(() => this.setData({ confirmDel: '' }), 3000);
       return;
     }
 
     if (this.confirmTimer) clearTimeout(this.confirmTimer);
-    const ok = store.deleteLog(id);
+    // 行是「天」，id 是当天的记录 id 串：按天整删
+    let ok = false;
+    raw.split(',').forEach((id) => { if (store.deleteLog(id)) ok = true; });
     this.setData({ confirmDel: '' });
     if (ok) {
       this.render();

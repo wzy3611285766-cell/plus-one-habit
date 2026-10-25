@@ -78,13 +78,14 @@
           class="log-toggle {{expanded === card.gid ? 'is-open' : ''}}"
           data-gid="{{card.gid}}"
           bindtap="toggleLogs"
-        >{{expanded === card.gid ? '收起记录' : '查看 ' + card.logCount + ' 条记录'}}</view>
+        >{{expanded === card.gid ? '收起记录' : '查看 ' + card.logCount + ' 天记录'}}</view>
 
         <view wx:if="{{expanded === card.gid}}" class="recent-logs">
           <view wx:for="{{card.logs}}" wx:for-item="lg" wx:key="id" class="log-item">
             <text class="log-date num">{{lg.date}}</text>
             <text class="log-amt num">+{{lg.amount}}</text>
             <text class="log-unit">{{card.unit}}</text>
+            <text wx:if="{{lg.count > 1}}" class="log-min">· {{lg.count}} 次</text>
             <text wx:if="{{lg.minutes}}" class="log-min">· {{lg.minutes}} 分钟</text>
             <text wx:if="{{lg.makeup}}" class="log-makeup">补</text>
             <view
@@ -93,7 +94,7 @@
               catchtap="deleteLog"
             >{{confirmDel === lg.id ? '确认删除' : '×'}}</view>
           </view>
-          <text wx:if="{{card.logCount > 10}}" class="log-more">仅显示最近 10 条</text>
+          <text wx:if="{{card.logCount > 10}}" class="log-more">仅显示最近 10 天</text>
         </view>
       </view>
     </view>

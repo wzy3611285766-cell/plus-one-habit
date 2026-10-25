@@ -521,7 +521,7 @@ await test('看板正确汇总并生成 14 天柱状数据', async () => {
   assert(page.data.legend.length >= 1, '近 14 天有记录的目标应进图例');
 });
 
-await test('看板：展开记录后能删掉一条（两段式确认，不是长按）', async () => {
+await test('看板：展开记录后能删掉一天（两段式确认，天行整删）', async () => {
   const UB = freshUtils();
   await boot(UB);
   const page = mount('board');
@@ -534,13 +534,44 @@ await test('看板：展开记录后能删掉一条（两段式确认，不是�
   page.toggleLogs({ currentTarget: { dataset: { gid: card.gid } } });
   eq(page.data.expanded, card.gid, '点一次应展开');
 
-  const logId = card.logs[0].id;
-  page.deleteLog({ currentTarget: { dataset: { id: logId } } });
-  eq(page.data.confirmDel, logId, '第一次点应进入待确认');
-  assert(!(UB.store.get().logs.find((l) => l.id === logId) || {}).deleted, '第一次点不该真的删');
+  const ids = String(card.logs[0].id).split(',');
+  page.deleteLog({ currentTarget: { dataset: { id: card.logs[0].id } } });
+  eq(page.data.confirmDel, card.logs[0].id, '第一次点应进入待确认');
+  assert(ids.every((x) => !((UB.store.get().logs.find((l) => l.id === x) || {}).deleted)),
+    '第一次点不该真的删');
 
-  page.deleteLog({ currentTarget: { dataset: { id: logId } } });
-  eq((UB.store.get().logs.find((l) => l.id === logId) || {}).deleted, true, '第二次点才真删');
+  page.deleteLog({ currentTarget: { dataset: { id: card.logs[0].id } } });
+  assert(ids.every((x) => (UB.store.get().logs.find((l) => l.id === x) || {}).deleted),
+    '第二次点才真删（当天整删）');
+});
+
+await test('看板：记录按天聚合——同一天多次打卡合成一行（合计+次数），按天整删', async () => {
+  const UC = freshUtils();
+  await boot(UC);
+  const t = UC.U.todayStr();
+  UC.store.addGoal({ id: 'pg-day', name: '聚合测试', unit: '个', total: 100, deadline: UC.U.addDays(t, 30), createdAt: t, color: '#6366f1', sample: false });
+  UC.store.addLog('pg-day', t, 1, null, false);
+  UC.store.addLog('pg-day', t, 3, null, false);
+  UC.store.addLog('pg-day', t, 2, null, true);
+
+  const page = mount('board');
+  page.onLoad();
+  page.render();
+
+  const card = page.data.activeCards.find((c) => c.gid === 'pg-day');
+  assert(card, '新目标应有卡');
+  const day = card.logs.find((r) => r.id.indexOf(',') >= 0);
+  assert(day, '同一天多次打卡应合成一行');
+  eq(day.amount, '6', '当天合计');
+  eq(day.count, 3, '次数标注');
+  eq(day.makeup, true, '混有补记应标注');
+
+  page.toggleLogs({ currentTarget: { dataset: { gid: 'pg-day' } } });
+  page.deleteLog({ currentTarget: { dataset: { id: day.id } } });
+  page.deleteLog({ currentTarget: { dataset: { id: day.id } } });
+  const left = UC.store.get().logs.filter((l) => l.goalId === 'pg-day' && l.date === t && !l.deleted);
+  eq(left.length, 0, '确认后当天三条一起删掉');
+  if (typeof page.onUnload === 'function') page.onUnload();
 });
 
 await test('看板：统计条 / 热力图 / 最近动态 / 柱子点击', async () => {

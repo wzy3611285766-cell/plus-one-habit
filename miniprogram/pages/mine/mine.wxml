@@ -132,7 +132,6 @@
         <view class="mine-ico ico-out"></view>
         <view class="mine-body">
           <text class="mine-txt">注销账号</text>
-          <text class="mine-sub">账号与全部记录将被永久删除</text>
         </view>
       </view>
     </view>
