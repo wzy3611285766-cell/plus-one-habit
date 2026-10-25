@@ -572,7 +572,7 @@ function seedData() {
   const goals = [
     { id: SEED_IDS[0], name: '背英语四级单词', unit: '个', total: 1200, deadline: U.addDays(t, 68), color: COLORS[0], obstacle: '晚上容易困', plan: '早上通勤时先背 20 个' },
     { id: SEED_IDS[1], name: '复习错题', unit: '道', total: 300, deadline: U.addDays(t, 48), color: COLORS[1], obstacle: '攒着不想翻', plan: '每天晚饭后固定 15 分钟' },
-    { id: SEED_IDS[2], name: '读《马斯克传》', unit: '页', total: 440, deadline: U.addDays(t, 40), color: COLORS[2], obstacle: '睡前刷手机', plan: '把书放在餐桌上' }
+    { id: SEED_IDS[2], name: '读《币安人生》', unit: '页', total: 440, deadline: U.addDays(t, 40), color: COLORS[2], obstacle: '睡前刷手机', plan: '把书放在餐桌上' }
   ].map((g) => {
     const out = Object.assign({}, g, { createdAt: t, sample: true });
     return touch(out);

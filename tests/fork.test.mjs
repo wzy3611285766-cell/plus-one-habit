@@ -75,7 +75,7 @@ const D = freshUtils();
 await test('UTF-8 往返：中文 / emoji / 代理对 / 混合', () => {
   const cases = [
     '背英语四级单词',
-    '读《马斯克传》',
+    '读《币安人生》',
     'a,b:c d/e=f+?&#!',
     '颜色 #6366f1 与 #10b981',
     '打卡🎉与📚（emoji 走代理对）',
