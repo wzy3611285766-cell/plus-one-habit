@@ -803,7 +803,9 @@ await test('注销成功后：账号没了、云端分片清零、本机回到�
   page.openDeleteAccount();
   page.setData({ form: { confirmDelete: '注销' } });
   page.submitDeleteAccount();
-  await new Promise((r) => setTimeout(r, 400));
+  /* 等 700ms：注销成功后有 600ms 的「回登录页 reLaunch」定时器，
+     必须在本用例窗口内消化掉，否则会飘进后面用例的执行窗口 */
+  await new Promise((r) => setTimeout(r, 700));
 
   eq(page.data.logged, false, '应回到未登录');
   assert(!UD.auth.isLogged(), '本机身份缓存应已清空');
@@ -851,6 +853,107 @@ await test('清过示例的设备升级时不会重新塞入', () => {
 
   eq(UD.store.get().goals.length, 1, '不应重新塞入示例');
   eq(UD.store.get().seedVersion, UD.M.SEED_VERSION, '版本号静默对齐');
+});
+
+/* ================================================================= */
+
+group('审查修复回归（2026-10-26）');
+
+await test('我的页：音效开关能来回拨（曾读 tap 的 e.detail.value 被钉死在关）', async () => {
+  const U20 = freshUtils();
+  await boot(U20);
+
+  const page = mount('mine');
+  page.onLoad();
+  page.render();
+
+  page.setData({ soundOn: true });
+  page.toggleSound();
+  eq(page.data.soundOn, false, '开着时拨一下应关上');
+  eq(U20.store.get().settings.sound, false, '开关应落到 store 的设置里');
+
+  page.toggleSound();
+  eq(page.data.soundOn, true, '再拨一下应回到开（旧 bug 恒为关）');
+  eq(U20.store.get().settings.sound, true);
+});
+
+await test('目标编辑：日期下限不再钉死在当前值（新建=今天，编辑=创建日）', async () => {
+  const U21 = freshUtils();
+  await boot(U21);
+  const t = U21.U.todayStr();
+
+  const pageNew = mount('goalEdit');
+  pageNew.onLoad({});
+  eq(pageNew.data.minDate, t, '新建时下限是今天，短期目标可选（旧 bug 钉在默认 60 天后）');
+
+  U21.store.addGoal({ id: 'ge-1', name: '编辑下限', unit: '个', total: 10, deadline: U21.U.addDays(t, 30), createdAt: t, color: '#6366f1', sample: false });
+  const pageEdit = mount('goalEdit');
+  pageEdit.onLoad({ id: 'ge-1' });
+  eq(pageEdit.data.minDate, t, '编辑时下限是创建日，允许把截止日提前');
+  eq(pageEdit.data.form.deadline, U21.U.addDays(t, 30), '表单回填原截止日');
+});
+
+await test('周报：未保存的复盘切周要先确认，不再静默丢稿', async () => {
+  const U22 = freshUtils();
+  await boot(U22);
+
+  const page = mount('weekly');
+  page.onLoad();
+  page.render();
+
+  page.onField({ currentTarget: { dataset: { field: 'keep' } }, detail: { value: '写得正投入' } });
+  eq(page.data.dirty, true, '输入过内容应置 dirty');
+
+  const modals = () => env.log.filter((x) => x.type === 'modal').length;
+  const before = modals();
+  page.prevWeek();
+  eq(page.data.offset, 0, '有未保存内容时切周应被拦下');
+  eq(modals(), before + 1, '应弹确认框');
+
+  page.setData({ dirty: false });
+  page.prevWeek();
+  eq(page.data.offset, -1, '干净状态下切周直接走');
+  eq(modals(), before + 1, '不需要再确认');
+});
+
+await test('今日页：全部达成不再是「还没有目标」空态，且保留新建入口', async () => {
+  env.storage.clear();   // 只留本用例自己的目标：统计口径断言不能被前面用例的遗留目标污染
+  const U23 = freshUtils();
+  await boot(U23);
+  const t = U23.U.todayStr();
+  U23.store.addGoal({ id: 'done-1', name: '已完成目标', unit: '个', total: 3, deadline: U23.U.addDays(t, 10), createdAt: t, color: '#6366f1', sample: false });
+  U23.store.addLog('done-1', t, 3, null, false);
+
+  const page = mount('today');
+  page.onLoad();
+  page.render();
+
+  eq(page.data.hasGoals, true, '有已完成目标时仍算「有目标」（旧 bug 空态卡与已完成区同屏）');
+  eq(page.data.hasActive, false, '统计条口径只看进行中的目标');
+  eq(page.data.doneRows.length, 1, '已完成区应有这张卡');
+  assert(page.data.allDoneText, '应给出达成/收工的绿条文案，而不是「还没有目标」空态');
+});
+
+await test('我的页：退出登录后直接回登录页（不等下次切 tab 才被闸门兜走）', async () => {
+  const U24 = freshUtils();
+  await boot(U24);
+  await U24.auth.login();
+
+  const page = mount('mine');
+  page.onLoad();
+  page.render();
+  eq(page.data.logged, true, '先处于登录态');
+
+  env.modalAnswer = { confirm: true, cancel: false };
+  const relaunchBefore = env.log.filter((x) => x.type === 'reLaunch').length;
+  page.logout();
+  await new Promise((r) => setTimeout(r, 700));   // 回登录页有 600ms 延迟：先把提示露给用户
+  env.modalAnswer = null;
+
+  eq(U24.auth.isLogged(), false, '应已登出');
+  const relaunches = env.log.filter((x) => x.type === 'reLaunch');
+  eq(relaunches.length, relaunchBefore + 1, '应 reLaunch 一次');
+  eq(relaunches[relaunches.length - 1].url, '/pages/login/login');
 });
 
 export const suite = '页面集成';

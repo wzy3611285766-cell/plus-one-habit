@@ -61,13 +61,16 @@ export function installWxEnv(opts) {
     hideLoading: () => { },
     showModal: (arg) => {
       state.log.push({ type: 'modal', title: arg && arg.title });
-      // 默认「取消」：危险的破坏性操作不会被测试意外触发
-      if (arg && arg.success) arg.success({ confirm: false, cancel: true });
+      // 默认「取消」：危险的破坏性操作不会被测试意外触发。
+      // 测试需要走确认分支时，先设 state.modalAnswer = { confirm: true }。
+      const ans = state.modalAnswer || { confirm: false, cancel: true };
+      if (arg && arg.success) arg.success(ans);
     },
     setClipboardData: (arg) => { state.log.push({ type: 'copy', data: arg && arg.data }); if (arg && arg.success) arg.success(); },
 
     navigateTo: (arg) => { state.log.push({ type: 'navigateTo', url: arg && arg.url }); },
     redirectTo: (arg) => { state.log.push({ type: 'redirectTo', url: arg && arg.url }); },
+    reLaunch: (arg) => { state.log.push({ type: 'reLaunch', url: arg && arg.url }); },
     switchTab: (arg) => { state.log.push({ type: 'switchTab', url: arg && arg.url }); },
     navigateBack: () => { state.log.push({ type: 'navigateBack' }); },
     hideTabBar: (arg) => { state.log.push({ type: 'hideTabBar' }); if (arg && arg.success) arg.success(); },
