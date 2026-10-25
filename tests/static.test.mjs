@@ -867,6 +867,12 @@ test('我的页：列表行按压是中性灰（块级）', () => {
   assert(press.indexOf('rgba(0,122,255') < 0, '不应是品牌蓝');
 });
 
+test('今日页顶栏 + 快捷键：只在有目标时显示（空状态用大按钮，不孤儿挂 +）', () => {
+  const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
+  assert(/<view wx:if="{{hasGoals}}" class="add-goal"/.test(wxml),
+    '顶栏 + 快捷键应挂在 hasGoals 上');
+});
+
 test('登录闸门：进入必须先一键登录（用户 2026-10-25 决策）', () => {
   const appJs = read(path.join(MP, 'app.js'));
   const loginWxml = read(path.join(MP, 'pages', 'login', 'login.wxml'));

@@ -19,7 +19,9 @@
     <text class="date">{{dateText}} · {{greeting}}</text>
     <view class="head-actions">
       <view wx:if="{{!logged}}" class="login-link" bindtap="goLogin">登录</view>
-      <view class="add-goal" bindtap="goNewGoal">
+      <!-- 空目标状态不显示这个快捷键：中间孤零零一个 + 很怪，
+           那时的大按钮（新建目标）才是入口；有目标后它在右上角常驻 -->
+      <view wx:if="{{hasGoals}}" class="add-goal" bindtap="goNewGoal">
         <view class="add-h"></view>
         <view class="add-v"></view>
       </view>
