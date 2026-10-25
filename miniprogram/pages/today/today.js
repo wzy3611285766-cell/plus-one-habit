@@ -292,7 +292,11 @@ Page({
       greeting: greeting,
       rows: activeRows,
       doneRows: doneRows,
-      hasGoals: rows.length > 0,
+      /* hasGoals 含已完成目标：全部达成时页面不再是「还没有目标」的空态，
+         右上角 + 也保留住「新建目标继续」的入口（绿条文案里承诺过它）。
+         统计条只看进行中的目标 —— 全部达成后 0/0 没有信息量。 */
+      hasGoals: rows.length > 0 || doneRows.length > 0,
+      hasActive: rows.length > 0,
       statCards: statCards,
       rhythm: rhythm,
       rhythmTotal: rhythmTotal,

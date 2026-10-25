@@ -28,8 +28,8 @@
     </view>
   </view>
 
-  <!-- ---------- 统计条：两张卡（今日已打卡 / 最长连续） ---------- -->
-  <view wx:if="{{hasGoals}}" class="stat-strip">
+  <!-- ---------- 统计条：两张卡（今日已打卡 / 最长连续），有进行中目标才有意义 ---------- -->
+  <view wx:if="{{hasActive}}" class="stat-strip">
     <view wx:for="{{statCards}}" wx:key="k" class="stat-card">
       <view class="stat-ico {{item.tone}}">
         <view wx:if="{{item.k === 'hit'}}" class="ico-check"></view>

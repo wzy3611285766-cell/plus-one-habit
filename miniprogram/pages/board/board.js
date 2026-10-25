@@ -26,10 +26,8 @@ Page({
     /* 统计条：累计打卡 / 累计活跃 */
     statCards: [],
 
-    /* 目标卡：进行中在前，已完成单独分区 */
+    /* 目标卡：进行中在前，已完成单独分区。卡片只存 sections 一份，WXML 也只消费它 */
     sections: [],
-    activeCards: [],
-    doneCards: [],
     hasData: false,
 
     /* 近 14 天堆叠图 */
@@ -237,8 +235,6 @@ Page({
       logged: auth.isLogged(),
       statCards: statCards,
       sections: sections,
-      activeCards: activeCards,
-      doneCards: doneCards,
       hasData: goals.length > 0,
       chart: chart,
       chartMax: chartMax,

@@ -170,9 +170,23 @@ Page({
 
   /* ================= 周切换 ================= */
 
+  /** 切周前的统一闸门：表单有未保存内容时必须让用户明确丢弃，否则静默清空等于丢稿 */
+  guardDirty(then) {
+    if (!this.data.dirty) { then(); return; }
+    wx.showModal({
+      title: '复盘还没保存',
+      content: '这周写的内容还没保存，切走会丢失。',
+      confirmText: '丢弃',
+      confirmColor: '#FF3B30',
+      success: (res) => { if (res.confirm) then(); }
+    });
+  },
+
   prevWeek() {
-    this.setData({ offset: this.data.offset - 1, savedTip: '' });
-    this.render();
+    this.guardDirty(() => {
+      this.setData({ offset: this.data.offset - 1, savedTip: '' });
+      this.render();
+    });
   },
 
   toggleArchive() {
@@ -185,18 +199,22 @@ Page({
   goArchive(e) {
     const off = Number(e.currentTarget.dataset.off);
     if (isNaN(off)) return;
-    /* 即使就是当前周也执行：表单已清空，点存档行必须把内容装回 KPT 纸，
-       并滚到纸面 —— 否则点按毫无可见反馈（「展开不了」的主因） */
-    this.setData({ offset: off, savedTip: '' });
-    this.render();
-    try { wx.pageScrollTo({ selector: '#kpt-card', duration: 200 }); } catch (e) { /* 旧基础库静默 */ }
-    try { sfx.tap(); } catch (e) { /* 静默 */ }
+    this.guardDirty(() => {
+      /* 即使就是当前周也执行：表单已清空，点存档行必须把内容装回 KPT 纸，
+         并滚到纸面 —— 否则点按毫无可见反馈（「展开不了」的主因） */
+      this.setData({ offset: off, savedTip: '' });
+      this.render();
+      try { wx.pageScrollTo({ selector: '#kpt-card', duration: 200 }); } catch (e) { /* 旧基础库静默 */ }
+      try { sfx.tap(); } catch (e) { /* 静默 */ }
+    });
   },
 
   nextWeek() {
     if (this.data.offset >= 0) return;
-    this.setData({ offset: this.data.offset + 1, savedTip: '' });
-    this.render();
+    this.guardDirty(() => {
+      this.setData({ offset: this.data.offset + 1, savedTip: '' });
+      this.render();
+    });
   },
 
   /* ================= 复盘表单 ================= */
