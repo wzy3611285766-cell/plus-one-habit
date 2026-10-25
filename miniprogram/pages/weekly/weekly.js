@@ -171,17 +171,18 @@ Page({
   },
 
   toggleArchive() {
-    sfx.tap();
+    // 先切状态再发声：音频引擎在部分真机上的同步异常不能挡住展开
     this.setData({ archiveOpen: !this.data.archiveOpen });
+    try { sfx.tap(); } catch (e) { /* 静默 */ }
   },
 
   /** 存档直达：按周一日期换算回 offset，跳到那一周 */
   goArchive(e) {
     const off = Number(e.currentTarget.dataset.off);
     if (isNaN(off) || off === this.data.offset) return;
-    sfx.tap();
     this.setData({ offset: off, savedTip: '' });
     this.render();
+    try { sfx.tap(); } catch (e) { /* 静默 */ }
   },
 
   nextWeek() {
