@@ -12,10 +12,10 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const fork = require('../../utils/fork.js');
 const api = require('../../utils/api.js');
-const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
 const sfx = require('../../utils/sfx.js');
+const ui = require('../../utils/ui.js');
 
 Page({
   data: {
@@ -29,7 +29,6 @@ Page({
     /* 分叉态（未登录 + 从分享卡片种入过目标）才显示「重新载入」入口 */
     forked: false,
     themeOn: false,
-    stats: { records: 0, streak: 0, goals: 0, logs: 0 },
 
     sync: { dot: 'off', text: '未登录', time: '', msg: '' },
 
@@ -112,8 +111,6 @@ Page({
     const logged = auth.isLogged();
     const user = auth.user();
     const sync = store.syncState();
-    const goals = M.activeGoals(st);
-    const logs = M.activeLogs(st);
 
     let joinedDays = 0;
     if (user && user.createdAt) {
@@ -129,17 +126,11 @@ Page({
       joinedDays: joinedDays,
       hasSample: store.hasSample(),
       forked: !logged && store.forkInfo().forked,
-      stats: {
-        records: logs.length,
-        streak: M.globalStreak(st),
-        goals: goals.length,
-        logs: logs.length
-      },
       sync: {
-        dot: this.dotOf(logged ? sync.phase : 'needlogin'),
+        dot: ui.syncDot(logged ? sync.phase : 'needlogin'),
         /* 未登录就是「未登录」，不要写成「待同步」——那会让用户以为
            有个任务在等着他，而其实只是没登录 */
-        text: logged ? this.labelOf(sync.phase) : '未登录',
+        text: logged ? ui.syncLabel(sync.phase) : '未登录',
         time: U.fmtAgo(sync.lastSyncAt),
         /* 只在真的失败时说明一句；「未登录」不解释，那是状态不是错误 */
         msg: sync.phase === 'error' ? (sync.message || '同步失败，稍后会自动重试') : ''
@@ -149,11 +140,6 @@ Page({
       soundOn: sfx.soundEnabled(),
       volume: sfx.volumePct()
     });
-  },
-
-  dotOf(p) { return { synced: 'ok', syncing: 'sync', error: 'err', needlogin: 'off', offline: 'off' }[p] || 'off'; },
-  labelOf(p) {
-    return { idle: '待同步', syncing: '同步中', synced: '已同步', error: '同步失败', needlogin: '未登录', offline: '离线' }[p] || '待同步';
   },
 
   /* ================= 登录 / 登出 ================= */
@@ -348,20 +334,6 @@ Page({
 
     this.render();
     this.syncTabBarTheme();
-  },
-
-  cycleTheme() {
-    const order = ['auto', 'dark', 'light'];
-    const cur = this.data.theme;
-    const next = order[(order.indexOf(cur) + 1) % order.length];
-    store.updateSettings({ theme: next });
-    const app = getApp();
-    // 导航栏 + 系统监听交给 app 统一处理，避免页面与 app 各管一半
-    if (app && typeof app.applyTheme === 'function') app.applyTheme();
-    else prefs.applyNavTheme(next);
-    this.render();
-    this.syncTabBarTheme();
-    this.toast('外观：' + this.themeText(next));
   },
 
   hapticPref() { return prefs.haptic(); },

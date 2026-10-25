@@ -10,6 +10,7 @@ const store = require('../../utils/store.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
+const ui = require('../../utils/ui.js');
 
 const COLORS = M.COLORS;
 
@@ -164,20 +165,10 @@ Page({
   toggleDanger() { this.setData({ dangerOpen: !this.data.dangerOpen }); },
 
   confirmDelete() {
-    const st = store.get();
-    const done = M.doneAmount(st, this.data.id);
-    const count = st.logs.filter((l) => l.goalId === this.data.id && !l.deleted).length;
-    wx.showModal({
-      title: '删除这个目标？',
-      content: '连同它的 ' + count + ' 条打卡记录（共 ' + U.trimNum(done) + '）一起删除，所有设备同步生效。',
-      confirmText: '删除',
-      confirmColor: '#FF3B30',
-      success: (res) => {
-        if (!res.confirm) return;
-        store.deleteGoal(this.data.id);
-        wx.showToast({ title: '已删除', icon: 'success' });
-        setTimeout(() => wx.navigateBack(), 400);
-      }
+    ui.confirmDeleteGoal(store.get(), this.data.id, () => {
+      store.deleteGoal(this.data.id);
+      wx.showToast({ title: '已删除', icon: 'success' });
+      setTimeout(() => wx.navigateBack(), 400);
     });
   },
 

@@ -18,6 +18,7 @@ const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
 const sfx = require('../../utils/sfx.js');
+const ui = require('../../utils/ui.js');
 
 /* ================= 打卡反馈的常量 =================
    数值取自设计基准的 plus1Burst / celebrate。
@@ -182,8 +183,6 @@ Page({
        为真就说明昨天那次漏打已经被休息日抵掉了。 */
     const todayStr = U.todayStr();
     const yesterday = U.addDays(todayStr, -1);
-    const rowMap = {};
-    rows.forEach((r) => { rowMap[r.gid] = r; });
 
     const missedRows = [];
     const restRows = [];
@@ -194,13 +193,11 @@ Page({
       if (dates[yesterday]) return;             // 昨天打过卡
       if (yesterday < g.createdAt) return;      // 昨天这个目标还不存在
 
-      const row = rowMap[g.id] || {};
       const left = U.diffDays(todayStr, g.deadline);   // 负数表示已过期
       const item = {
         gid: g.id,
         name: g.name,
         unit: g.unit,
-        quotaText: row.quotaText || '',
         overdue: left < 0,
         overdueDays: left < 0 ? -left : 0
       };
@@ -285,8 +282,8 @@ Page({
       themeClass: prefs.themeClassOf(st.settings && st.settings.theme),
       logged: logged,
       user: auth.user(),
-      syncText: this.syncLabel(sync.phase),
-      syncDot: this.syncDot(sync.phase),
+      syncText: ui.syncLabel(sync.phase),
+      syncDot: ui.syncDot(sync.phase),
       syncTime: U.fmtAgo(sync.lastSyncAt),
       dateText: U.fmtShort(todayStr) + ' ' + U.weekdayCN(todayStr),
       greeting: greeting,
@@ -319,17 +316,6 @@ Page({
     /* 只有当天建议量的快照真的被写入了才落盘。
        这一页会因为同步事件被反复重绘，无条件 save 等于每次同步都整份写一次本地存储。 */
     if (ov.snapshotsWritten) store.save();
-  },
-
-  syncLabel(phase) {
-    return {
-      idle: '待同步', syncing: '同步中', synced: '已同步',
-      error: '同步失败', needlogin: '未登录', offline: '离线'
-    }[phase] || '待同步';
-  },
-
-  syncDot(phase) {
-    return { synced: 'ok', syncing: 'sync', error: 'err', needlogin: 'off', offline: 'off', idle: 'off' }[phase] || 'off';
   },
 
   /* ================= 打卡 ================= */
@@ -581,24 +567,13 @@ Page({
     wx.navigateTo({ url: '/pages/goal-edit/goal-edit?id=' + encodeURIComponent(gid) });
   },
 
-  /** 删除的确认文案与 goal-edit 页逐字一致，避免同一操作出现两种说法 */
   menuDelete() {
     const gid = this.data.menuGid;
-    const st = store.get();
-    const done = M.doneAmount(st, gid);
-    const count = st.logs.filter((l) => l.goalId === gid && !l.deleted).length;
-    wx.showModal({
-      title: '删除这个目标？',
-      content: '连同它的 ' + count + ' 条打卡记录（共 ' + U.trimNum(done) + '）一起删除，所有设备同步生效。',
-      confirmText: '删除',
-      confirmColor: '#FF3B30',
-      success: (res) => {
-        if (!res.confirm) return;
-        store.deleteGoal(gid);
-        this.setData({ menuOn: false, menuGid: '', menuName: '', menuOverdue: false });
-        this.render();
-        this.toast('已删除');
-      }
+    ui.confirmDeleteGoal(store.get(), gid, () => {
+      store.deleteGoal(gid);
+      this.setData({ menuOn: false, menuGid: '', menuName: '', menuOverdue: false });
+      this.render();
+      this.toast('已删除');
     });
   },
 
