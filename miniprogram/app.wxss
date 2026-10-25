@@ -17,14 +17,14 @@ page{
   /* ---- 字号阶梯 ---- */
   --fs-display:clamp(40px,12vw,64px);
   --fs-num-lg:clamp(28px,8vw,40px);
-  --fs-h1:clamp(22px,6.2vw,30px);
-  --fs-h2:clamp(18px,4.6vw,22px);
-  --fs-h3:clamp(16px,4vw,18px);
+  --fs-h1:clamp(24px,6.8vw,33px);
+  --fs-h2:clamp(19.5px,5.2vw,24px);
+  --fs-h3:clamp(17px,4.4vw,19.5px);
   --fs-body:clamp(15px,3.8vw,16px);
   --fs-sm:clamp(13px,3.2vw,14px);
   --fs-xs:clamp(11.5px,2.8vw,12.5px);
   --fs-nano:clamp(10.5px,2.6vw,11.5px);
-  --fs-p1:clamp(40px,11vw,52px);
+  --fs-p1:clamp(44px,12vw,58px);
 
   /* ---- 字重 / 字距 ---- */
   --fw-normal:400;--fw-med:500;--fw-semi:600;--fw-bold:700;--fw-black:800;
@@ -389,14 +389,14 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
   --fs-display:clamp(40px,12vw,64px);
   --fs-num-lg:clamp(28px,8vw,40px);
-  --fs-h1:clamp(22px,6.2vw,30px);
-  --fs-h2:clamp(18px,4.6vw,22px);
-  --fs-h3:clamp(16px,4vw,18px);
+  --fs-h1:clamp(24px,6.8vw,33px);
+  --fs-h2:clamp(19.5px,5.2vw,24px);
+  --fs-h3:clamp(17px,4.4vw,19.5px);
   --fs-body:clamp(15px,3.8vw,16px);
   --fs-sm:clamp(13px,3.2vw,14px);
   --fs-xs:clamp(11.5px,2.8vw,12.5px);
   --fs-nano:clamp(10.5px,2.6vw,11.5px);
-  --fs-p1:clamp(40px,11vw,52px);
+  --fs-p1:clamp(44px,12vw,58px);
   --fw-normal:400;
   --fw-med:500;
   --fw-semi:600;
@@ -535,7 +535,7 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   align-items:center;
   gap:8rpx;
   font-size:var(--fs-h3);
-  font-weight:700;
+  font-weight:800;
   letter-spacing:var(--ls-snap);
   color:var(--text-1);
 }
