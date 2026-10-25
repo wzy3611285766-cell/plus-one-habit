@@ -634,6 +634,15 @@ await test('周报：四栏复盘可保存，并能生成可复制的周报文�
   const note = U16.store.get().notes[mon];
   assert(note && note.keep === '每天都打了卡', '复盘应写入 notes');
 
+  eq(page.data.form.keep, '', '保存后表单应清空（内容进往期列表）');
+  const own = page.data.archive.find((a) => a.key === mon);
+  assert(own, '刚保存的周应出现在往期列表');
+  includes(own.snippet, '保持：每天都打了卡');
+
+  page.goArchive({ currentTarget: { dataset: { off: own.off } } });
+  eq(page.data.form.keep, '每天都打了卡', '点存档行应把内容装回 KPT 纸');
+  eq(page.data.offset, 0, '当前周的行也能打开');
+
 });
 
 await test('复盘会随打卡数据一起同步到云端', async () => {

@@ -37,7 +37,7 @@
   </view>
 
   <!-- ---------- 卡片二：KPT 纸感复盘 ---------- -->
-  <view class="card">
+  <view class="card" id="kpt-card">
     <view class="card-title">
       <view class="title-dot"></view>
       <text>本周复盘</text>

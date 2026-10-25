@@ -179,9 +179,12 @@ Page({
   /** 存档直达：按周一日期换算回 offset，跳到那一周 */
   goArchive(e) {
     const off = Number(e.currentTarget.dataset.off);
-    if (isNaN(off) || off === this.data.offset) return;
+    if (isNaN(off)) return;
+    /* 即使就是当前周也执行：表单已清空，点存档行必须把内容装回 KPT 纸，
+       并滚到纸面 —— 否则点按毫无可见反馈（「展开不了」的主因） */
     this.setData({ offset: off, savedTip: '' });
     this.render();
+    try { wx.pageScrollTo({ selector: '#kpt-card', duration: 200 }); } catch (e) { /* 旧基础库静默 */ }
     try { sfx.tap(); } catch (e) { /* 静默 */ }
   },
 
@@ -204,14 +207,27 @@ Page({
     const r = this.weekRange();
     const f = this.data.form;
     const empty = FIELDS.every((k) => !String(f[k] || '').trim());
-    if (empty && !this.data.hasNote) { sfx.error(); this.toast('还没有填写内容'); return; }
+    /* 四栏全空一律不落库：保存后表单会清空，误触保存绝不能把已存的复盘清成空 */
+    if (empty) {
+      try { sfx.error(); } catch (e) { /* 静默 */ }
+      this.toast('还没有填写内容');
+      return;
+    }
 
     store.setNote(r.start, {
       keep: f.keep, problem: f.problem, try: f.try, next: f.next
     });
-    sfx.saved();
-    this.setData({ dirty: false, hasNote: !empty, savedTip: '已保存' });
+
+    /* 写完一篇的日记感：保存即入档，表单清空；
+       内容从下方「往期复盘」列表点开回看或继续编辑 */
+    this.setData({
+      dirty: false,
+      hasNote: true,
+      savedTip: '已保存',
+      form: { keep: '', problem: '', try: '', next: '' }
+    });
     setTimeout(() => this.setData({ savedTip: '' }), 1600);
+    try { sfx.saved(); } catch (e) { /* 静默：保存反馈不能被音频异常吞掉 */ }
     this.toast(auth.isLogged() ? '已保存，正在同步' : '已保存');
   },
 
