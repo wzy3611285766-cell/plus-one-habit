@@ -3,7 +3,7 @@
   <!-- 品牌区：全站唯一使用主色渐变的地方，登录页需要一点仪式感 -->
   <view class="brand">
     <view class="brand-mark">+1</view>
-    <view class="brand-title">学习目标管理台</view>
+    <view class="brand-title">PLus one habit</view>
     <view class="brand-sub">微信一键登录</view>
   </view>
 

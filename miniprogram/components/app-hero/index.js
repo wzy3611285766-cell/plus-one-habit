@@ -16,8 +16,8 @@ const U = require('../../utils/util.js');
 
 Component({
   properties: {
-    /** 主标题。四个页签统一是「学习目标管理台」 */
-    title: { type: String, value: '学习目标管理台' }
+    /** 主标题。四个页签统一是「PLus one habit」 */
+    title: { type: String, value: 'PLus one habit' }
   },
 
   data: {

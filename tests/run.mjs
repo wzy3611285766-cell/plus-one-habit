@@ -19,7 +19,7 @@ const SUITES = [
   ['小程序静态检查（WXML/WXSS/JSON/JS 语法）', './static.test.mjs']
 ];
 
-console.log('学习目标管理台 · 小程序测试');
+console.log('PLus one habit · 小程序测试');
 console.log('运行时 ' + process.version + '（Electron-as-Node ' + (process.versions.electron || '-') + '）');
 
 let loadFailed = 0;
