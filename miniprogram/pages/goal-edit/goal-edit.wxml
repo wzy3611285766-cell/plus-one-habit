@@ -25,7 +25,7 @@
 
     <view class="field">
       <text class="field-label">截止日期</text>
-      <picker mode="date" value="{{form.deadline}}" start="{{form.deadline}}" bindchange="onDateChange">
+      <picker mode="date" value="{{form.deadline}}" start="{{minDate}}" bindchange="onDateChange">
         <view class="input picker-value {{errors.deadline ? 'is-error' : ''}}">{{form.deadline || '请选择'}}</view>
       </picker>
       <view wx:if="{{errors.deadline}}" class="field-hint is-error">{{errors.deadline}}</view>

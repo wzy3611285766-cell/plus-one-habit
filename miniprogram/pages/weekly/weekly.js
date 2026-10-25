@@ -52,7 +52,10 @@ Page({
     this.render(true);
   },
 
-  onUnload() { if (this.unsub) this.unsub(); },
+  onUnload() {
+    if (this.unsub) this.unsub();
+    if (this.savedTipTimer) clearTimeout(this.savedTipTimer);
+  },
 
   /* ================= 渲染 ================= */
 
@@ -228,7 +231,7 @@ Page({
       savedTip: '已保存',
       form: { keep: '', problem: '', try: '', next: '' }
     });
-    setTimeout(() => this.setData({ savedTip: '' }), 1600);
+    this.savedTipTimer = setTimeout(() => this.setData({ savedTip: '' }), 1600);
     try { sfx.saved(); } catch (e) { /* 静默：保存反馈不能被音频异常吞掉 */ }
     this.toast(auth.isLogged() ? '已保存，正在同步' : '已保存');
   },

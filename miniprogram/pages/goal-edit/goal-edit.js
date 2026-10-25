@@ -19,6 +19,9 @@ Page({
     id: '',
     isNew: true,
     form: { name: '', unit: '', total: '', deadline: '', color: COLORS[0], obstacle: '', plan: '' },
+    /** date picker 可选下限：新建=今天，编辑=目标创建日。绝不绑 form.deadline ——
+        那会把「只能选今天以后」变成「只能选当前值以后」，截止日就没法提前了 */
+    minDate: '',
     colors: COLORS.map((c) => ({ hex: c, css: U.gcolor(c) })),
     errors: {},
     preview: null,
@@ -37,7 +40,7 @@ Page({
     if (!id) {
       // 默认截止日给 60 天后：太短会让人直接放弃，太长会让目标失去紧迫感
       const deadline = U.addDays(U.todayStr(), 60);
-      this.setData({ form: Object.assign({}, this.data.form, { deadline: deadline }) });
+      this.setData({ form: Object.assign({}, this.data.form, { deadline: deadline }), minDate: U.todayStr() });
       this.updatePreview();
       return;
     }
@@ -50,6 +53,7 @@ Page({
     this.setData({
       id: id,
       isNew: false,
+      minDate: g.createdAt || U.todayStr(),
       form: {
         name: g.name,
         unit: g.unit,

@@ -145,8 +145,6 @@ Page({
         msg: sync.phase === 'error' ? (sync.message || '同步失败，稍后会自动重试') : ''
       },
       themeOn: this.themePref() === 'dark',
-      theme: this.themePref(),
-      themeText: this.themeText(this.themePref()),
       haptic: this.hapticPref(),
       soundOn: sfx.soundEnabled(),
       volume: sfx.volumePct()
@@ -200,6 +198,8 @@ Page({
           store.onLoggedOut();
           this.render();
           this.toast('已退出登录');
+          /* 强制登录闸门要求登出即回登录页，不能等下一次切 tab 才被 onShow 兜走 */
+          setTimeout(() => wx.reLaunch({ url: '/pages/login/login' }), 600);
         });
       }
     });
@@ -273,6 +273,7 @@ Page({
         this.setData({ busy: false, sheet: '' });
         this.render();
         this.toast('账号已注销');
+        setTimeout(() => wx.reLaunch({ url: '/pages/login/login' }), 600);
       })
       .catch((e) => {
         this.setData({ busy: false, formError: (e && e.apiMessage) || '注销失败，请稍后重试' });
@@ -374,8 +375,10 @@ Page({
 
   /* ---------- 音效 ---------- */
 
-  toggleSound(e) {
-    const next = !!(e && e.detail ? e.detail.value : !this.data.soundOn);
+  toggleSound() {
+    /* 绑定点是自绘开关那行 view 的 tap（detail 只有坐标，没有 value），
+       不能读 e.detail.value —— 那样恒为 undefined，开关会被钉死在「关」 */
+    const next = !this.data.soundOn;
     store.updateSettings({ sound: next });
     this.setData({ soundOn: next });
     // 打开时立刻响一下：用户能马上确认「就是这个音」。

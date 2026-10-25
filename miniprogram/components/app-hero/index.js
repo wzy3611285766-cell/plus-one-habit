@@ -31,6 +31,7 @@ Component({
 
   lifetimes: {
     attached() {
+      this._alive = true;
       let nav = null;
       try {
         const app = getApp();
@@ -47,7 +48,8 @@ Component({
         const boot = getApp().globalData.bootPromise;
         if (boot && typeof boot.then === 'function') {
           this.setData({ booting: true });
-          const done = () => { this.setData({ booting: false }); };
+          // reLaunch 可能在 bootPromise 落定前拆掉组件：detached 之后不再 setData
+          const done = () => { if (this._alive) this.setData({ booting: false }); };
           boot.then(done, done);
         }
       } catch (e2) { /* 忽略 */ }
@@ -57,6 +59,7 @@ Component({
     },
 
     detached() {
+      this._alive = false;
       if (this.unsub) this.unsub();
     }
   },
