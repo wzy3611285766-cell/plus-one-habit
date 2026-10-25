@@ -123,6 +123,8 @@
   width:var(--size);
   height:var(--size);
   border-radius:50%;
+  /* 不支持 conic-gradient 的旧内核：整环退为轨道色（信息降级，不破版） */
+  background:var(--track);
   /* --p 是 0~100 的完成率；从 12 点顺时针铺 --p%，其余用轨道色 */
   background:conic-gradient(
     var(--gc,var(--brand-500)) calc(var(--p) * 1%),

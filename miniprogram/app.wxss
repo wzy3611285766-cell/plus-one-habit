@@ -619,6 +619,7 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 .tz-btn-amber::after{
   content:"";
   position:absolute;
+  left:0;top:0;right:0;bottom:0;  /* inset 的四边回退：旧内核不认简写，缺了会塌成零尺寸 */
   inset:0;
   border-radius:inherit;
   pointer-events:none;
@@ -771,7 +772,7 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 
 /* ---------- 玻璃遮罩层（弹层） ---------- */
 .mask{
-  position:fixed;inset:0;z-index:900;
+  position:fixed;left:0;top:0;right:0;bottom:0;inset:0;z-index:900;
   background:var(--mask-bg);
   /* 虚化身后的页面：这是「弹出层」最便宜也最有效的一层玻璃语言。
      不支持 backdrop-filter 时只是没有虚化，遮罩底色仍在，不会破版 */

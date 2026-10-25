@@ -377,7 +377,7 @@
 }
 .mp-fill.just-hit::before{
   content:"";
-  position:absolute;inset:0;
+  position:absolute;left:0;top:0;right:0;bottom:0;inset:0;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
   background-size:200% 100%;
   background-position:-120% 0;
@@ -579,7 +579,7 @@
 }
 
 .p1-fx{
-  position:fixed;inset:0;z-index:9000;pointer-events:none;
+  position:fixed;left:0;top:0;right:0;bottom:0;inset:0;z-index:9000;pointer-events:none;
 }
 .p1-ring{
   position:fixed;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;
@@ -621,7 +621,7 @@
 /* =====================================================================
    达成彩带
    ===================================================================== */
-.confetti-layer{ position:fixed;inset:0;z-index:8999;pointer-events:none; }
+.confetti-layer{ position:fixed;left:0;top:0;right:0;bottom:0;inset:0;z-index:8999;pointer-events:none; }
 .confetti-glow{
   position:fixed;left:0;right:0;top:0;height:38vh;pointer-events:none;
   background:radial-gradient(120% 100% at 50% 0%,rgba(124,92,255,.22),rgba(124,92,255,0) 70%);
@@ -727,6 +727,7 @@
    ===================================================================== */
 .goal-menu{
   position:fixed;
+  left:0;top:0;right:0;bottom:0;  /* inset 四边回退：旧内核缺了会让抽屉整层不可见 */
   inset:0;
   z-index:1200;
   display:flex;
@@ -735,6 +736,7 @@
 }
 .goal-menu-mask{
   position:absolute;
+  left:0;top:0;right:0;bottom:0;
   inset:0;
   background:var(--mask-bg);
   -webkit-backdrop-filter:blur(3px);

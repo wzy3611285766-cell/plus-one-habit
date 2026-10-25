@@ -76,6 +76,7 @@
         <view
           wx:if="{{card.logCount > 0}}"
           class="log-toggle {{expanded === card.gid ? 'is-open' : ''}}"
+          aria-role="button"
           data-gid="{{card.gid}}"
           bindtap="toggleLogs"
         >{{expanded === card.gid ? '收起记录' : '查看 ' + card.logCount + ' 天记录'}}</view>
@@ -90,6 +91,8 @@
             <text wx:if="{{lg.makeup}}" class="log-makeup">补</text>
             <view
               class="log-del {{confirmDel === lg.id ? 'is-confirm' : ''}}"
+              aria-role="button"
+              aria-label="删除这天的记录"
               data-id="{{lg.id}}"
               catchtap="deleteLog"
             >{{confirmDel === lg.id ? '确认删除' : '×'}}</view>
@@ -109,6 +112,8 @@
         wx:for="{{chart}}"
         wx:key="date"
         class="col {{item.isToday ? 'is-today' : ''}} {{picked === item.date ? 'is-picked' : ''}}"
+        aria-role="button"
+        aria-label="{{item.tipDate}}"
         data-date="{{item.date}}"
         bindtap="pickDay"
       >

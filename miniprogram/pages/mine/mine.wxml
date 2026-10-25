@@ -10,7 +10,7 @@
 
   <view class="card id-card">
     <view class="mine-list">
-      <view wx:if="{{logged}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="openNickname">
+      <view wx:if="{{logged}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="openNickname">
         <view class="mine-ico ico-user"></view>
         <view class="mine-body">
           <text class="mine-txt">{{user.nickname || '未设置昵称'}}</text>
@@ -19,7 +19,7 @@
         <view class="chev chev-right"></view>
       </view>
 
-      <view wx:else hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="goLogin">
+      <view wx:else hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="goLogin">
         <view class="mine-ico ico-user"></view>
         <view class="mine-body">
           <text class="mine-txt">未登录</text>
@@ -47,7 +47,7 @@
     </view>
 
     <view class="mine-list">
-      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="toggleSound">
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="toggleSound">
         <view class="mine-ico ico-sound"></view>
         <view class="mine-body">
           <text class="mine-txt">打卡音效</text>
@@ -76,7 +76,7 @@
         />
       </view>
 
-      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="toggleTheme">
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="toggleTheme">
         <view class="mine-ico ico-theme"></view>
         <view class="mine-body">
           <text class="mine-txt">深色模式</text>
@@ -85,7 +85,7 @@
         <view class="switch {{themeOn ? 'on' : 'off'}}"><view class="knob"></view></view>
       </view>
 
-      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="toggleHaptic">
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="toggleHaptic">
         <view class="mine-ico ico-vibe"></view>
         <view class="mine-body">
           <text class="mine-txt">打卡震动</text>
@@ -104,7 +104,7 @@
     </view>
 
     <view class="mine-list">
-      <view wx:if="{{!hasSample}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="loadSample">
+      <view wx:if="{{!hasSample}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="loadSample">
         <view class="mine-ico ico-download"></view>
         <view class="mine-body">
           <text class="mine-txt">载入示例目标</text>
@@ -112,7 +112,7 @@
         </view>
       </view>
 
-      <view wx:if="{{hasSample}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="clearSample">
+      <view wx:if="{{hasSample}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="clearSample">
         <view class="mine-ico ico-trash"></view>
         <view class="mine-body">
           <text class="mine-txt">移除示例目标</text>
@@ -120,7 +120,7 @@
         </view>
       </view>
 
-      <view wx:if="{{forked}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" bindtap="refork">
+      <view wx:if="{{forked}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="refork">
         <view class="mine-ico ico-refresh"></view>
         <view class="mine-body">
           <text class="mine-txt">重新载入分享的目标</text>
@@ -128,7 +128,7 @@
         </view>
       </view>
 
-      <view wx:if="{{logged}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn danger" bindtap="openDeleteAccount">
+      <view wx:if="{{logged}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn danger" aria-role="button" bindtap="openDeleteAccount">
         <view class="mine-ico ico-out"></view>
         <view class="mine-body">
           <text class="mine-txt">注销账号</text>

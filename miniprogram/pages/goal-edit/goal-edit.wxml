@@ -26,7 +26,7 @@
     <view class="field">
       <text class="field-label">截止日期</text>
       <picker mode="date" value="{{form.deadline}}" start="{{minDate}}" bindchange="onDateChange">
-        <view class="input picker-value {{errors.deadline ? 'is-error' : ''}}">{{form.deadline || '请选择'}}</view>
+        <view class="input picker-value {{errors.deadline ? 'is-error' : ''}}" aria-role="button" aria-label="选择截止日期">{{form.deadline || '请选择'}}</view>
       </picker>
       <view wx:if="{{errors.deadline}}" class="field-hint is-error">{{errors.deadline}}</view>
     </view>
@@ -41,6 +41,8 @@
           wx:key="hex"
           class="swatch {{form.color === item.hex ? 'is-on' : ''}}"
           style="--gc:{{item.css}}"
+          aria-role="button"
+          aria-label="配色"
           data-hex="{{item.hex}}"
           bindtap="pickColor"
         ></view>
@@ -69,7 +71,7 @@
 
   <!-- 删除：两段式确认，先展开再确认，避免误触 -->
   <view wx:if="{{!isNew}}" class="danger">
-    <view wx:if="{{!dangerOpen}}" class="danger-open" bindtap="toggleDanger">删除这个目标</view>
+    <view wx:if="{{!dangerOpen}}" class="danger-open" aria-role="button" bindtap="toggleDanger">删除这个目标</view>
     <block wx:else>
       <view class="danger-note">删除会连同它的全部打卡记录一起消失，无法恢复。</view>
       <view class="sheet-actions">
