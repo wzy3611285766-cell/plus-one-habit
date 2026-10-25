@@ -101,7 +101,7 @@
 
       <!-- 进度：凹槽 + 目标色填充 + 前沿白点（对应基准 .mini-progress） -->
       <view class="mini-progress">
-        <view class="mp-fill {{bumpGid === item.gid ? 'just-hit' : ''}}" style="width:{{item.pct}}%;background:{{item.color}}"></view>
+        <view class="mp-fill {{bumpGid === item.gid ? 'just-hit' : ''}}" style="width:{{item.pct + '%'}};background:{{item.color}}"></view>
       </view>
 
       <!-- 信息行：总量 / 截止 / 连续 / 建议 -->
@@ -129,7 +129,7 @@
 
         <view class="goal-action-side">
           <view class="cp-bar">
-            <view class="cp-fill" style="width:{{item.todayPct}}%;background:{{item.color}}"></view>
+            <view class="cp-fill" style="width:{{item.todayPct + '%'}};background:{{item.color}}"></view>
           </view>
           <view class="cp-text">
             今日 <text class="num">{{item.got}}</text> / {{item.quotaNum}} {{item.unit}}

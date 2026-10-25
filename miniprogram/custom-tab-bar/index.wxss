@@ -363,3 +363,6 @@
 @media (prefers-reduced-motion: reduce){
   .tab{ transition:none; }
 }
+
+/* hover-class 按压态（与 :active 同观感，但每次触摸必触发） */
+.tab.is-press{ transform:scale(.94);filter:brightness(1.06); }

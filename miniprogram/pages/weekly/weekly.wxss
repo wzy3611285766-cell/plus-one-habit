@@ -203,3 +203,6 @@
   transition:transform .18s ease-out;
 }
 .arc-toggle.is-open{ transform:rotate(-135deg); }
+
+/* hover-class 按压态 */
+.arc-row.is-press{ background:rgba(120,120,128,.16); }

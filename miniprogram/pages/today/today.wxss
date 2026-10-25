@@ -907,3 +907,8 @@
 }
 .fk-btn::after{border:none}
 .fk-btn:active{transform:scale(.96);filter:brightness(.96)}
+
+/* hover-class 按压态 */
+.add-goal.is-press{ background:rgba(120,120,128,.18); }
+.more-btn.is-press{ background:rgba(120,120,128,.18);color:var(--brand-600); }
+.tz-btn-ghost.is-press{ background:rgba(120,120,128,.16); }

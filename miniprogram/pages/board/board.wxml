@@ -123,7 +123,7 @@
         </view>
 
         <view class="col-track">
-          <view class="col-stack" style="height:{{item.pct}}%">
+          <view class="col-stack" style="height:{{item.pct + '%'}}">
             <view
               wx:for="{{item.segs}}"
               wx:for-item="seg"

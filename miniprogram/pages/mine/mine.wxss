@@ -369,3 +369,6 @@
   line-height:inherit;
 }
 .mine-btn-share::after{ border:none; }
+
+/* hover-class 按压态 */
+.mine-btn.is-press{ background:rgba(120,120,128,.16);box-shadow:none; }
