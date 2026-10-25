@@ -143,7 +143,6 @@
         <text class="legend-name">{{item.name}}</text>
       </view>
     </view>
-    <text class="chart-hint">每段代表一个目标；点一根柱子看当天明细</text>
   </view>
 
   <!-- ---------- 近 35 天热力 ---------- -->
@@ -167,8 +166,7 @@
       <view class="heat-cell l3"></view>
       <view class="heat-cell l4"></view>
       <text class="legend-k">多</text>
-    </view>
-    <text class="heat-note">颜色按当天打卡次数分档（不是时长）</text>
+    </view>  
   </view>
 
   <!-- ---------- 最近动态 ---------- -->

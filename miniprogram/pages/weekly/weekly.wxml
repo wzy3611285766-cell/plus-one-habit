@@ -27,7 +27,7 @@
       </view>
 
       <view class="week-summary-row week-total">
-        <text class="wsr-total-k">合计打卡</text>
+        <text class="wsr-total-k">PLus one</text>
         <view class="vals">
           <text class="wsr-strong num">{{totals.count}}</text> 次
           <view wx:if="{{totals.prevCount > 0}}" class="week-compare">上周 {{totals.prevCount}} 次</view>

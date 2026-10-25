@@ -26,9 +26,6 @@
       </view>
     </view>
     <view class="field-hint">{{cloudError}}</view>
-    <view class="sheet-actions">
-      <button class="btn btn-ghost" bindtap="goGuest">先返回打卡</button>
-    </view>
   </view>
 
   <view wx:else class="card">
@@ -43,9 +40,6 @@
       <text>{{busy ? busyText : '微信一键登录'}}</text>
     </button>
 
-    <view class="login-foot">
-      <text class="link" bindtap="goGuest">先不登录</text>
-    </view>
   </view>
 
 </view>

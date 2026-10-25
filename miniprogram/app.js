@@ -159,10 +159,29 @@ App({
       }
       store.onLoggedOut();
       return r;
+    }).then((r) => {
+      this.globalData.bootResult = r;
+      this.ensureLoginGate();
+      return r;
     }).catch(() => {
       this.globalData.bootResult = { ok: false, reason: 'error' };
+      this.ensureLoginGate();
       return this.globalData.bootResult;
     });
+  },
+
+  /**
+   * 登录闸门（2026-10-25 用户决策：进入小程序必须先微信一键登录）。
+   * 云开发可用而未登录时，任何 tab 页都会回到登录页；
+   * 只在会话恢复有结论（bootResult 已定）后判定，不和 restore 抢跑。
+   * 未配置 ENV_ID 的离线模式不设闸 —— 那时登录不可用，打卡仍需可用。
+   */
+  ensureLoginGate() {
+    const g = this.globalData;
+    if (!g.cloudReady) return;
+    if (!g.bootResult) return;
+    if (auth.isLogged()) return;
+    wx.reLaunch({ url: '/pages/login/login' });
   },
 
   /** 供页面在需要时手动重试启动流程 */

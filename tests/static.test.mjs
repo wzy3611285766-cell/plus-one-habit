@@ -867,4 +867,17 @@ test('我的页：列表行按压是中性灰（块级）', () => {
   assert(press.indexOf('rgba(0,122,255') < 0, '不应是品牌蓝');
 });
 
+test('登录闸门：进入必须先一键登录（用户 2026-10-25 决策）', () => {
+  const appJs = read(path.join(MP, 'app.js'));
+  const loginWxml = read(path.join(MP, 'pages', 'login', 'login.wxml'));
+  assert(appJs.indexOf('ensureLoginGate') >= 0 && appJs.indexOf("wx.reLaunch({ url: '/pages/login/login' })") >= 0,
+    'app.js 应有登录闸门');
+  ['today', 'board', 'weekly', 'mine'].forEach((p) => {
+    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    assert(js.indexOf('ensureLoginGate') >= 0, p + ' 的 onShow 应调用登录闸门');
+  });
+  assert(loginWxml.indexOf('先返回打卡') < 0 && loginWxml.indexOf('先不登录') < 0,
+    '登录页不应再有游客逃生门（闸门必须真的拦住）');
+});
+
 export const suite = '小程序静态检查';
