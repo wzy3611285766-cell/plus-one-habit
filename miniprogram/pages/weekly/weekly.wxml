@@ -5,9 +5,9 @@
   <!-- ---------- 卡片一：周切换 + 本周汇总 ---------- -->
   <view class="card week-card">
     <view class="week-nav">
-      <view class="btn btn-ghost week-btn" bindtap="prevWeek">上一周</view>
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-ghost week-btn" bindtap="prevWeek">上一周</view>
       <text class="week-label">{{range}}{{isCurrent ? '（本周）' : ''}}</text>
-      <view class="btn btn-ghost week-btn {{isCurrent ? 'is-off' : ''}}" bindtap="nextWeek">下一周</view>
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-ghost week-btn {{isCurrent ? 'is-off' : ''}}" bindtap="nextWeek">下一周</view>
     </view>
 
     <view wx:if="{{!summary.length}}" class="week-empty">这一周还没有打卡记录</view>
@@ -96,7 +96,7 @@
     </view>
 
     <view class="kpt-actions">
-      <button class="btn btn-primary" bindtap="save">保存复盘</button>
+      <button hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-primary" bindtap="save">保存复盘</button>
     </view>
   </view>
 
@@ -111,7 +111,7 @@
       </view>
     </view>
     <view wx:if="{{archiveOpen}}" class="arc-list">
-      <view wx:for="{{archive}}" wx:key="key" class="arc-row" data-off="{{item.off}}" bindtap="goArchive">
+      <view wx:for="{{archive}}" wx:key="key" hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="arc-row" data-off="{{item.off}}" bindtap="goArchive">
         <view class="arc-main">
           <text class="arc-week">{{item.label}}</text>
           <text class="arc-snippet">{{item.snippet}}</text>

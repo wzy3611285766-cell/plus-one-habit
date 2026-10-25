@@ -9,7 +9,7 @@
     <view
       wx:for="{{list}}"
       wx:key="key"
-      class="tab {{active === item.key ? 'on' : ''}}"
+      hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="tab {{active === item.key ? 'on' : ''}}"
       data-key="{{item.key}}"
       data-path="{{item.path}}"
       bindtap="onTap"

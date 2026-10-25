@@ -64,7 +64,7 @@
   </view>
 
   <view class="actions">
-    <button class="btn btn-primary" bindtap="save">{{isNew ? '创建目标' : '保存修改'}}</button>
+    <button hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-primary" bindtap="save">{{isNew ? '创建目标' : '保存修改'}}</button>
   </view>
 
   <!-- 删除：两段式确认，先展开再确认，避免误触 -->
@@ -73,8 +73,8 @@
     <block wx:else>
       <view class="danger-note">删除会连同它的全部打卡记录一起消失，无法恢复。</view>
       <view class="sheet-actions">
-        <button class="btn btn-ghost" bindtap="toggleDanger">取消</button>
-        <button class="btn btn-danger" bindtap="confirmDelete">确认删除</button>
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-ghost" bindtap="toggleDanger">取消</button>
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-danger" bindtap="confirmDelete">确认删除</button>
       </view>
     </block>
   </view>

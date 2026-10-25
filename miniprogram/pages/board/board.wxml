@@ -187,7 +187,7 @@
     <view class="empty-title">还没有可统计的数据</view>
     <view class="empty-desc">先去今日页新建一个目标，打卡几天后这里就会有节奏图。</view>
     <view class="empty-actions">
-      <button class="btn btn-primary" bindtap="goToday">去今日打卡</button>
+      <button hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-primary" bindtap="goToday">去今日打卡</button>
     </view>
   </view>
 </view>

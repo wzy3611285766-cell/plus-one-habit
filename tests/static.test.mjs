@@ -869,7 +869,7 @@ test('我的页：列表行按压是中性灰（块级）', () => {
 
 test('今日页顶栏 + 快捷键：只在有目标时显示（空状态用大按钮，不孤儿挂 +）', () => {
   const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
-  assert(/<view wx:if="{{hasGoals}}" class="add-goal"/.test(wxml),
+  assert(/wx:if="\{\{hasGoals\}\}"[^>]*class="add-goal"/.test(wxml),
     '顶栏 + 快捷键应挂在 hasGoals 上');
 });
 
