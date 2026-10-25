@@ -5,7 +5,7 @@
   "miniprogramRoot": "miniprogram/",
   "cloudfunctionRoot": "cloudfunctions/",
   "compileType": "miniprogram",
-  "libVersion": "3.5.5",
+  "libVersion": "3.17.5",
   "setting": {
     "urlCheck": true,
     "es6": true,
