@@ -109,6 +109,31 @@ Page({
 
     const note = st.notes[r.start] && !st.notes[r.start].deleted ? st.notes[r.start] : null;
 
+    /* 往期复盘存档：写过内容的周，新 → 旧；摘录取第一个非空栏。
+       用户翻旧复盘的真实动机是「回想当时写了什么」，列表直接给摘录（备忘录习惯），
+       比一周一周盲翻、也比纯日期点标更省一跳。 */
+    const mon0 = U.mondayOf(U.todayStr());
+    const archive = Object.keys(st.notes)
+      .filter((k) => {
+        const n = st.notes[k];
+        return n && !n.deleted && (n.keep || n.problem || n.try || n.next);
+      })
+      .sort(function (a, b) { return a < b ? 1 : -1; })
+      .map((k) => {
+        const n = st.notes[k];
+        let snippet = '';
+        for (let i = 0; i < FIELDS.length; i++) {
+          const v = String(n[FIELDS[i]] || '').trim();
+          if (v) { snippet = LABELS[FIELDS[i]] + '：' + v; break; }
+        }
+        return {
+          key: k,
+          off: Math.round(U.diffDays(mon0, k) / 7),
+          label: U.fmtShort(k) + ' - ' + U.fmtShort(U.addDays(k, 6)),
+          snippet: snippet.slice(0, 24)
+        };
+      });
+
     const patch = {
       themeClass: prefs.themeClassOf(st.settings && st.settings.theme),
       logged: auth.isLogged(),
@@ -121,7 +146,8 @@ Page({
         count: weekCount,
         prevCount: prevCount
       },
-      hasNote: !!note
+      hasNote: !!note,
+      archive: archive
     };
     if (!keepForm) {
       patch.form = {
@@ -139,6 +165,15 @@ Page({
 
   prevWeek() {
     this.setData({ offset: this.data.offset - 1, savedTip: '' });
+    this.render();
+  },
+
+  /** 存档直达：按周一日期换算回 offset，跳到那一周 */
+  goArchive(e) {
+    const off = Number(e.currentTarget.dataset.off);
+    if (isNaN(off) || off === this.data.offset) return;
+    sfx.tap();
+    this.setData({ offset: off, savedTip: '' });
     this.render();
   },
 

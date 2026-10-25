@@ -610,6 +610,37 @@ await test('复盘会随打卡数据一起同步到云端', async () => {
   eq(core.payload.notes[mon].keep, '每天都打了卡');
 });
 
+await test('往期复盘存档：新→旧排列、带摘录、点按直达那一周', async () => {
+  const U18 = freshUtils();
+  await boot(U18);
+  const page = mount('weekly');
+  page.onLoad();
+  page.render();
+
+  const mon0 = U18.U.mondayOf(U18.U.todayStr());
+  const w1 = U18.U.addDays(mon0, -7);
+  const w2 = U18.U.addDays(mon0, -14);
+  U18.store.setNote(w1, { keep: '第一周保持', problem: '', try: '', next: '' });
+  U18.store.setNote(w2, { keep: '', problem: '第二周问题', try: '', next: '' });
+  page.render();
+
+  const arc = page.data.archive;
+  // 共享环境里可能还有别的周写过复盘，按 key 找本周插入的两条
+  const byKey = {};
+  arc.forEach((a) => { byKey[a.key] = a; });
+  assert(byKey[w1] && byKey[w2], '写过复盘的两周都应在存档里');
+  eq(byKey[w1].snippet, '保持：第一周保持', '摘录取第一个非空栏');
+  eq(byKey[w2].snippet, '问题：第二周问题');
+  const iW1 = arc.indexOf(byKey[w1]);
+  const iW2 = arc.indexOf(byKey[w2]);
+  assert(iW1 < iW2, '新 → 旧排序');
+
+  page.goArchive({ currentTarget: { dataset: { off: byKey[w2].off } } });
+  eq(page.data.offset, -2, '应跳到两周前');
+  eq(page.data.form.problem, '第二周问题', 'KPT 纸应载入那周的复盘');
+  if (typeof page.onUnload === 'function') page.onUnload();
+});
+
 /* ================================================================= */
 
 group('目标编辑');
@@ -680,8 +711,6 @@ await test('所有页面在未登录 + 空数据下渲染都不报错', async ()
 });
 
 /* ================================================================= */
-
-group('周报文本');
 
 group('注销账号');
 

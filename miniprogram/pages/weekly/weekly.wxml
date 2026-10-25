@@ -99,4 +99,21 @@
       <button class="btn btn-primary" bindtap="save">保存复盘</button>
     </view>
   </view>
+
+  <!-- ---------- 卡片三：往期复盘（写过才出现） ---------- -->
+  <view wx:if="{{archive.length}}" class="card">
+    <view class="card-title">
+      <view class="title-dot"></view>
+      <text>往期复盘</text>
+    </view>
+    <view class="arc-list">
+      <view wx:for="{{archive}}" wx:key="key" class="arc-row" data-off="{{item.off}}" bindtap="goArchive">
+        <view class="arc-main">
+          <text class="arc-week">{{item.label}}</text>
+          <text class="arc-snippet">{{item.snippet}}</text>
+        </view>
+        <view class="arc-chev"></view>
+      </view>
+    </view>
+  </view>
 </view>
