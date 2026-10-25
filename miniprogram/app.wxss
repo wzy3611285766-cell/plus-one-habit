@@ -613,7 +613,6 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
    app.wxss 对全部页面生效，一处写完，页面不再各配一份。 */
 .btn-primary::after,
 .btn-danger::after,
-.btn-green::after,
 .btn-wx::after,
 .fk-btn::after,
 .tz-btn-red::after,
@@ -629,7 +628,6 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 /* 半透染色玻璃上的白字要立得住：轻投影是 iOS 的做法 */
 .btn-primary,
 .btn-danger,
-.btn-green,
 .btn-wx,
 .fk-btn,
 .tz-btn-red,

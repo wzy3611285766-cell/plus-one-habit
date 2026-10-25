@@ -156,31 +156,6 @@
 }
 .kpt-actions .btn{ flex:1; }
 
-/* =====================================================================
-   生成的周报文本
-   ===================================================================== */
-.report-box{ margin-top:12px; }
-.report-preview{
-  padding:16px;
-  border-radius:var(--r-md);
-  background:var(--surface-inverse);
-  color:var(--text-on-inverse);
-  font-family:var(--font-mono,ui-monospace,Menlo,monospace);
-  font-size:var(--fs-sm);
-  line-height:1.85;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-.btn-green{
-  width:100%;
-  margin-top:10px;
-  background:var(--gb-tint-green);
-  color:#fff;
-  -webkit-backdrop-filter:var(--gb-blur-liq);
-  backdrop-filter:var(--gb-blur-liq);
-  box-shadow:var(--gb-tint-green-edge),var(--gb-drop);
- }
-
 .ph{ color:var(--text-4); }
 
 /* =====================================================================

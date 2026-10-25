@@ -96,13 +96,7 @@
     </view>
 
     <view class="kpt-actions">
-      <button class="btn btn-ghost" bindtap="save">保存复盘</button>
-      <button class="btn btn-primary" bindtap="generate">生成周报文本</button>
-    </view>
-
-    <view wx:if="{{hasReport}}" class="report-box">
-      <view class="report-preview">{{report}}</view>
-      <button class="btn btn-green" bindtap="copyReport">一键复制周报</button>
+      <button class="btn btn-primary" bindtap="save">保存复盘</button>
     </view>
   </view>
 </view>

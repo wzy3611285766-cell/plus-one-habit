@@ -3,7 +3,7 @@
  *
  * 复盘用 KPT 四栏（保持 / 问题 / 尝试 / 下一步），存进 notes[周一日期]。
  * 复盘内容和其他打卡数据走同一套同步：在手机上写完，回到电脑上就能看到。
- * 「生成周报文本」把这一周的客观数据 + 复盘拼成一段可以直接贴出去的文本。
+ * 复盘只保存在小程序里（随账号同步），不做导出文本。
  */
 
 const store = require('../../utils/store.js');
@@ -29,8 +29,6 @@ Page({
     form: { keep: '', problem: '', try: '', next: '' },
     hasNote: false,
     dirty: false,
-    report: '',
-    hasReport: false,
     savedTip: ''
   },
 
@@ -172,50 +170,6 @@ Page({
     this.setData({ dirty: false, hasNote: !empty, savedTip: '已保存' });
     setTimeout(() => this.setData({ savedTip: '' }), 1600);
     this.toast(auth.isLogged() ? '已保存，正在同步' : '已保存');
-  },
-
-  /* ================= 生成周报 ================= */
-
-  /**
-   * 生成周报文本，格式对齐基准 buildReport：
-   *   【学习周报】周一 - 周日
-   *   - 目标：+N 单位，打卡 X 天（累计 P%）｜上周 +N 单位
-   *   本周合计：N 次（上周 M 次）
-   *   保持 / 问题 / 尝试 / 下周预案
-   * 唯一的替换：基准的「本周总投入：N 分钟」→「本周合计：N 次」（没有用时数据）。
-   */
-  generate() {
-    const s = this.data.totals;
-    const lines = ['【学习周报】' + this.data.range];
-
-    this.data.summary.forEach((row) => {
-      let l = '- ' + row.name + '：+' + row.sum + ' ' + row.unit
-        + '，打卡 ' + row.days + ' 天（累计 ' + row.pct + '%）';
-      if (row.compare) l += '｜' + row.compare;
-      lines.push(l);
-    });
-
-    if (s.count > 0) {
-      let ml = '本周合计：' + s.count + ' 次';
-      if (s.prevCount > 0) ml += '（上周 ' + s.prevCount + ' 次）';
-      lines.push(ml);
-    }
-
-    FIELDS.forEach((k) => {
-      const v = String(this.data.form[k] || '').trim();
-      if (v) lines.push(LABELS[k] + '：' + v);
-    });
-
-    this.setData({ report: lines.join('\n'), hasReport: true });
-  },
-
-  copyReport() {
-    if (!this.data.report) return;
-    wx.setClipboardData({
-      data: this.data.report,
-      success: () => wx.showToast({ title: '已复制', icon: 'success' }),
-      fail: () => this.toast('复制失败，请长按选择文本')
-    });
   },
 
   goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },

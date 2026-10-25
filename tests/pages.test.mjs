@@ -595,12 +595,6 @@ await test('周报：四栏复盘可保存，并能生成可复制的周报文�
   const note = U16.store.get().notes[mon];
   assert(note && note.keep === '每天都打了卡', '复盘应写入 notes');
 
-  page.generate();
-  assert(page.data.hasReport, '应生成周报');
-  includes(page.data.report, '每天都在打了卡'.slice(0, 3), '周报应包含复盘内容');
-
-  page.copyReport();
-  assert(env.log.some((x) => x.type === 'copy'), '应触发复制');
 });
 
 await test('复盘会随打卡数据一起同步到云端', async () => {
@@ -688,33 +682,6 @@ await test('所有页面在未登录 + 空数据下渲染都不报错', async ()
 /* ================================================================= */
 
 group('周报文本');
-
-await test('生成的文本对齐基准格式：标题 / 每目标一行 / 四栏 / 合计', async () => {
-  const UW = freshUtils();
-  await boot(UW);
-
-  const t = UW.U.todayStr();
-  UW.store.addGoal({
-    id: 'w1', name: '背单词', unit: '个', total: 100,
-    deadline: UW.U.addDays(t, 10), createdAt: t, color: '#6366f1', sample: false
-  });
-  UW.store.addLog('w1', t, 5, null, false);
-
-  const page = mount('weekly');
-  page.onLoad();
-  page.render();
-
-  page.setData({ form: { keep: '保持A', problem: '问题B', try: '尝试C', next: '预案D' } });
-  page.generate();
-  const r = page.data.report;
-
-  includes(r, '【学习周报】', '应以基准的标题开头');
-  includes(r, '（累计', '每个目标行应带累计完成率');
-  includes(r, '保持：保持A', '四栏应写进文本');
-  includes(r, '下周预案：预案D');
-  assert(r.indexOf('分钟') < 0, '没有用时数据，文本里不该出现「分钟」');
-  assert(r.split('\n').length >= 3, '应有多行，不是一整段');
-});
 
 group('注销账号');
 

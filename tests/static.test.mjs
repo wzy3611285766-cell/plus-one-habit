@@ -760,7 +760,6 @@ test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键�
   assert(/\.btn-danger\{[\s\S]*?--gb-tint-red/.test(app), '危险键应是红染色玻璃');
   assert(/\.tz-btn-red\{[\s\S]*?--gb-tint-red/.test(today), '立即打卡应是红染色玻璃');
   assert(/\.tz-btn-ghost\{[\s\S]*?background:var\(--surface-sunken\)/.test(today), '调整计划应是 iOS 灰底次级键');
-  assert(/\.btn-green\{[\s\S]*?--gb-tint-green/.test(weekly), '一键复制应是绿染色玻璃');
   assert(/\.btn-wx\{[\s\S]*?backdrop-filter:var\(--gb-blur-liq\)/.test(login), '微信登录键应是绿染色玻璃（液态档）');
 
   // +1 是全站唯一发光体：紫色实底渐变，明确不参与玻璃系统
