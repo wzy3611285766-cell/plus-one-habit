@@ -161,7 +161,7 @@ Page({
       let total = 0;
       goals.forEach((g) => {
         const v = M.logsOn(st, g.id, d);
-        if (v > 0) segs.push({ key: g.id, name: g.name, unit: g.unit, color: U.gcolor(g.color), amount: v });
+        if (v > 0) segs.push({ key: g.id, name: g.name, unit: g.unit, color: U.gcolor(g.color || M.COLORS[0]), amount: v });
         total += v;
       });
       days.push({ date: d, label: String(Number(d.slice(8, 10))), isToday: d === today, total: total, segs: segs });
@@ -177,7 +177,10 @@ Page({
       tipRows: d.segs.slice(0, 4).map((s) => ({
         k: s.key, name: s.name, unit: s.unit, amount: U.trimNum(s.amount), color: s.color
       })),
-      segs: d.segs.map((s) => ({ key: s.key, color: s.color, pct: Math.round(s.amount / chartMax * 100) }))
+      /* 段高不再用百分比：柱身已按 total/chartMax 定高，段内用 flex-grow 按
+         数量比例分配即可精确填满 —— 嵌套百分比（段% × 柱%）会被二次缩放，
+         取整误差还会让最高那根溢出裁切或填不满（线上柱子半截的根因）。 */
+      segs: d.segs.map((s) => ({ key: s.key, color: s.color, amount: s.amount }))
     }));
 
     /* 图例：只列近 14 天真的出现过的目标（基准 usedGoals 的口径） */

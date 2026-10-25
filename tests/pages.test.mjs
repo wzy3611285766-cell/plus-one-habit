@@ -519,6 +519,14 @@ await test('看板正确汇总并生成 14 天柱状数据', async () => {
   assert(cards[0].etaText && cards[0].etaText.length > 0, '每个目标都应有预计完成说明');
   assert(cards[0].pct >= 0 && cards[0].pct <= 100, '完成率应在 0~100');
   assert(page.data.legend.length >= 1, '近 14 天有记录的目标应进图例');
+
+  // 柱状段：flex-grow 按 amount 分配，颜色必须有兜底（透明段 = 柱子「半截白」）
+  page.data.chart.forEach((c) => {
+    c.segs.forEach((sg) => {
+      assert(sg.amount > 0, '段必须有正数量');
+      assert(sg.color && sg.color.indexOf('undefined') < 0, '段颜色不得为空/undefined');
+    });
+  });
 });
 
 await test('看板：展开记录后能删掉一天（两段式确认，天行整删）', async () => {

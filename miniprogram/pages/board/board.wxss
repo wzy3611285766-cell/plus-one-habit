@@ -306,7 +306,9 @@
 .col.is-today .col-stack{ box-shadow:0 0 0 2rpx var(--brand-200); }
 .col.is-picked .col-stack{ box-shadow:0 0 0 3rpx var(--brand-300); }
 .seg{
-  width:100%;min-height:2px;
+  width:100%;
+  flex:0 1 0;              /* 高度由 flex-grow 按当天各目标数量比例分配，精确填满柱身 */
+  min-height:2px;
   background:var(--gc,var(--brand-500));
   border-top:1px solid var(--surface);
 }

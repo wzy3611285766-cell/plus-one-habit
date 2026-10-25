@@ -129,7 +129,7 @@
               wx:for-item="seg"
               wx:key="key"
               class="seg"
-              style="--gc:{{seg.color}};height:{{seg.pct}}%"
+              style="--gc:{{seg.color}};flex-grow:{{seg.amount}}"
             ></view>
           </view>
         </view>
