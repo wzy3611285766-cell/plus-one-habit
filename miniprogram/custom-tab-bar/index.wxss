@@ -365,4 +365,9 @@
 }
 
 /* hover-class 按压态（与 :active 同观感，但每次触摸必触发） */
-.tab.is-press{ transform:scale(.94);filter:brightness(1.06); }
+.tab.is-press{ transform:scale(.94);filter:brightness(1.06);animation:tabPop .24s ease-out; }
+@keyframes tabPop{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(.945); }
+  100%{ transform:scale(1); }
+}

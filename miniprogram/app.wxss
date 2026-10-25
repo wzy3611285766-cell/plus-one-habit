@@ -840,4 +840,11 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
    模拟器与真机都逐次必触发。0ms 进入、120ms 回弹。2026-10-26 重补：
    上一笔提交时本规则被并行会话回滚，导致按压态整体失效。
    ===================================================================== */
-.is-press{ transform:scale(.94);opacity:.82; }
+/* 短按也能看到完整「按下弹起」：类一挂就播完整弹跳（与触摸时长无关），
+   动画结束后长按者停在 scale(.94) 的持续按压态，松手走过渡弹回 */
+.is-press{ transform:scale(.94);opacity:.82;animation:pressPop .24s ease-out; }
+@keyframes pressPop{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(.945); }
+  100%{ transform:scale(1); }
+}

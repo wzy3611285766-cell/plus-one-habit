@@ -35,7 +35,7 @@
       <text class="banner-text">{{error}}</text>
     </view>
 
-    <button hover-class="is-press" hover-start-time="0" hover-stay-time="120" class="btn btn-wx" disabled="{{busy}}" bindtap="doLogin">
+    <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-wx" disabled="{{busy}}" bindtap="doLogin">
       <view class="wx-mark"></view>
       <text>{{busy ? busyText : '微信一键登录'}}</text>
     </button>
