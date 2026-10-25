@@ -78,6 +78,25 @@ Page({
     if (this.unsub) this.unsub();
     if (this.unsubAuth) this.unsubAuth();
     if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.setTabBarVisible(true);
+  },
+
+  onHide() {
+    // 弹层开着时若用户点底栏切走了（底栏可能浮在遮罩之上），
+    // 回来时不应还挂着弹层，tabBar 也要恢复
+    if (this.data.sheet) this.setData({ sheet: '' });
+    this.setTabBarVisible(true);
+  },
+
+  /**
+   * 弹层期间隐藏自定义 tabBar：真机上它的渲染层级不完全受页面 z-index 控制，
+   * 压住弹层底部确认按钮是已知问题；官方 hide/showTabBar 跨机型稳定。
+   */
+  setTabBarVisible(visible) {
+    try {
+      const fn = visible ? wx.showTabBar : wx.hideTabBar;
+      if (typeof fn === 'function') fn({ animated: false });
+    } catch (e) { /* 非 tab 页 / 重复隐藏等场景静默 */ }
   },
 
   /* ================= 渲染 ================= */
@@ -200,6 +219,7 @@ Page({
 
   openNickname() {
     if (!this.data.logged) { this.goLogin(); return; }
+    this.setTabBarVisible(false);
     this.setData({
       sheet: 'nickname',
       formError: '',
@@ -212,7 +232,7 @@ Page({
     if (!v) { this.setData({ formError: '昵称不能为空' }); return; }
     this.setData({ busy: true, formError: '' });
     auth.updateProfile({ nickname: v })
-      .then(() => { this.setData({ busy: false, sheet: '' }); this.render(); this.toast('已更新'); })
+      .then(() => { this.setTabBarVisible(true); this.setData({ busy: false, sheet: '' }); this.render(); this.toast('已更新'); })
       .catch((e) => { this.setData({ busy: false, formError: (e && e.apiMessage) || '更新失败' }); });
   },
 
@@ -224,6 +244,7 @@ Page({
 
   openDeleteAccount() {
     if (!this.data.logged) { this.goLogin(); return; }
+    this.setTabBarVisible(false);
     this.setData({
       sheet: 'deleteAccount',
       formError: '',
@@ -243,6 +264,7 @@ Page({
         // 云端已经删干净了，本机这两份也不该留着
         store.clearLocalOnly();
         store.onLoggedOut();
+        this.setTabBarVisible(true);
         this.setData({ busy: false, sheet: '' });
         this.render();
         this.toast('账号已注销');
@@ -392,7 +414,11 @@ Page({
     this.setData(patch);
   },
 
-  closeSheet() { if (!this.data.busy) this.setData({ sheet: '' }); },
+  closeSheet() {
+    if (this.data.busy) return;
+    this.setData({ sheet: '' });
+    this.setTabBarVisible(true);
+  },
   noop() { },
 
   /** tabBar 是独立组件，外观变了要主动通知它一次 */

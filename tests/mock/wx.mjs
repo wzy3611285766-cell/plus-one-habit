@@ -70,6 +70,8 @@ export function installWxEnv(opts) {
     redirectTo: (arg) => { state.log.push({ type: 'redirectTo', url: arg && arg.url }); },
     switchTab: (arg) => { state.log.push({ type: 'switchTab', url: arg && arg.url }); },
     navigateBack: () => { state.log.push({ type: 'navigateBack' }); },
+    hideTabBar: (arg) => { state.log.push({ type: 'hideTabBar' }); if (arg && arg.success) arg.success(); },
+    showTabBar: (arg) => { state.log.push({ type: 'showTabBar' }); if (arg && arg.success) arg.success(); },
     stopPullDownRefresh: () => { },
     vibrateShort: (arg) => { state.log.push({ type: 'vibrate' }); if (arg && arg.fail) { /* 不调用 fail，模拟支持震动 */ } },
     setNavigationBarColor: () => { },
