@@ -11,6 +11,7 @@ const CFG = require('./utils/config.js');
 const store = require('./utils/store.js');
 const auth = require('./utils/auth.js');
 const prefs = require('./utils/prefs.js');
+const sfx = require('./utils/sfx.js');
 
 App({
   globalData: {
@@ -34,6 +35,10 @@ App({
     this.handleShareEntry(options);
     this.applyTheme();
     this.globalData.bootPromise = this.restoreSession();
+    // 悄悄预热音效引擎（不发声）：等首屏渲染稳定后再做，不跟启动抢主线程
+    setTimeout(() => {
+      try { sfx.preload(); } catch (e) { /* 预热失败不影响任何功能 */ }
+    }, 500);
   },
 
   /**

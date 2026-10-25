@@ -279,7 +279,7 @@ Page({
     const hour = now.getHours();
     const greeting = hour < 6 ? '夜深了' : (hour < 11 ? '早上好' : (hour < 14 ? '中午好' : (hour < 18 ? '下午好' : '晚上好')));
 
-    this.setData({
+    const patch = {
       themeClass: prefs.themeClassOf(st.settings && st.settings.theme),
       logged: logged,
       user: auth.user(),
@@ -303,7 +303,13 @@ Page({
 
       // 分叉欢迎横幅：记录里「还没打过招呼」才显示，一辈子一次
       forkBanner: store.forkWelcomePending()
-    });
+    };
+    // store 一次动作先后发 state 与 sync 两个事件，内容完全相同；
+    // 连击时这就是双倍整页渲染 —— 相同签名直接跳过（首个 render 必发）。
+    const sig = JSON.stringify(patch);
+    if (sig === this._lastRenderSig) return;
+    this._lastRenderSig = sig;
+    this.setData(patch);
     /* 只有当天建议量的快照真的被写入了才落盘。
        这一页会因为同步事件被反复重绘，无条件 save 等于每次同步都整份写一次本地存储。 */
     if (ov.snapshotsWritten) store.save();

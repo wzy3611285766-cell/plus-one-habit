@@ -148,6 +148,16 @@ function applyGain(ctx, pct) {
   }
 }
 
+/**
+ * 预热：提前创建 WebAudio 上下文与主增益，但不发声。
+ * app 启动时静默调用一次，首个 +1 就不用付「上下文创建 + 首节点连图」的成本。
+ */
+function preload() {
+  const ctx = audioCtx();
+  if (ctx) masterOf(ctx);
+  return !!ctx;
+}
+
 /** iOS 要求在手势里解锁音频上下文；每次发声前调一次没有副作用 */
 function unlock() {
   const ctx = audioCtx();
@@ -405,6 +415,7 @@ module.exports = {
   undo: undo,
   todayDone: todayDone,
   preview: preview,
+  preload: preload,
   destroy: destroy,
 
   /* 纯函数（测试与 UI 用） */

@@ -132,7 +132,9 @@
     0 3px 8px rgba(15,23,42,.12);
   overflow:hidden;
   /* elasticity：回弹用带过冲的曲线，0.15 的量感是「有点弹，但不晃」 */
-  transition:color .18s ease-out,background .18s ease-out,box-shadow .18s ease-out,
+  /* box-shadow 不参与过渡：阴影逐帧重绘磨砂区最拖帧率，按压时让它立即切换；
+     只留 transform（合成器）做弹性动画 */
+  transition:color .18s ease-out,background .18s ease-out,
     transform .26s cubic-bezier(.34,1.56,.64,1),filter .14s ease-out;
 }
 

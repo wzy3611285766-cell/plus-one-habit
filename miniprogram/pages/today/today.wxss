@@ -552,8 +552,9 @@
   animation:p1Charged .7s cubic-bezier(.45,0,.55,1) infinite;
 }
 @keyframes p1Charged{
-  0%,100%{ filter:brightness(1); }
-  50%{ filter:brightness(1.10); }
+  /* opacity 走合成器；filter 会让大按钮的六层阴影每帧整体重绘，连击时掉帧 */
+  0%,100%{ opacity:1; }
+  50%{ opacity:.86; }
 }
 
 .p1-pop-a{ animation:p1PopA .42s cubic-bezier(.34,1.56,.64,1); }

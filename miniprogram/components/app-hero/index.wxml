@@ -11,6 +11,10 @@
     style="height:{{statusBar + 40}}px;padding-top:{{statusBar + 6}}px;padding-right:{{rightPad}}px;box-sizing:border-box"
   >
     <text class="hero-title">{{title}}</text>
+    <!-- 启动加载点：会话恢复/首次对齐期间显示，落定即隐 -->
+    <view wx:if="{{booting}}" class="boot-dots">
+      <view class="d d1"></view><view class="d d2"></view><view class="d d3"></view>
+    </view>
   </view>
 
   <view wx:if="{{chips.length}}" class="hero-chips">
