@@ -630,7 +630,7 @@ test('我的页保持 iOS 分组列表形态', () => {
     .forEach((k) => { assert(css.indexOf('.' + k) >= 0, '样式缺少 .' + k); });
 
   assert(/\.mine-btn\{[\s\S]*?border-bottom:\.5px solid var\(--line\)/.test(css), '行分隔应是 .5px 发丝线');
-  assert(/\.mine-btn:active\{[\s\S]*?inset 0 \.5px 0 rgba\(255,255,255,\.55\)/.test(css), '按下时应有玻璃高光');
+  assert(/\.mine-btn:active\{[\s\S]*?rgba\(120,120,128,\.16\)/.test(css), '列表行按下应是 iOS 中性灰高亮');
   assert(css.indexOf('.mine-btn.danger') >= 0, '危险行有独立配色');
 
   /* 账号相关的入口只留「登录」和「注销账号」：
