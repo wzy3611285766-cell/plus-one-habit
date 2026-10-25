@@ -85,8 +85,8 @@
   font-size:var(--fs-body);
   font-weight:700;
   letter-spacing:var(--ls-snap);
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
   box-shadow:inset 0 .5px 0 rgba(255,255,255,.42),0 0 0 .5px rgba(4,140,68,.42),var(--gb-drop);
   transition:transform .12s ease-out, filter .15s;
 }

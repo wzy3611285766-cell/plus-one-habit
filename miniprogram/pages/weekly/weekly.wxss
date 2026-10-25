@@ -176,8 +176,8 @@
   margin-top:10px;
   background:var(--gb-tint-green);
   color:#fff;
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
   box-shadow:var(--gb-tint-green-edge),var(--gb-drop);
  }
 

@@ -239,14 +239,14 @@
 }
 .tz-btn-red{
   background:var(--gb-tint-red);color:#fff;
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
   box-shadow:var(--gb-tint-red-edge),var(--gb-drop);
  }
 .tz-btn-amber{
   background:var(--gb-tint-amber);color:#fff;flex:none;
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
   box-shadow:var(--gb-tint-amber-edge),var(--gb-drop);
  }
 .tz-btn-ghost{
@@ -899,8 +899,8 @@
   border-radius:var(--r-pill);border:none;
   background:var(--gb-tint-brand);color:#fff;
   font-size:var(--fs-nano);font-weight:600;line-height:1;
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
   box-shadow:var(--gb-tint-brand-hi),var(--gb-tint-brand-edge),var(--gb-drop);
   transition:filter .18s ease,transform .16s ease;
 }
