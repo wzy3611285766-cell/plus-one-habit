@@ -956,4 +956,25 @@ await test('我的页：退出登录后直接回登录页（不等下次切 tab 
   eq(relaunches[relaunches.length - 1].url, '/pages/login/login');
 });
 
+await test('看板入场喷涌：圆环先归零再扫回真实值，柱子挂喷涌类', async () => {
+  env.storage.clear();
+  const U26 = freshUtils();
+  await boot(U26);
+  const t = U26.U.todayStr();
+  U26.store.addGoal({ id: 'fx-1', name: '动效目标', unit: '个', total: 10, deadline: U26.U.addDays(t, 30), createdAt: t, color: '#6366f1', sample: false });
+  U26.store.addLog('fx-1', t, 4, null, false);
+
+  const page = mount('board');
+  page.onLoad();
+  page.render();
+  eq(page.data.sections[0].cards[0].pct, 40, '渲染先是真实完成率');
+
+  page.onShow();
+  eq(page.data.sections[0].cards[0].pct, 0, '动效第一拍：圆环归零等待扫描');
+  await new Promise((r) => setTimeout(r, 900));   // 40ms 起跑 + 14 步 × 36ms，整段在本用例内消化
+  eq(page.data.fxOn, true, '柱子的喷涌类已挂上');
+  eq(page.data.sections[0].cards[0].pct, 40, '扫描结束回到真实完成率');
+  if (typeof page.onUnload === 'function') page.onUnload();
+});
+
 export const suite = '页面集成';

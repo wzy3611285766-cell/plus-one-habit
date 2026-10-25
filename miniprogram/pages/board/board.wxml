@@ -128,7 +128,7 @@
         </view>
 
         <view class="col-track">
-          <view class="col-stack" style="height:{{item.pct + '%'}}">
+          <view class="col-stack {{fxOn ? 'is-gush' : ''}}" style="height:{{item.pct + '%'}};animation-delay:{{index * 25}}ms">
             <view
               wx:for="{{item.segs}}"
               wx:for-item="seg"

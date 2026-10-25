@@ -46,7 +46,9 @@ Page({
     /** 当前展开记录的目标；空串表示都收起 */
     expanded: '',
     /** 正在等待二次确认删除的记录 id */
-    confirmDel: ''
+    confirmDel: '',
+    /** 入场喷涌开关：挂上后柱子播 CSS 喷涌动画，圆环由 JS 分步扫描 */
+    fxOn: false
   },
 
   /** 转发卡片带目标模板：同学点开即可得到一份自己的副本（见 utils/fork.js） */
@@ -65,11 +67,60 @@ Page({
     if (gate && typeof gate.ensureLoginGate === 'function') gate.ensureLoginGate();
     prefs.setStatusBarLight(true);
     this.render();
+    this.playEnterFx();
+  },
+
+  /* ================= 入场喷涌 =================
+     切到看板时图表从无到有「喷涌」成形：
+       柱子 —— fxOn 挂 is-gush 类，CSS scaleY 从地面依次弹起（每列错峰 25ms）；
+       圆环 —— conic-gradient 的 --p 无法做 CSS 过渡，用 14 步 easeOut 扫到
+               目标值，中心的百分比数字跟着一起数上来。
+     两拍式重启：先摘类并把圆环归零，下一拍再挂类起跑 —— 没有这个间隔，
+     上一轮还挂在节点上的动画类不会被重新触发。 */
+  playEnterFx() {
+    if (!this.data.sections.length) return;
+    this.stopEnterFx();
+    this._fxTargets = this.data.sections.map((sec) => sec.cards.map((c) => c.pct));
+    this.setData({
+      fxOn: false,
+      sections: this.data.sections.map((sec) => Object.assign({}, sec, {
+        cards: sec.cards.map((c) => Object.assign({}, c, { pct: 0 }))
+      }))
+    });
+    this.fxDelayTimer = setTimeout(() => {
+      this.setData({ fxOn: true });
+      const steps = 14;
+      let i = 0;
+      this.pctTimer = setInterval(() => {
+        i++;
+        const eased = 1 - Math.pow(1 - i / steps, 3);
+        const targets = this._fxTargets;
+        this.setData({
+          sections: this.data.sections.map((sec, si) => Object.assign({}, sec, {
+            cards: sec.cards.map((c, ci) => Object.assign({}, c, {
+              pct: Math.round((targets[si][ci] || 0) * eased)
+            }))
+          }))
+        });
+        if (i >= steps) { clearInterval(this.pctTimer); this.pctTimer = null; }
+      }, 36);
+    }, 40);
+  },
+
+  stopEnterFx() {
+    if (this.pctTimer) { clearInterval(this.pctTimer); this.pctTimer = null; }
+    if (this.fxDelayTimer) { clearTimeout(this.fxDelayTimer); this.fxDelayTimer = null; }
   },
 
   onUnload() {
     if (this.unsub) this.unsub();
     if (this.confirmTimer) clearTimeout(this.confirmTimer);
+    this.stopEnterFx();
+  },
+
+  /* 切走时收掉动效定时器：真实值由下一次 onShow 的 render() 恢复 */
+  onHide() {
+    this.stopEnterFx();
   },
 
   render() {
