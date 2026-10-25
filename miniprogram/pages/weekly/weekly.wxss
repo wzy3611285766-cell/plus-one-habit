@@ -53,7 +53,7 @@
   align-items:flex-start;
   justify-content:space-between;
   gap:12px;
-  padding:10px 0;
+  padding:8px 0;
   border-bottom:1px solid var(--line-soft);
   font-size:var(--fs-body);
 }
@@ -103,7 +103,7 @@
 
 .week-total{
   margin-top:4px;
-  padding-top:12px;
+  padding-top:10px;
   border-top:1px solid var(--line);
   border-bottom:none;
 }
@@ -119,10 +119,10 @@
   background:#f59e0b;
 }
 
-.kpt-row{ margin-bottom:14px; }
+.kpt-row{ margin-bottom:10px; }
 .kpt-label{
   display:block;
-  margin-bottom:6px;
+  margin-bottom:4px;
   font-size:var(--fs-sm);
   font-weight:600;
   color:var(--text-2);
@@ -135,7 +135,7 @@
 /* 只有下边线：像在纸上写，而不是在表单里填 */
 .kpt-input{
   width:100%;
-  min-height:calc(44px);
+  min-height:calc(38px);
   padding:0 2px;
   border:none;
   border-bottom:2px solid var(--line-strong);
@@ -190,3 +190,16 @@
   border-right:1.6px solid var(--text-4);
   transform:rotate(45deg);
 }
+
+/* 往期复盘折叠头：标题行即开关，右侧「N 篇」+ 展开箭头 */
+.arc-head{ cursor:pointer; }
+.arc-meta{ margin-left:auto;display:flex;align-items:center;gap:6px; }
+.arc-count{ font-size:var(--fs-xs);font-weight:600;color:var(--text-3); }
+.arc-toggle{
+  width:8px;height:8px;
+  border-right:1.6px solid var(--text-3);
+  border-bottom:1.6px solid var(--text-3);
+  transform:rotate(45deg);
+  transition:transform .18s ease-out;
+}
+.arc-toggle.is-open{ transform:rotate(-135deg); }

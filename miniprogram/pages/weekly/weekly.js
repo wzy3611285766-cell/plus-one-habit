@@ -29,7 +29,9 @@ Page({
     form: { keep: '', problem: '', try: '', next: '' },
     hasNote: false,
     dirty: false,
-    savedTip: ''
+    savedTip: '',
+    /** 往期复盘默认收起：主任务是写本周，存档按需展开 */
+    archiveOpen: false,
   },
 
   /** 转发卡片带目标模板：同学点开即可得到一份自己的副本（见 utils/fork.js） */
@@ -166,6 +168,11 @@ Page({
   prevWeek() {
     this.setData({ offset: this.data.offset - 1, savedTip: '' });
     this.render();
+  },
+
+  toggleArchive() {
+    sfx.tap();
+    this.setData({ archiveOpen: !this.data.archiveOpen });
   },
 
   /** 存档直达：按周一日期换算回 offset，跳到那一周 */

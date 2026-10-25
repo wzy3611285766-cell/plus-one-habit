@@ -635,6 +635,10 @@ await test('往期复盘存档：新→旧排列、带摘录、点按直达那�
   const iW2 = arc.indexOf(byKey[w2]);
   assert(iW1 < iW2, '新 → 旧排序');
 
+  eq(page.data.archiveOpen, false, '存档默认收起');
+  page.toggleArchive();
+  eq(page.data.archiveOpen, true, '标题行可展开');
+
   page.goArchive({ currentTarget: { dataset: { off: byKey[w2].off } } });
   eq(page.data.offset, -2, '应跳到两周前');
   eq(page.data.form.problem, '第二周问题', 'KPT 纸应载入那周的复盘');
