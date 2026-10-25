@@ -33,7 +33,6 @@
         <view class="mine-ico ico-share"></view>
         <view class="mine-body">
           <text class="mine-txt">分享</text>
-          <text class="mine-sub">把我的目标复制一份给他，进度各记各的</text>
         </view>
         <view class="chev chev-right"></view>
       </button>
