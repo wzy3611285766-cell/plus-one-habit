@@ -473,7 +473,7 @@ await test('登录后展示昵称与同步状态', async () => {
   eq(page.data.logged, true);
   assert(page.data.user.id, '应展示账号 id');
   assert(page.data.user.hasWechat, '微信身份应标记为已绑定');
-  assert(page.data.stats.records >= 1, '应统计到打卡记录');
+  assert(U9.store.get().logs.some((l) => !l.deleted), '应统计到打卡记录');
   assert(['已同步', '同步中', '待同步'].indexOf(page.data.sync.text) >= 0,
     '同步状态应是中性词，实际：' + page.data.sync.text);
 });
@@ -509,7 +509,7 @@ await test('看板正确汇总并生成 14 天柱状数据', async () => {
   eq(page.data.hasData, true);
   eq(page.data.chart.length, 14, '近 14 天应有 14 根柱子');
 
-  const cards = page.data.activeCards.concat(page.data.doneCards);
+  const cards = page.data.sections.reduce((acc, s) => acc.concat(s.cards), []);
   assert(cards.length >= 2, '应统计到目标数');
   assert(page.data.sections.length >= 1, '应按进行中 / 已完成分区');
 
@@ -536,7 +536,7 @@ await test('看板：展开记录后能删掉一天（两段式确认，天行�
   page.onLoad();
   page.render();
 
-  const card = page.data.activeCards.find((c) => c.logCount > 0);
+  const card = page.data.sections.reduce((a, s) => a.concat(s.cards), []).find((c) => c.logCount > 0);
   assert(card, '应有一个带记录的目标');
 
   page.toggleLogs({ currentTarget: { dataset: { gid: card.gid } } });
@@ -566,7 +566,7 @@ await test('看板：记录按天聚合——同一天多次打卡合成一行�
   page.onLoad();
   page.render();
 
-  const card = page.data.activeCards.find((c) => c.gid === 'pg-day');
+  const card = page.data.sections.reduce((a, s) => a.concat(s.cards), []).find((c) => c.gid === 'pg-day');
   assert(card, '新目标应有卡');
   const day = card.logs.find((r) => r.id.indexOf(',') >= 0);
   assert(day, '同一天多次打卡应合成一行');

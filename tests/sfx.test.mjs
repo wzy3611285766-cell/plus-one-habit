@@ -130,20 +130,20 @@ await test('默认音量是 60（相对基准的百分比）', () => {
   eq(sfx.volumePct(), 60);
 });
 
-await test('音量真的落到主增益上：60% → 1.8（0.6 × 补益 3）', () => {
+await test('音量真的落到主增益上：60% → √0.6 × 补益 4 ≈ 3.098（2026-10-26 幂曲线调响）', () => {
   sfx.plus1(1);
   const ctx = lastCtx();
   assert(ctx, '应已创建 WebAudio 上下文');
   const master = masterGain(ctx);
   assert(master, '主增益应已连到 destination');
-  near(master.gain.value, 1.8, 1e-6, '主增益');
+  near(master.gain.value, Math.sqrt(0.6) * 4, 1e-6, '主增益');
 });
 
-await test('改音量后下一次发声就跟着变：40% → 1.2；纯函数映射保持 0.6 不变', () => {
+await test('改音量后下一次发声就跟着变：40% → √0.4 × 4 ≈ 2.530；纯函数映射保持 0.4 不变', () => {
   store.updateSettings({ volume: 40 });
   sfx.plus1(1);
   const master = masterGain(lastCtx());
-  near(master.gain.value, 1.2, 1e-6, '主增益');
+  near(master.gain.value, Math.sqrt(0.4) * 4, 1e-6, '主增益');
   eq(sfx.gainFromVolume(40), 0.4, 'gainFromVolume 仍是纯百分比映射');
 });
 
@@ -286,7 +286,7 @@ await test('拿不到 WebAudio 时 tap() 退回 assets/sounds/tap.wav', () => {
     const plays = audioLog(before);
     eq(plays.length, 1, '应播放一次 wav');
     eq(plays[0].src, '/assets/sounds/tap.wav');
-    near(plays[0].volume, 0.5, 1e-6, '兜底播放也应遵守音量百分比');
+    near(plays[0].volume, Math.sqrt(0.5), 1e-6, '兜底播放也应遵守音量百分比（幂曲线）');
   } finally {
     globalThis.wx.createWebAudioContext = real;
   }
