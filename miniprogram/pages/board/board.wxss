@@ -15,7 +15,7 @@
 .stat-strip{
   display:flex;
   gap:8px;
-  margin-top:10px;
+  /* 与 hero 的间距由 app.wxss 的 app-hero 宿主统一提供 */
   margin-bottom:var(--gap-card);
   margin-left:calc(var(--pad-page) * -1);
   margin-right:calc(var(--pad-page) * -1);

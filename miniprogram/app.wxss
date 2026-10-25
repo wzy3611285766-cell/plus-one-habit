@@ -502,6 +502,11 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   background-repeat:no-repeat;
   padding:calc(var(--gap-block) * .7) var(--pad-page) var(--pad-nav);
 }
+/* hero 组件宿主：hero 底缘到首个板块的间距基准，四个页签统一由这里出。
+   首个板块（统计条 / 周切换卡 / 空态卡）不再各自带 margin-top——
+   之前 0/10/12px 混着用，切页签时第一张卡的起点会跳。 */
+app-hero{ display:block; margin-bottom:10px; }
+
 .page-title{
   font-size:var(--fs-h1);
   font-weight:800;
