@@ -26,13 +26,11 @@
     </view>
   </view>
 
-  <!-- ---------- 统计条：四张竖排数字卡（对齐基准 #todayStats） ---------- -->
+  <!-- ---------- 统计条：两张卡（今日已打卡 / 最长连续） ---------- -->
   <view wx:if="{{hasGoals}}" class="stat-strip">
     <view wx:for="{{statCards}}" wx:key="k" class="stat-card">
       <view class="stat-ico {{item.tone}}">
         <view wx:if="{{item.k === 'hit'}}" class="ico-check"></view>
-        <view wx:elif="{{item.k === 'logs'}}" class="ico-clock"></view>
-        <view wx:elif="{{item.k === 'goals'}}" class="ico-target"></view>
         <view wx:else class="ico-flame"></view>
       </view>
       <view class="stat-text">

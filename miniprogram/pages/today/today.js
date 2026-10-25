@@ -244,18 +244,14 @@ Page({
         sample: !!g.sample
       }));
 
-    /* ---------- 统计条：四张竖排数字卡（对齐基准 #todayStats） ----------
-       基准第二张是「今日投入（分钟）」；用时只在基准的「补记」弹窗里录，
-       本项目没有补记入口，所以改成「今日记录（次）」—— 形状一致，口径不同。 */
+    /* ---------- 统计条：两张卡 ----------
+       「今日记录（次）」与「进行中目标」已按用户要求移除（2026-10-25）；
+       完整的累计统计仍在进度看板页。 */
     const hitCount = activeRows.filter((r) => r.gotNum > 0).length;
     const bestStreak = activeRows.reduce((mx, r) => Math.max(mx, r.streakNum || 0), 0);
-    let todayCount = 0;
-    st.logs.forEach((l) => { if (!l.deleted && l.date === todayStr) todayCount++; });
 
     const statCards = [
       { k: 'hit', num: hitCount + '/' + activeRows.length, label: '今日已打卡', tone: 'is-brand' },
-      { k: 'logs', num: todayCount, label: '今日记录（次）', tone: 'is-amber' },
-      { k: 'goals', num: activeRows.length, label: '进行中目标', tone: 'is-green' },
       { k: 'flame', num: bestStreak + ' 天', label: '最长连续', tone: 'is-amber' }
     ];
 

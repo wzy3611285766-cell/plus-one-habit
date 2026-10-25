@@ -127,7 +127,7 @@ await test('未登录时新建目标仍然可用（写本机）', () => {
   eq(todayPage.data.rows[0].name, '背单词');
   eq(todayPage.data.rows[0].total, '100', '卡片应带总量');
   eq(todayPage.data.rows[0].complete, false, '刚建的目标不应是已完成');
-  assert(todayPage.data.statCards.length === 4, '统计条应有四张卡');
+  assert(todayPage.data.statCards.length === 2, '统计条应有两张卡（今日已打卡 / 最长连续）');
 });
 
 await test('今日区三态：今天新建的目标不会被误判成「昨天漏卡」', () => {
