@@ -764,4 +764,45 @@ await test('注销成功后：账号没了、云端分片清零、本机回到�
   eq(UD.store.get().goals.length, 0, '本机数据也应清空');
 });
 
+group('示例数据升级（SEED_VERSION 迁移）');
+
+await test('旧版本的示例目标在启动时自动换成新版，用户自己的目标不动', () => {
+  const UD = freshUtils();
+  env.storage.clear();
+  const t = UD.U.todayStr();
+  const st = UD.M.blankState();
+  st.seedVersion = 4;                       // 旧名单
+  st.goals.push({ id: 'seed-g3', name: '读《马斯克传》', unit: '页', total: 440, deadline: UD.U.addDays(t, 40), createdAt: t, color: '#10b981', obstacle: '', plan: '', sample: true, updatedAt: 1 });
+  st.goals.push({ id: 'pg-own', name: '用户自己的目标', unit: '个', total: 100, deadline: UD.U.addDays(t, 30), createdAt: t, color: '#6366f1', obstacle: '', plan: '', sample: false, updatedAt: 1 });
+  st.seeded = true;
+  env.storage.set('lgt.state.v1', JSON.stringify(st));
+
+  UD.store.load();
+
+  const goals = UD.store.get().goals;
+  const samples = goals.filter((g) => g.sample && !g.deleted).map((g) => g.name);
+  eq(samples.length, 3, '应换成新版 3 个示例');
+  includes(samples.join(','), '币安人生', '新名单应生效');
+  assert(samples.join(',').indexOf('马斯克') < 0, '旧示例应被摘掉');
+  const own = goals.find((g) => !g.sample);
+  eq(own.name, '用户自己的目标', '用户自己的目标不受影响');
+  eq(UD.store.get().seedVersion, UD.M.SEED_VERSION, '版本号应对齐');
+});
+
+await test('清过示例的设备升级时不会重新塞入', () => {
+  const UD = freshUtils();
+  env.storage.clear();
+  const t = UD.U.todayStr();
+  const st = UD.M.blankState();
+  st.seedVersion = 4;
+  st.sampleCleared = true;                  // 用户明确清过
+  st.goals.push({ id: 'pg-own', name: '用户自己的目标', unit: '个', total: 100, deadline: UD.U.addDays(t, 30), createdAt: t, color: '#6366f1', obstacle: '', plan: '', sample: false, updatedAt: 1 });
+  env.storage.set('lgt.state.v1', JSON.stringify(st));
+
+  UD.store.load();
+
+  eq(UD.store.get().goals.length, 1, '不应重新塞入示例');
+  eq(UD.store.get().seedVersion, UD.M.SEED_VERSION, '版本号静默对齐');
+});
+
 export const suite = '页面集成';

@@ -94,6 +94,27 @@ function shard(key) {
  * H5 遗留数据只在首次迁移时读取，迁移后立刻标记 dirty，
  * 用户登录后这批数据会自动带上云。
  */
+/**
+ * 示例数据升级：名单改版后（SEED_VERSION 变更），把本机还挂着的旧示例整体
+ * 换成新版。只动 sample 目标 —— 用户自己的目标与打卡一根手指都不碰；
+ * 清过示例的只对齐版本号，不会重新塞入。
+ */
+function refreshSeed() {
+  if ((state.seedVersion || 0) >= M.SEED_VERSION) return;
+  if (state.goals.some((g) => g.sample && !g.deleted)) {
+    state.goals = state.goals.filter((g) => !g.sample);
+    const data = M.seedData();
+    const base = state.goals.reduce((mx, g) => Math.max(mx, typeof g.order === 'number' ? g.order : 0), 0);
+    data.goals.forEach((g, i) => {
+      g.order = base + i + 1;
+      state.goals.push(g);
+    });
+    state.seeded = true;
+  }
+  state.seedVersion = M.SEED_VERSION;
+  save();
+}
+
 function load() {
   const rawShards = U.safeJson(readRaw(K.SHARDS, ''), null);
   if (rawShards && typeof rawShards === 'object') {
@@ -107,6 +128,7 @@ function load() {
   const rawState = U.safeJson(readRaw(K.STATE, ''), null);
   if (rawState) {
     state = M.parseState(rawState).state;
+    refreshSeed();
     return { migrated: false };
   }
 
@@ -120,6 +142,7 @@ function load() {
       Object.keys(shards).forEach((k) => { shards[k].dirty = true; });
       shard(M.CORE_KEY).dirty = true;
       saveShards();
+      refreshSeed();
       return { migrated: true, goals: state.goals.length, logs: state.logs.length };
     }
   }
@@ -518,6 +541,7 @@ function installSample() {
   state.seeded = true;
   state.sampleCleared = false;
 
+  state.seedVersion = M.SEED_VERSION;
   /* 刻意不调用 markCore()：示例数据只活在这台设备上。
      推上云端会把演示内容混进真实账号，换设备时还会看到一堆不属于自己的目标。 */
   commit();

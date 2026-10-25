@@ -15,7 +15,8 @@ const U = require('./util.js');
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#0ea5e9', '#8b5cf6', '#ef4444', '#f97316', '#14b8a6'];
 const SEED_IDS = ['seed-g1', 'seed-g2', 'seed-g3', 'seed-g4', 'seed-g5', 'seed-g6'];
-const SEED_VERSION = 4;
+/** 示例名单改版时 +1：旧设备上已装载的示例会在启动时自动换成新版（store.refreshSeed） */
+const SEED_VERSION = 5;
 const STATE_VERSION = 3;
 
 /* ================= 状态 ================= */
@@ -171,6 +172,7 @@ function parseState(raw) {
   }
 
   st.seeded = !!raw.seeded;
+  st.seedVersion = U.finiteNumber(raw.seedVersion, 0, 1e9) ? Math.round(raw.seedVersion) : 0;
   st.sampleCleared = !!raw.sampleCleared;
   if (U.isDateString(raw.createdAt)) st.createdAt = raw.createdAt;
 
