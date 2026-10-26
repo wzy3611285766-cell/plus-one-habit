@@ -10,11 +10,12 @@
 
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
 const api = require('../../utils/api.js');
-const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
 const sfx = require('../../utils/sfx.js');
+const ui = require('../../utils/ui.js');
 
 Page({
   data: {
@@ -25,8 +26,9 @@ Page({
     user: null,
     joinedDays: 0,
     hasSample: false,
+    /* 分叉态（未登录 + 从分享卡片种入过目标）才显示「重新载入」入口 */
+    forked: false,
     themeOn: false,
-    stats: { records: 0, streak: 0, goals: 0, logs: 0 },
 
     sync: { dot: 'off', text: '未登录', time: '', msg: '' },
 
@@ -75,6 +77,28 @@ Page({
     if (this.unsub) this.unsub();
     if (this.unsubAuth) this.unsubAuth();
     if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.setTabBarVisible(true);
+  },
+
+  onHide() {
+    // 弹层开着时若用户点底栏切走了（底栏可能浮在遮罩之上），
+    // 回来时不应还挂着弹层，tabBar 也要恢复
+    if (this.data.sheet) this.setData({ sheet: '' });
+    this.setTabBarVisible(true);
+  },
+
+  /**
+   * 弹层期间隐藏自定义 tabBar：真机上它的渲染层级不完全受页面 z-index 控制，
+   * 压住弹层底部确认按钮是已知问题。
+   */
+  setTabBarVisible(visible) {
+    // 只走组件级 hidden。绝不能补调 wx.showTabBar / wx.hideTabBar：
+    // custom:true 下原生栏被框架压住不渲染，真机上 showTabBar 会把它重新
+    // 拉起，玻璃栏底下从此多出一栏原生 tabBar（开发者工具里不复现）。
+    try {
+      const bar = this.getTabBar && this.getTabBar();
+      if (bar && typeof bar.setVisible === 'function') bar.setVisible(visible);
+    } catch (e) { /* 无 tabBar 实例时静默 */ }
   },
 
   /* ================= 渲染 ================= */
@@ -85,8 +109,6 @@ Page({
     const logged = auth.isLogged();
     const user = auth.user();
     const sync = store.syncState();
-    const goals = M.activeGoals(st);
-    const logs = M.activeLogs(st);
 
     let joinedDays = 0;
     if (user && user.createdAt) {
@@ -101,38 +123,52 @@ Page({
       user: user,
       joinedDays: joinedDays,
       hasSample: store.hasSample(),
-      stats: {
-        records: logs.length,
-        streak: M.globalStreak(st),
-        goals: goals.length,
-        logs: logs.length
-      },
+      forked: !logged && store.forkInfo().forked,
       sync: {
-        dot: this.dotOf(logged ? sync.phase : 'needlogin'),
+        dot: ui.syncDot(logged ? sync.phase : 'needlogin'),
         /* 未登录就是「未登录」，不要写成「待同步」——那会让用户以为
            有个任务在等着他，而其实只是没登录 */
-        text: logged ? this.labelOf(sync.phase) : '未登录',
+        text: logged ? ui.syncLabel(sync.phase) : '未登录',
         time: U.fmtAgo(sync.lastSyncAt),
         /* 只在真的失败时说明一句；「未登录」不解释，那是状态不是错误 */
         msg: sync.phase === 'error' ? (sync.message || '同步失败，稍后会自动重试') : ''
       },
       themeOn: this.themePref() === 'dark',
-      theme: this.themePref(),
-      themeText: this.themeText(this.themePref()),
       haptic: this.hapticPref(),
       soundOn: sfx.soundEnabled(),
       volume: sfx.volumePct()
     });
   },
 
-  dotOf(p) { return { synced: 'ok', syncing: 'sync', error: 'err', needlogin: 'off', offline: 'off' }[p] || 'off'; },
-  labelOf(p) {
-    return { idle: '待同步', syncing: '同步中', synced: '已同步', error: '同步失败', needlogin: '未登录', offline: '离线' }[p] || '待同步';
-  },
-
   /* ================= 登录 / 登出 ================= */
 
   goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
+
+  /* ================= 分享分叉 ================= */
+
+  /** 「分享」按钮（open-type="share"）走这里，与右上角 ⋯ 转发同一条路 */
+  onShareAppMessage() {
+    return fork.shareConfig(store.get());
+  },
+
+  /**
+   * 重新载入分享时的那份数据（仅分叉态可见）。
+   * 确认方式与「重置这台手机」一致：系统弹窗两段式，不用输入框。
+   */
+  refork() {
+    wx.showModal({
+      title: '重新载入分享的目标？',
+      content: '这台手机上的目标和打卡记录会丢失，换成分享时复制来的那份。',
+      confirmText: '重新载入',
+      confirmColor: '#FF3B30',
+      success: (res) => {
+        if (!res.confirm) return;
+        const r = store.reforkFromShare();
+        this.render();
+        this.toast(r.ok ? '已重新载入' : '分享的数据不完整，没有载入');
+      }
+    });
+  },
 
   logout() {
     wx.showModal({
@@ -146,6 +182,8 @@ Page({
           store.onLoggedOut();
           this.render();
           this.toast('已退出登录');
+          /* 不再跳登录页：退出后就在「我的」以未登录态继续用，
+             想同步时再点这一行的「微信一键登录」（用户自行选择）。 */
         });
       }
     });
@@ -169,9 +207,8 @@ Page({
   /* ================= 修改昵称 ================= */
 
   openNickname() {
-    /* 过审模式：不提供改昵称（那是一个文本输入框） */
-    if (require('../../utils/config.js').SAFE_MODE) return;
     if (!this.data.logged) { this.goLogin(); return; }
+    this.setTabBarVisible(false);
     this.setData({
       sheet: 'nickname',
       formError: '',
@@ -184,7 +221,7 @@ Page({
     if (!v) { this.setData({ formError: '昵称不能为空' }); return; }
     this.setData({ busy: true, formError: '' });
     auth.updateProfile({ nickname: v })
-      .then(() => { this.setData({ busy: false, sheet: '' }); this.render(); this.toast('已更新'); })
+      .then(() => { this.setTabBarVisible(true); this.setData({ busy: false, sheet: '' }); this.render(); this.toast('已更新'); })
       .catch((e) => { this.setData({ busy: false, formError: (e && e.apiMessage) || '更新失败' }); });
   },
 
@@ -196,6 +233,7 @@ Page({
 
   openDeleteAccount() {
     if (!this.data.logged) { this.goLogin(); return; }
+    this.setTabBarVisible(false);
     this.setData({
       sheet: 'deleteAccount',
       formError: '',
@@ -215,9 +253,11 @@ Page({
         // 云端已经删干净了，本机这两份也不该留着
         store.clearLocalOnly();
         store.onLoggedOut();
+        this.setTabBarVisible(true);
         this.setData({ busy: false, sheet: '' });
         this.render();
         this.toast('账号已注销');
+        /* 同上：留在「我的」的未登录态，不把用户推去登录页 */
       })
       .catch((e) => {
         this.setData({ busy: false, formError: (e && e.apiMessage) || '注销失败，请稍后重试' });
@@ -294,20 +334,6 @@ Page({
     this.syncTabBarTheme();
   },
 
-  cycleTheme() {
-    const order = ['auto', 'dark', 'light'];
-    const cur = this.data.theme;
-    const next = order[(order.indexOf(cur) + 1) % order.length];
-    store.updateSettings({ theme: next });
-    const app = getApp();
-    // 导航栏 + 系统监听交给 app 统一处理，避免页面与 app 各管一半
-    if (app && typeof app.applyTheme === 'function') app.applyTheme();
-    else prefs.applyNavTheme(next);
-    this.render();
-    this.syncTabBarTheme();
-    this.toast('外观：' + this.themeText(next));
-  },
-
   hapticPref() { return prefs.haptic(); },
 
   toggleHaptic() {
@@ -319,8 +345,10 @@ Page({
 
   /* ---------- 音效 ---------- */
 
-  toggleSound(e) {
-    const next = !!(e && e.detail ? e.detail.value : !this.data.soundOn);
+  toggleSound() {
+    /* 绑定点是自绘开关那行 view 的 tap（detail 只有坐标，没有 value），
+       不能读 e.detail.value —— 那样恒为 undefined，开关会被钉死在「关」 */
+    const next = !this.data.soundOn;
     store.updateSettings({ sound: next });
     this.setData({ soundOn: next });
     // 打开时立刻响一下：用户能马上确认「就是这个音」。
@@ -364,7 +392,11 @@ Page({
     this.setData(patch);
   },
 
-  closeSheet() { if (!this.data.busy) this.setData({ sheet: '' }); },
+  closeSheet() {
+    if (this.data.busy) return;
+    this.setData({ sheet: '' });
+    this.setTabBarVisible(true);
+  },
   noop() { },
 
   /** tabBar 是独立组件，外观变了要主动通知它一次 */

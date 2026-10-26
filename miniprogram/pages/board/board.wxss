@@ -15,7 +15,7 @@
 .stat-strip{
   display:flex;
   gap:8px;
-  margin-top:10px;
+  /* 与 hero 的间距由 app.wxss 的 app-hero 宿主统一提供 */
   margin-bottom:var(--gap-card);
   margin-left:calc(var(--pad-page) * -1);
   margin-right:calc(var(--pad-page) * -1);
@@ -123,6 +123,8 @@
   width:var(--size);
   height:var(--size);
   border-radius:50%;
+  /* 不支持 conic-gradient 的旧内核：整环退为轨道色（信息降级，不破版） */
+  background:var(--track);
   /* --p 是 0~100 的完成率；从 12 点顺时针铺 --p%，其余用轨道色 */
   background:conic-gradient(
     var(--gc,var(--brand-500)) calc(var(--p) * 1%),
@@ -305,8 +307,18 @@
 }
 .col.is-today .col-stack{ box-shadow:0 0 0 2rpx var(--brand-200); }
 .col.is-picked .col-stack{ box-shadow:0 0 0 3rpx var(--brand-300); }
+
+/* ---------- 入场喷涌：切到看板时柱子从地面依次弹起 ----------
+   用 scaleY 而不是 height：不触发布局重排，只走合成器；origin 在柱底，
+   配合 backwards 填充让错峰延迟期间柱子贴地不冒头。
+   过冲到 1.12 的贝塞尔是「喷涌」的手感来源（微微弹过头再落回）。 */
+.col-stack{ transform-origin:50% 100%; }
+.col-stack.is-gush{ animation:barGush .5s cubic-bezier(.2,.85,.25,1.12) backwards; }
+@keyframes barGush{ from{ transform:scaleY(.02); } }
 .seg{
-  width:100%;min-height:2px;
+  width:100%;
+  flex:0 1 0;              /* 高度由 flex-grow 按当天各目标数量比例分配，精确填满柱身 */
+  min-height:2px;
   background:var(--gc,var(--brand-500));
   border-top:1px solid var(--surface);
 }

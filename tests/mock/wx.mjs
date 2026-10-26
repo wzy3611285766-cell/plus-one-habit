@@ -46,7 +46,10 @@ export function installWxEnv(opts) {
     callCount: { auth: 0, sync: 0 },
     log: [],
     app: null,
-    pageStack: []
+    pageStack: [],
+    /* 数据预拉取：测试直接塞字符串（微信缓存里的原文），null 表示本次没有缓存 */
+    prefetchData: null,
+    prefetchTimeStamp: 0
   };
 
   const wx = {
@@ -61,18 +64,47 @@ export function installWxEnv(opts) {
     hideLoading: () => { },
     showModal: (arg) => {
       state.log.push({ type: 'modal', title: arg && arg.title });
-      // 默认「取消」：危险的破坏性操作不会被测试意外触发
-      if (arg && arg.success) arg.success({ confirm: false, cancel: true });
+      // 默认「取消」：危险的破坏性操作不会被测试意外触发。
+      // 测试需要走确认分支时，先设 state.modalAnswer = { confirm: true }。
+      const ans = state.modalAnswer || { confirm: false, cancel: true };
+      if (arg && arg.success) arg.success(ans);
     },
     setClipboardData: (arg) => { state.log.push({ type: 'copy', data: arg && arg.data }); if (arg && arg.success) arg.success(); },
 
     navigateTo: (arg) => { state.log.push({ type: 'navigateTo', url: arg && arg.url }); },
     redirectTo: (arg) => { state.log.push({ type: 'redirectTo', url: arg && arg.url }); },
+    reLaunch: (arg) => { state.log.push({ type: 'reLaunch', url: arg && arg.url }); },
     switchTab: (arg) => { state.log.push({ type: 'switchTab', url: arg && arg.url }); },
     navigateBack: () => { state.log.push({ type: 'navigateBack' }); },
+    hideTabBar: (arg) => { state.log.push({ type: 'hideTabBar' }); if (arg && arg.success) arg.success(); },
+    showTabBar: (arg) => { state.log.push({ type: 'showTabBar' }); if (arg && arg.success) arg.success(); },
     stopPullDownRefresh: () => { },
     vibrateShort: (arg) => { state.log.push({ type: 'vibrate' }); if (arg && arg.fail) { /* 不调用 fail，模拟支持震动 */ } },
     setNavigationBarColor: () => { },
+
+    /* 数据预拉取：真实环境里由微信在冷启动前写好缓存，
+       这里用 state.prefetchData 直接喂原文，客户端逻辑（解析/闸门）照常走。 */
+    setBackgroundFetchToken: (arg) => {
+      state.log.push({ type: 'fetchToken', token: arg && arg.token });
+      if (arg && arg.success) arg.success();
+    },
+    getBackgroundFetchData: (arg) => {
+      const raw = state.prefetchData;
+      if (raw === null || raw === undefined || raw === '') {
+        if (arg && arg.fail) arg.fail({ errMsg: 'getBackgroundFetchData:fail no prefetch data' });
+        return;
+      }
+      if (arg && arg.success) {
+        arg.success({
+          fetchedData: raw,
+          timeStamp: state.prefetchTimeStamp || Date.now(),
+          path: '',
+          query: {},
+          scene: 1001,
+          fetchType: (arg && arg.fetchType) || 'pre'
+        });
+      }
+    },
 
     /* 音频：桩实例把每次 play 时的 src 与 volume 记进日志，
        音效测试据此断言「60% 真的变成了 0.6 的增益」。
@@ -168,6 +200,10 @@ export function installWxEnv(opts) {
       init() { },
       callFunction(arg) {
         const name = arg && arg.name;
+        if (state.cloudFail) {
+          // 模拟断网：wx.cloud.callFunction 自身 reject（不是云函数返回错误信封）
+          return Promise.reject({ errMsg: 'cloud.callFunction:fail network error' });
+        }
         if (name !== 'auth' && name !== 'sync') {
           return Promise.reject(new Error('unknown cloud function ' + name));
         }

@@ -2,25 +2,37 @@
 
   <app-hero />
 
+  <!-- ---------- 分叉欢迎横幅：一辈子只打一次（参数取自基准 .sync-banner.fork） ---------- -->
+  <view wx:if="{{forkBanner}}" class="fk-banner" style="top:{{bannerTop}}px">
+    <view class="fk-ico"><view class="fk-ico-dot"></view><view class="fk-ico-stem"></view></view>
+    <view class="fk-body">
+      <text class="fk-title">已经复制一份给你</text>
+      <text class="fk-text">这些目标来自同学的分享，从今天起的进度由你自己记录。</text>
+      <view class="fk-act">
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="fk-btn" bindtap="dismissForkBanner">知道了</button>
+      </view>
+    </view>
+  </view>
+
   <!-- ---------- 日期与操作：压成一行，把首屏留给目标卡 ---------- -->
   <view class="head">
     <text class="date">{{dateText}} · {{greeting}}</text>
     <view class="head-actions">
-      <view wx:if="{{!logged}}" class="login-link" bindtap="goLogin">登录</view>
-      <view class="add-goal" bindtap="goNewGoal">
+      <view wx:if="{{!logged}}" class="login-link" aria-role="button" bindtap="goLogin">登录</view>
+      <!-- 空目标状态不显示这个快捷键：中间孤零零一个 + 很怪，
+           那时的大按钮（新建目标）才是入口；有目标后它在右上角常驻 -->
+      <view wx:if="{{hasGoals}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="add-goal" aria-role="button" aria-label="新建目标" bindtap="goNewGoal">
         <view class="add-h"></view>
         <view class="add-v"></view>
       </view>
     </view>
   </view>
 
-  <!-- ---------- 统计条：四张竖排数字卡（对齐基准 #todayStats） ---------- -->
-  <view wx:if="{{hasGoals}}" class="stat-strip">
+  <!-- ---------- 统计条：两张卡（今日已打卡 / 最长连续），有进行中目标才有意义 ---------- -->
+  <view wx:if="{{hasActive}}" class="stat-strip">
     <view wx:for="{{statCards}}" wx:key="k" class="stat-card">
       <view class="stat-ico {{item.tone}}">
         <view wx:if="{{item.k === 'hit'}}" class="ico-check"></view>
-        <view wx:elif="{{item.k === 'logs'}}" class="ico-clock"></view>
-        <view wx:elif="{{item.k === 'goals'}}" class="ico-target"></view>
         <view wx:else class="ico-flame"></view>
       </view>
       <view class="stat-text">
@@ -54,8 +66,8 @@
           <text class="tz-why tz-why-danger">{{item.overdue ? '已逾期 ' + item.overdueDays + ' 天，且昨天没学' : '昨天没学 · 已滚入今日'}}</text>
         </view>
         <view class="tz-actions">
-          <view class="tz-btn tz-btn-red" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
-          <view wx:if="{{item.overdue}}" class="tz-btn tz-btn-ghost" data-gid="{{item.gid}}" bindtap="goEditGoal">调整计划</view>
+          <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="tz-btn tz-btn-red" aria-role="button" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
+          <view wx:if="{{item.overdue}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="tz-btn tz-btn-ghost" aria-role="button" data-gid="{{item.gid}}" bindtap="goEditGoal">调整计划</view>
         </view>
       </view>
 
@@ -65,7 +77,7 @@
           <text class="tz-name">{{item.name}}</text>
           <text class="tz-why tz-why-amber">昨天漏打卡 · 已用本周休息日（每周 1 天），连续天数保住了</text>
         </view>
-        <view class="tz-btn tz-btn-amber" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
+        <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="tz-btn tz-btn-amber" aria-role="button" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
       </view>
     </block>
 
@@ -84,12 +96,12 @@
         <view class="goal-color-dot"></view>
         <text class="goal-name">{{item.name}}</text>
         <text wx:if="{{item.badge}}" class="badge {{item.badgeClass}}">{{item.badge}}</text>
-        <view class="more-btn" data-gid="{{item.gid}}" catchtap="openMenu">···</view>
+        <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="more-btn" aria-role="button" aria-label="目标操作" data-gid="{{item.gid}}" catchtap="openMenu">···</view>
       </view>
 
       <!-- 进度：凹槽 + 目标色填充 + 前沿白点（对应基准 .mini-progress） -->
       <view class="mini-progress">
-        <view class="mp-fill {{bumpGid === item.gid ? 'just-hit' : ''}}" style="width:{{item.pct}}%;background:{{item.color}}"></view>
+        <view class="mp-fill {{bumpGid === item.gid ? 'just-hit' : ''}}" style="width:{{item.pct + '%'}};background:{{item.color}}"></view>
       </view>
 
       <!-- 信息行：总量 / 截止 / 连续 / 建议 -->
@@ -104,6 +116,8 @@
       <view class="goal-action">
         <view
           class="plus1 {{bumpGid === item.gid ? popClass : ''}} {{bumpGid === item.gid ? p1Level : ''}}"
+          aria-role="button"
+          aria-label="打卡加一"
           data-gid="{{item.gid}}"
           bindtap="onPlus1"
         >
@@ -117,12 +131,12 @@
 
         <view class="goal-action-side">
           <view class="cp-bar">
-            <view class="cp-fill" style="width:{{item.todayPct}}%;background:{{item.color}}"></view>
+            <view class="cp-fill" style="width:{{item.todayPct + '%'}};background:{{item.color}}"></view>
           </view>
           <view class="cp-text">
             今日 <text class="num">{{item.got}}</text> / {{item.quotaNum}} {{item.unit}}
           </view>
-          <text wx:if="{{item.gotNum > 0}}" class="link-undo" data-gid="{{item.gid}}" bindtap="onUndo">撤销</text>
+          <text wx:if="{{item.gotNum > 0}}" class="link-undo" aria-role="button" data-gid="{{item.gid}}" bindtap="onUndo">撤销</text>
         </view>
       </view>
 
@@ -147,7 +161,7 @@
           <view class="goal-color-dot"></view>
           <text class="goal-name">{{item.name}}</text>
           <text wx:if="{{item.badge}}" class="badge {{item.badgeClass}}">{{item.badge}}</text>
-          <view class="more-btn" data-gid="{{item.gid}}" catchtap="openMenu">···</view>
+          <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="more-btn" aria-role="button" aria-label="目标操作" data-gid="{{item.gid}}" catchtap="openMenu">···</view>
         </view>
 
         <view class="mini-progress">
@@ -187,44 +201,8 @@
   <!-- ---------- 空态 ---------- -->
   <view wx:if="{{!hasGoals}}" class="card empty">
     <view class="empty-title">还没有目标</view>
-    <view class="empty-desc">
-      目标要有总量和终点，才能算出「今天建议做多少」。
-      比如「背 1200 个单词，12 月 20 日前完成」。
-    </view>
     <view class="empty-actions">
-      <button class="btn btn-primary" bindtap="goNewGoal">新建目标</button>
-    </view>
-  </view>
-
-  <!--
-    过审模式：新建目标 = 从预设里挑一个。
-    这里**没有任何输入框**，四个选项的名称、单位、总量、周期都是定死的。
-  -->
-  <view wx:if="{{presetOn}}" class="mask" bindtap="closePreset">
-    <view class="sheet" catchtap="noopMenu">
-      <view class="sheet-grab"></view>
-      <view class="sheet-title">选一个目标</view>
-
-      <view class="preset-list">
-        <view
-          wx:for="{{presets}}"
-          wx:key="name"
-          class="preset-item"
-          data-i="{{index}}"
-          bindtap="pickPreset"
-        >
-          <view class="preset-dot" style="background:{{item.color}}"></view>
-          <view class="preset-main">
-            <text class="preset-name">{{item.name}}</text>
-            <text class="preset-sub">共 {{item.total}} {{item.unit}} · {{item.days}} 天</text>
-          </view>
-          <text class="preset-add">添加</text>
-        </view>
-      </view>
-
-      <view class="sheet-actions">
-        <button class="btn btn-ghost" bindtap="closePreset">取消</button>
-      </view>
+      <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="goNewGoal">新建目标</button>
     </view>
   </view>
 
@@ -233,12 +211,12 @@
     遮罩 blur(3px) + 底部磨砂玻璃面板 + 顶部拖拽条 + gmUp 弹出动画。
   -->
   <view wx:if="{{menuOn}}" class="goal-menu">
-    <view class="goal-menu-mask" bindtap="closeMenu"></view>
+    <view class="goal-menu-mask" aria-role="button" aria-label="关闭菜单" bindtap="closeMenu"></view>
 
     <view class="goal-menu-sheet" catchtap="noopMenu">
       <view class="menu-head">{{menuName}}</view>
 
-      <view class="menu-item" bindtap="menuEdit">
+      <view class="menu-item" aria-role="button" bindtap="menuEdit">
         <view class="mi-ico mi-pencil"></view>
         <text>编辑目标</text>
       </view>
@@ -248,12 +226,12 @@
         <text>调整计划</text>
       </view>
 
-      <view class="menu-item menu-item-danger" bindtap="menuDelete">
+      <view class="menu-item menu-item-danger" aria-role="button" bindtap="menuDelete">
         <view class="mi-ico mi-trash"></view>
         <text>删除目标</text>
       </view>
 
-      <view class="menu-item menu-item-ghost" bindtap="closeMenu">取消</view>
+      <view class="menu-item menu-item-ghost" aria-role="button" bindtap="closeMenu">取消</view>
     </view>
   </view>
 

@@ -435,11 +435,25 @@ test('不出现 emoji（设计约束：图标一律用内联 SVG 或纯 CSS）',
 
 group('云函数结构');
 
-test('两个云函数都有入口与依赖声明', () => {
-  ['auth', 'sync'].forEach((fn) => {
+test('三个云函数都有入口与依赖声明', () => {
+  ['auth', 'sync', 'prefetch'].forEach((fn) => {
     assert(fs.existsSync(path.join(CF, fn, 'index.js')), fn + ' 缺少 index.js');
     assert(fs.existsSync(path.join(CF, fn, 'package.json')), fn + ' 缺少 package.json');
   });
+});
+
+test('预拉取云函数返回字符串缓存体（微信协议），不套 { ok, data } 信封', () => {
+  const src = read(path.join(CF, 'prefetch', 'index.js'));
+  assert(src.indexOf('service.build') >= 0, '应走 service.build');
+  assert(src.indexOf('JSON.stringify(service.emptyPayload') >= 0, '异常兜底也应返回字符串');
+  assert(src.indexOf('toEnvelope') < 0, '预拉取不能返回错误信封');
+});
+
+test('预拉取身份只在小程序上下文为空时才采信 event（客户端可伪造）', () => {
+  const svc = read(path.join(CF, 'prefetch', 'lib', 'service.js'));
+  assert(/if \(ctx && ctx\.openid\) return \{ openid: ctx\.openid/.test(svc), 'ctx.openid 必须优先');
+  assert(svc.indexOf('payload.userId') < 0, '不得信任请求体里的 userId');
+  assert(svc.indexOf('MAX_BODY_BYTES = 200 * 1024') >= 0, '必须自己卡在 256KB 以下');
 });
 
 test('云函数入口都做了统一错误封装，不把异常直接抛给客户端', () => {
@@ -545,20 +559,26 @@ test('底部导航对齐基准 .nav：玻璃胶囊选中态 + 容器发丝边', 
   const js = read(path.join(MP, 'custom-tab-bar', 'index.js'));
 
   /* saturation 140 取自 liquid-glass-react 的默认值 */
-  assert(/\.tabbar\{[\s\S]*?blur\(20px\) saturate\(140%\)/.test(css), '容器应是 blur(20px) saturate(140%)');
+  assert(/\.tabbar\{[\s\S]*?blur\(12px\) saturate\(180%\)/.test(css), '栏身应是液态档 blur(12px) saturate(180%)（低模糊高饱和，不是磨砂）');
   assert(/\.tabbar\{[\s\S]*?border-top:1px solid var\(--line\)/.test(css), '容器应有发丝上边');
-  assert(/\.tab\.on\{[\s\S]*?linear-gradient\(180deg,rgba\(0,122,255,\.16\)/.test(css), '选中态应是品牌色渐变胶囊');
+  assert(/\.tab\.on\{[\s\S]*?rgba\(0,122,255,\.34\)/.test(css), '选中态应是品牌染色玻璃（半透 ~.34，不是实心）');
   assert(/\.tab\.on\{[\s\S]*?inset 0 \.5px 0 rgba\(255,255,255,\.78\)/.test(css), '选中态应有玻璃上缘高光');
   /* 每一格是 Liquid Glass 语义的按键（参照 @callstack/liquid-glass）：
      clear 档未选中 / regular+tint 选中 / interactive 按压 / spacing 融合 */
-  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.14\)/.test(css),
-    '未选中应是 clear 档（更透明，底面 .14 → .05）');
+  assert(/\.tab\{[\s\S]*?linear-gradient\(180deg,rgba\(255,255,255,\.10\)/.test(css),
+    '未选中应是液态玻璃体（核心透 .10 → .03，真透明）');
+  assert(/\.tab\{[\s\S]*?inset 0 0 0 \.5px rgba\(255,255,255,\.30\)/.test(css), '液态边缘聚光：整圈亮 rim');
+  assert(/\.tab\{[\s\S]*?border-radius:999rpx/.test(css), '每枚按键应是全圆边胶囊');
+  assert(/\.tab\{[\s\S]*?0 3px 8px rgba\(15,23,42,\.12\)/.test(css), '饱满胶囊应有底部投影托起（液态档加深）');
+  assert(/\.tabbar-inner\{[\s\S]*?gap:6px/.test(css), '胶囊之间应拉开间距（分体，不是融合）');
+  assert(/\.tabbar\{[\s\S]*?--glass-bg:rgba\(255,255,255,\.48\)/.test(css), '栏身液态底色应压到 .48（透出内容色）');
   assert(css.indexOf('.tab::after') >= 0, '每格应有镜面高光层');
+  assert(/\.tab::after\{[\s\S]*?opacity:\.9/.test(css), '液态档镜面高光应开到 .9');
   assert(/\.tab:active\{[\s\S]*?filter:brightness\(1\.06\)/.test(css),
     '按下应提亮（interactive 是「响应手指」，不是只变暗）');
   assert(/\.tab:active\{[\s\S]*?inset 0 2px 6px/.test(css), '按下应有内阴影（塌陷感）');
   assert(css.indexOf('.tabbar.theme-dark .tab{') >= 0, '深色下玻璃要换一套，不能照抄白色');
-  assert(/\.tabbar-inner\{[\s\S]*?gap:2px/.test(css), 'container spacing：格子间距要收到 2px 才有融合感');
+  /* 融合间距已由 gap:6px 的分体断言取代（饱满胶囊方案） */
 
   /* 今日图标必须是「右上角开口」的清单：四段拼出来，勾从缺口穿出 */
   ['.ico-today .g1', '.ico-today .g2', '.ico-today .g3', '.ico-today .g4']
@@ -567,8 +587,8 @@ test('底部导航对齐基准 .nav：玻璃胶囊选中态 + 容器发丝边', 
   assert(/\.ico-today \.g2\{[\s\S]*?top:1\.4px/.test(css), '上边应是独立短段');
 
   /* 折射做不到，用边缘内发光近似 —— 这条防止有人把它当装饰删掉 */
-  assert(/\.tab\{[\s\S]*?inset 0 0 12px rgba\(255,255,255,\.10\)/.test(css),
-    '每格应有边缘内发光（折射的近似）');
+  assert(/\.tab\{[\s\S]*?inset 0 0 14px rgba\(255,255,255,\.14\)/.test(css),
+    '每格应有边缘内发光（折射的近似，饱满档 14px）');
 
   /* 基准手机端：选中项 = 玻璃胶囊 + 底部一条 18px 短横线（缺一都不像） */
   assert(css.indexOf('.tab.on::before') >= 0, '选中态应有一条短横线');
@@ -624,7 +644,7 @@ test('我的页保持 iOS 分组列表形态', () => {
     .forEach((k) => { assert(css.indexOf('.' + k) >= 0, '样式缺少 .' + k); });
 
   assert(/\.mine-btn\{[\s\S]*?border-bottom:\.5px solid var\(--line\)/.test(css), '行分隔应是 .5px 发丝线');
-  assert(/\.mine-btn:active\{[\s\S]*?inset 0 \.5px 0 rgba\(255,255,255,\.55\)/.test(css), '按下时应有玻璃高光');
+  assert(/\.mine-btn:active\{[\s\S]*?rgba\(120,120,128,\.16\)/.test(css), '列表行按下应是 iOS 中性灰高亮');
   assert(css.indexOf('.mine-btn.danger') >= 0, '危险行有独立配色');
 
   /* 账号相关的入口只留「登录」和「注销账号」：
@@ -658,30 +678,6 @@ test('「我的」页不出现云端 / 本机 / 清空这类词', () => {
   });
 });
 
-/**
- * 过审模式（config.SAFE_MODE）下，用户路径上不能出现任何文本框。
- * 审核驳回理由是「不支持用户自定义输入」，所以这条是硬线：
- * 宁可少一个功能，也不要再被打回一次。
- */
-test('过审模式：用户能走到的页面上没有输入框', () => {
-  /* 这个套件是 ESM，没有 require，直接读源码判断 */
-  const cfgSrc = read(path.join(MP, 'utils', 'config.js'));
-  assert(/const SAFE_MODE = true/.test(cfgSrc), '当前应为过审模式');
-  const presetCount = (cfgSrc.match(/\{ name: '/g) || []).length;
-  eq(presetCount, 4, '应提供 4 个预设目标');
-
-  const today = read(path.join(MP, 'pages', 'today', 'today.wxml'));
-  assert(today.indexOf('<input') < 0, '今日页不该有任何输入框');
-
-  const weekly = read(path.join(MP, 'pages', 'weekly', 'weekly.wxml'));
-  assert(weekly.indexOf('wx:if="{{!safeMode}}"') >= 0, '周报四栏应在过审模式下隐藏');
-
-  const mine = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
-  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
-  assert(mineJs.indexOf('SAFE_MODE') >= 0, '改昵称入口应在过审模式下被拦住');
-  assert(mine.indexOf('openNickname') >= 0, '昵称行仍要显示（只读）');
-});
-
 test('界面不解释数据流向：隐私说明只留在文档里', () => {
   const mine = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
   ['修改密码', '登录设备', '微信绑定', '关于你的数据', '数据跟着', '数据存在哪']
@@ -695,6 +691,237 @@ test('界面不解释数据流向：隐私说明只留在文档里', () => {
   const login = read(path.join(MP, 'pages', 'login', 'login.wxml'));
   assert(login.indexOf('数据跟着') < 0, 'login.wxml 不应解释数据归属');
   assert(login.indexOf('数据存在哪') < 0, 'login.wxml 不应有「数据存在哪」入口');
+});
+
+
+/* ================================================================= */
+
+group('分享分叉（模仿 H5 第 17 轮）');
+
+/**
+ * 分叉的正确性最终由 fork.test.mjs 的行为测试保证；
+ * 这里只钉「结构没被改坏」：四个页签都能转发、入口和横幅还在。
+ */
+test('分叉模块存在，store 暴露完整入口', () => {
+  const f = path.join(MP, 'utils', 'fork.js');
+  assert(fs.existsSync(f), '缺少 utils/fork.js');
+  const src = read(f);
+  ['planIncoming', 'shareConfig', 'pendingWelcome', 'clearOnLogin'].forEach((k) => {
+    assert(src.indexOf(k) >= 0, 'fork.js 缺少 ' + k);
+  });
+
+  const store = read(path.join(MP, 'utils', 'store.js'));
+  ['applyShareQuery', 'reforkFromShare', 'forkWelcomePending', 'forkMarkWelcomed', 'forkInfo'].forEach((k) => {
+    assert(store.indexOf(k) >= 0, 'store.js 缺少 ' + k);
+  });
+  assert(store.indexOf('fork.clearOnLogin()') >= 0, 'onLoggedIn 应清分叉记录');
+});
+
+test('四个页签都支持转发，路径由 fork.shareConfig 统一构造', () => {
+  ['today', 'board', 'weekly', 'mine'].forEach((p) => {
+    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    assert(js.indexOf('onShareAppMessage') >= 0, p + '.js 应定义 onShareAppMessage');
+    assert(js.indexOf('fork.shareConfig') >= 0, p + '.js 应使用 fork.shareConfig');
+  });
+});
+
+test('「我的」页有分享入口与（分叉态的）重新载入入口', () => {
+  const wxml = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
+  assert(wxml.indexOf('>分享</text>') >= 0, '缺少「分享」入口');
+  assert(wxml.indexOf('open-type="share"') >= 0, '分享入口必须是 open-type=share 的 button');
+  assert(wxml.indexOf('重新载入分享的目标') >= 0, '缺少「重新载入分享的目标」');
+  assert(wxml.indexOf('wx:if="{{forked}}"') >= 0, '重新载入入口只在分叉态渲染');
+});
+
+test('今日页分叉欢迎横幅：品牌蓝配色 + 一辈子一次的闸门', () => {
+  const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
+  const css = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const js = read(path.join(MP, 'pages', 'today', 'today.js'));
+
+  assert(wxml.indexOf('class="fk-banner"') >= 0, '缺少横幅节点 .fk-banner');
+  assert(wxml.indexOf('bindtap="dismissForkBanner"') >= 0, '横幅应可关闭');
+  assert(js.indexOf('forkWelcomePending') >= 0 && js.indexOf('forkMarkWelcomed') >= 0,
+    '横幅显隐必须走 store 的 welcomed 记录（一辈子只打一次）');
+
+  // 参数取自基准 .sync-banner.fork：品牌蓝，不是错误红
+  assert(/\.fk-banner\{[\s\S]*?background:var\(--brand-50\)/.test(css), '横幅底色应是 --brand-50');
+  assert(!/\.fk-banner\{[\s\S]*?--danger-50/.test(css), '横幅不得用错误红配色');
+  assert(/\.fk-banner\{[\s\S]*?blur\(16px\)/.test(css), '横幅应保留基准的 blur(16px)');
+  assert(/\.fk-btn:active\{[\s\S]*?scale\(\.96\)/.test(css), '横幅按键按压应 scale(.96)（基准参数）');
+});
+
+test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键除外', () => {
+  const app = stripCssComments(read(path.join(MP, 'app.wxss')));
+  const today = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const weekly = stripCssComments(read(path.join(MP, 'pages', 'weekly', 'weekly.wxss')));
+  const login = stripCssComments(read(path.join(MP, 'pages', 'login', 'login.wxss')));
+
+  // 染色玻璃三件套：tint 底（半透明，可降级）+ 模糊 + tint 边光
+  assert(/\.btn-primary\{[\s\S]*?background:var\(--gb-tint-brand\)/.test(app), '主键应是品牌染色玻璃');
+  assert(/\.btn-primary\{[\s\S]*?backdrop-filter:var\(--gb-blur-liq\)/.test(app), '主键应带液态档模糊（低模糊高饱和）');
+  assert(app.indexOf('--gb-blur-liq:blur(8px) saturate(200%)') >= 0, '液态档模糊 token 应存在');
+  assert(app.indexOf('.btn-primary::after') >= 0 && app.indexOf('.tz-btn-red::after') >= 0,
+    '染色/清玻璃按键应统一挂镜面高光层（液态的湿感）');
+  assert(app.indexOf('rgba(0,122,255,.54)') >= 0, '染色层应半透（.54，真玻璃不是实心塑料）');
+  assert(app.indexOf('rgba(255,255,255,.55) 0%,rgba(255,255,255,.16) 30%') >= 0, '镜面高光应又亮又窄（.55 → 30% 收光）');
+  assert(app.indexOf('.fk-btn,') >= 0 && app.indexOf('text-shadow:0 1px 2px rgba(0,0,0,.18)') >= 0, '染色玻璃上的白字应有轻投影');
+  assert(/\.btn\{[\s\S]*?border-radius:var\(--r-pill\)/.test(app), '按键应是全圆边胶囊');
+  assert(/\.btn\{[\s\S]*?height:calc\(50px\)/.test(app), '大键高度应对齐 iOS 的 50pt');
+  assert(/\.btn\{[\s\S]*?letter-spacing:var\(--ls-snap\)/.test(app), '按键文字应用 iOS 的收紧字距');
+  assert(/\.btn:active\{[\s\S]*?opacity:\.85/.test(app), '按压应是 iOS 的透明度衰减');
+  assert(/\.btn-ghost\{[\s\S]*?background:var\(--surface-sunken\)/.test(app), '次级键应是 iOS 灰底胶囊');
+  assert(/\.add-goal:active\{[\s\S]*?rgba\(120,120,128,\.18\)/.test(today) && /\.more-btn:active\{[\s\S]*?rgba\(120,120,128,\.18\)/.test(today), '图标键按下应浮现 iOS 灰色高亮');
+  assert(/\.btn-danger\{[\s\S]*?--gb-tint-red/.test(app), '危险键应是红染色玻璃');
+  assert(/\.tz-btn-red\{[\s\S]*?--gb-tint-red/.test(today), '立即打卡应是红染色玻璃');
+  assert(/\.tz-btn-ghost\{[\s\S]*?background:var\(--surface-sunken\)/.test(today), '调整计划应是 iOS 灰底次级键');
+  assert(/\.btn-wx\{[\s\S]*?backdrop-filter:var\(--gb-blur-liq\)/.test(login), '微信登录键应是绿染色玻璃（液态档）');
+
+  // +1 是全站唯一发光体：紫色实底渐变，明确不参与玻璃系统
+  const start = today.indexOf('\n.plus1{');
+  const body = today.slice(start, today.indexOf('\n}', start));
+  assert(body.indexOf('backdrop-filter') < 0, '+1 主键不应使用毛玻璃');
+});
+
+/* ================================================================= */
+
+group('按键样式块级校验（括号配平后逐块匹配）');
+
+/**
+ * 先前的若干断言用 `selector{[\s\S]*?xxx` 跨规则匹配 —— 文件后部任何位置
+ * 出现同串都会被算进去：正向断言可能「因错误的原因通过」，
+ * 取反断言（如 fk-banner 不得出现 danger-50）更会被无关用途误伤。
+ * 这里做括号配平，把断言严格限制在目标规则块的正文里。
+ */
+function ruleBodies(css, selector) {
+  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 边界取行首（含缩进）：`.tabbar.theme-dark .tab{` 里的后代段 `.tab`
+  // 不应被当成独立规则 —— 否则「第一处」会抓到深色覆盖而不是基础块。
+  const re = new RegExp('(?:^|[\\n;}])\\s*' + esc + '\\s*\\{', 'g');
+  const bodies = [];
+  let m;
+  while ((m = re.exec(css))) {
+    const i = m.index + m[0].length - 1;
+    let depth = 0;
+    let j = i;
+    while (j < css.length) {
+      if (css[j] === '{') depth += 1;
+      else if (css[j] === '}') { depth -= 1; if (depth === 0) break; }
+      j += 1;
+    }
+    bodies.push(css.slice(i + 1, j));
+  }
+  return bodies;
+}
+
+function firstBody(css, selector) {
+  // 取文档顺序第一处（基础声明块）。同名选择器在媒体查询里的覆盖块
+  // （深色档 / reduced-motion / 平板档）不算「恰好一次」的违规。
+  const bodies = ruleBodies(css, selector);
+  assert(bodies.length >= 1, selector + ' 应至少声明一次');
+  return bodies[0];
+}
+
+test('.btn 家族：高度/圆边/字距/按压/灰底都在各自块内', () => {
+  const app = stripCssComments(read(path.join(MP, 'app.wxss')));
+  const body = firstBody(app, '.btn');
+  ['height:calc(50px)', 'border-radius:var(--r-pill)', 'letter-spacing:var(--ls-snap)'].forEach((k) => {
+    assert(body.indexOf(k) >= 0, '.btn 块内缺少 ' + k);
+  });
+  const press = firstBody(app, '.btn:active');
+  assert(press.indexOf('opacity:.85') >= 0, '.btn:active 应是透明度衰减');
+  const ghost = firstBody(app, '.btn-ghost');
+  assert(ghost.indexOf('background:var(--surface-sunken)') >= 0, '.btn-ghost 应是灰底');
+  assert(ghost.indexOf('backdrop-filter') < 0, '.btn-ghost 不应是玻璃面');
+});
+
+test('today：灰底次级键、图标键灰高亮、横幅配色逐块成立', () => {
+  const today = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const ghost = firstBody(today, '.tz-btn-ghost');
+  assert(ghost.indexOf('background:var(--surface-sunken)') >= 0, '调整计划应是灰底');
+  assert(firstBody(today, '.add-goal:active').indexOf('rgba(120,120,128,.18)') >= 0, '+ 键按下应有灰高亮');
+  assert(firstBody(today, '.more-btn:active').indexOf('rgba(120,120,128,.18)') >= 0, '⋯ 键按下应有灰高亮');
+
+  const banner = firstBody(today, '.fk-banner');
+  assert(banner.indexOf('background:var(--brand-50)') >= 0, '横幅底色应是品牌蓝 50');
+  assert(banner.indexOf('--danger-50') < 0, '横幅块内不得出现错误红');
+  assert(banner.indexOf('blur(16px)') >= 0, '横幅应保留 blur(16px)');
+});
+
+test('tabBar：液态参数逐块成立', () => {
+  const css = stripCssComments(read(path.join(MP, 'custom-tab-bar', 'index.wxss')));
+  const bar = firstBody(css, '.tabbar');
+  assert(bar.indexOf('saturate(180%)') >= 0, '栏身应 saturate(180%)');
+  assert(bar.indexOf('--glass-bg:rgba(255,255,255,.48)') >= 0, '栏身底色应 .48（透出内容色）');
+  const tab = firstBody(css, '.tab');
+  assert(tab.indexOf('inset 0 0 0 1px rgba(255,255,255,.16)') >= 0, '液态第二亮环');
+  assert(tab.indexOf('0 3px 8px rgba(15,23,42,.12)') >= 0, '液态深投影');
+  assert(tab.indexOf('border-radius:999rpx') >= 0, '胶囊圆边');
+  assert(tab.indexOf('rgba(255,255,255,.10) 0%,rgba(255,255,255,.03)') >= 0, '核心透 .10 → .03');
+  assert(tab.indexOf('inset 0 0 0 .5px rgba(255,255,255,.30)') >= 0, '整圈亮 rim');
+  const on = firstBody(css, '.tab.on');
+  assert(on.indexOf('rgba(0,122,255,.34)') >= 0, '选中品牌染色应 .34');
+});
+
+test('弹层与自定义 tabBar：组件级 hidden 收起（z-index 对自定义 tabBar 不可靠）', () => {
+  const barJs = read(path.join(MP, 'custom-tab-bar', 'index.js'));
+  const barWxml = read(path.join(MP, 'custom-tab-bar', 'index.wxml'));
+  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
+  assert(barJs.indexOf('hidden: false') >= 0, 'tabBar 组件应有 hidden 状态');
+  assert(barJs.indexOf('setVisible(visible)') >= 0, 'tabBar 组件应有 setVisible 方法');
+  assert(barWxml.indexOf('wx:if="{{!hidden}}"') >= 0, 'tabBar 根节点应受 hidden 控制');
+  assert(mineJs.indexOf('bar.setVisible(visible)') >= 0, '弹层开合应走组件主通道');
+  assert(mineJs.indexOf('setTabBarVisible(false)') >= 0 && mineJs.indexOf('setTabBarVisible(true)') >= 0,
+    '打开与关闭弹层都要调 setTabBarVisible');
+});
+
+test('我的页：列表行按压是中性灰（块级）', () => {
+  const css = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
+  const press = firstBody(css, '.mine-btn:active');
+  assert(press.indexOf('rgba(120,120,128,.16)') >= 0, '按下应是中性灰');
+  assert(press.indexOf('rgba(0,122,255') < 0, '不应是品牌蓝');
+});
+
+test('今日页顶栏 + 快捷键：只在有目标时显示（空状态用大按钮，不孤儿挂 +）', () => {
+  const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
+  assert(/wx:if="\{\{hasGoals\}\}"[^>]*class="add-goal"/.test(wxml),
+    '顶栏 + 快捷键应挂在 hasGoals 上');
+
+  const css = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const box = firstBody(css, '.add-goal');
+  assert(box.indexOf('position:relative') >= 0,
+    '+ 键必须给 absolute 的加号线提供定位基准（少了它，线会跑到页面中心，按键看起来消失）');
+  assert(firstBody(css, '.add-h,.add-v').indexOf('position:absolute') >= 0,
+    '加号两根线应各自绝对定位在按键中心');
+});
+
+test('目标编辑页配色：8 个色点固定一行，窄屏横滑也不换行', () => {
+  const css = stripCssComments(read(path.join(MP, 'pages', 'goal-edit', 'goal-edit.wxss')));
+  const row = firstBody(css, '.swatches');
+  assert(row.indexOf('grid-auto-flow:column') >= 0, '配色行应是一行网格（column）');
+  assert(row.indexOf('flex-wrap:wrap') < 0, '配色行不得再换行');
+  assert(row.indexOf('overflow-x:auto') >= 0, '极窄屏应横滑兜底，而不是折成第二行');
+
+  const dot = firstBody(css, '.swatch');
+  assert(dot.indexOf('max-width:40px') >= 0, '色点最大 40px，避免平板上一行铺得过开');
+  assert(firstBody(css, '.swatch::before').indexOf('padding-top:100%') >= 0,
+    '正方形应走 padding-top 方案，不依赖 aspect-ratio');
+});
+
+test('不强制登录：先能浏览功能，授权登录由用户自行选择（2026-10-26 提审驳回后撤销闸门）', () => {
+  const appJs = read(path.join(MP, 'app.js'));
+  const loginWxml = read(path.join(MP, 'pages', 'login', 'login.wxml'));
+
+  assert(appJs.indexOf('ensureLoginGate') < 0, 'app.js 不应再有登录闸门');
+  assert(appJs.indexOf("wx.reLaunch({ url: '/pages/login/login' })") < 0,
+    '启动链路不得主动跳登录页');
+  ['today', 'board', 'weekly', 'mine'].forEach((p) => {
+    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    assert(js.indexOf('ensureLoginGate') < 0, p + ' 的 onShow 不应再拦截未登录用户');
+  });
+
+  // 登录页必须留退路：审核员要先体验功能，再自行选择授权
+  assert(loginWxml.indexOf('先随便看看') >= 0, '登录页应提供不登录的出口');
+  assert(loginWxml.indexOf('不登录也能记录') >= 0, '登录页应说明不登录也能使用');
 });
 
 export const suite = '小程序静态检查';

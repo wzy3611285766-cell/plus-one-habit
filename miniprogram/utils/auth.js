@@ -52,6 +52,16 @@ function clearCached() {
   try { wx.removeStorageSync(K.USER); } catch (e) { }
 }
 
+/**
+ * 服务端明确否定了这个身份（未注册 / 账号停用）时调用：
+ * 清掉本机缓存并广播登出，让页面立刻回到未登录态。
+ * 与 logout() 的区别：那个是用户主动退出，这个是身份失效。
+ */
+function invalidate(reason) {
+  clearCached();
+  emit({ type: 'logout', reason: reason || 'invalid' });
+}
+
 /* ================= 设备信息 ================= */
 
 /**
@@ -79,6 +89,20 @@ function deviceId() {
 function isLogged() { return !!(current && current.user && current.user.id); }
 
 function user() { return current ? current.user : null; }
+
+/**
+ * 同步地把本机身份缓存载入内存（不发网络请求）。
+ *
+ * 冷启动必须在 onLaunch 里、页面渲染之前调用：否则第一帧的 auth.isLogged()
+ * 还是 false，老用户会先看到「登录」入口 / 「未登录」，等会话校验回来才翻过来。
+ * 本地缓存的 user 只用于渲染，不承担鉴权；真正的身份仍由云函数侧的 openid 决定。
+ */
+function hydrate() {
+  if (current) return user();
+  const cached = readCached();
+  if (cached) current = cached;
+  return user();
+}
 
 /* ================= 动作 ================= */
 
@@ -121,8 +145,7 @@ function restore() {
     })
     .catch((e) => {
       if (api.isAuthError(e)) {
-        clearCached();
-        emit({ type: 'logout', reason: e.code });
+        invalidate(e.code);
         return { ok: false, reason: e.code, user: null };
       }
       return { ok: false, reason: 'network', keepLocal: true, user: cached.user, error: e };
@@ -165,10 +188,7 @@ function updateProfile(patch) {
 /** 同步失败时如果发现账号没了，清本地并广播登出 */
 function requireLogin(promiseFactory) {
   return promiseFactory().catch((e) => {
-    if (api.isAuthError(e)) {
-      clearCached();
-      emit({ type: 'logout', reason: e.code });
-    }
+    if (api.isAuthError(e)) invalidate(e.code);
     throw e;
   });
 }
@@ -177,6 +197,7 @@ module.exports = {
   on: on,
   isLogged: isLogged,
   user: user,
+  hydrate: hydrate,
   deviceId: deviceId,
   login: login,
   restore: restore,
@@ -184,6 +205,7 @@ module.exports = {
   deleteAccount: deleteAccount,
   updateProfile: updateProfile,
   requireLogin: requireLogin,
+  invalidate: invalidate,
   readCached: readCached,
   clearCached: clearCached
 };

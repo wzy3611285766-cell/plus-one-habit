@@ -57,6 +57,15 @@ const utilFiles = [
 ];
 
 function freshUtils() {
+  // 换模块实例前，先掐掉旧 store 的 debounce 推送定时器：
+  // 否则它会在之后某个用例的 await 间隙开火，向共享的 env.callCount 写入，
+  // 让「不应发起云调用」这类精确增量断言偶发假失败。
+  try {
+    const prevStore = require.cache[require.resolve(utilFiles[4])];
+    if (prevStore && prevStore.exports && prevStore.exports.cancelScheduled) {
+      prevStore.exports.cancelScheduled();
+    }
+  } catch (e) { /* 首次调用时还没有旧实例 */ }
   utilFiles.forEach((f) => { delete require.cache[require.resolve(f)]; });
   return {
     auth: require(utilFiles[2]),
@@ -116,6 +125,14 @@ await test('未登录也能正常使用，不做任何拦截', () => {
   eq(todayPage.data.hasGoals, false, '新环境还没有目标');
 });
 
+await test('启动不跳登录页：未登录直接看到今日页（审核要求先体验功能）', () => {
+  const loginJumps = env.log.filter((x) =>
+    (x.type === 'reLaunch' || x.type === 'redirectTo') && String(x.url || '').indexOf('login') >= 0);
+  eq(loginJumps.length, 0, '未登录进入时不应被送去登录页');
+  eq(todayPage.data.logged, false);
+  eq(todayPage.data.hasGoals, false);
+});
+
 await test('未登录时新建目标仍然可用（写本机）', () => {
   U1.store.addGoal({
     id: 'pg1', name: '背单词', unit: '个', total: 100,
@@ -127,7 +144,7 @@ await test('未登录时新建目标仍然可用（写本机）', () => {
   eq(todayPage.data.rows[0].name, '背单词');
   eq(todayPage.data.rows[0].total, '100', '卡片应带总量');
   eq(todayPage.data.rows[0].complete, false, '刚建的目标不应是已完成');
-  assert(todayPage.data.statCards.length === 4, '统计条应有四张卡');
+  assert(todayPage.data.statCards.length === 2, '统计条应有两张卡（今日已打卡 / 最长连续）');
 });
 
 await test('今日区三态：今天新建的目标不会被误判成「昨天漏卡」', () => {
@@ -315,7 +332,9 @@ await test('一键登录成功后身份被保存，并自动把本机游客数�
 
   loginPage.doLogin();
 
-  await new Promise((r) => setTimeout(r, 400));
+  /* 700ms：登录成功 500ms 后还有一次导航（无页面栈时 switchTab 今日页），
+     在本用例窗口内消化掉，避免它飘进后面的导航断言 */
+  await new Promise((r) => setTimeout(r, 700));
   assert(U2.auth.isLogged(), '应已登录，错误：' + JSON.stringify(loginPage.data.error));
   assert(U2.auth.user().id, '应拿到账号 id');
   assert(U2.store.syncState().lastSyncAt > 0, '登录后应完成一次数据对齐');
@@ -349,6 +368,45 @@ await test('登录后当日打卡会同步到云端', async () => {
   const logs = docs.filter((d) => d.key.indexOf('logs:') === 0)
     .reduce((a, d) => a.concat(d.payload.items || []), []);
   assert(logs.some((l) => l.goalId === 'pg1'), '云端应出现这个目标今天的打卡记录');
+});
+
+await test('从「我的」进入登录：成功后返回上一页，不再强制跳今日', async () => {
+  env.storage.clear();
+  freshUtils();
+  const page = mount('login');
+  page.onLoad();
+
+  env.pageStack = [{}, {}];       // 模拟今日/我的 → navigateTo 登录页
+  const before = env.log.length;
+  page.doLogin();
+  await new Promise((r) => setTimeout(r, 700));   // 成功提示 500ms 后才导航
+  env.pageStack = [];
+
+  const nav = env.log.slice(before);
+  assert(nav.some((x) => x.type === 'navigateBack'), '有页面栈时应原路返回');
+  assert(!nav.some((x) => x.type === 'switchTab'), '不应强制切到今日页');
+});
+
+await test('登录页有「先随便看看」出口：不登录也能回到今日页', () => {
+  env.storage.clear();
+  freshUtils();                 // 清掉上一段的内存登录态，模拟一个还没登录的人
+  const page = mount('login');
+  page.onLoad();
+
+  // 冷启动直接落在登录页（没有页面栈）→ 回今日页
+  const before = env.log.length;
+  page.browse();
+  const nav = env.log.slice(before);
+  assert(nav.some((x) => x.type === 'switchTab' && x.url === '/pages/today/today'),
+    '没有页面栈时应 switchTab 回今日页，而不是把用户困在登录页');
+
+  // 从今日页点「登录」进来（有页面栈）→ 直接返回上一页
+  env.pageStack = [{}, {}];
+  const before2 = env.log.length;
+  page.browse();
+  const nav2 = env.log.slice(before2);
+  assert(nav2.some((x) => x.type === 'navigateBack'), '有页面栈时应返回上一页');
+  env.pageStack = [];
 });
 
 /* ================================================================= */
@@ -464,7 +522,7 @@ await test('登录后展示昵称与同步状态', async () => {
   eq(page.data.logged, true);
   assert(page.data.user.id, '应展示账号 id');
   assert(page.data.user.hasWechat, '微信身份应标记为已绑定');
-  assert(page.data.stats.records >= 1, '应统计到打卡记录');
+  assert(U9.store.get().logs.some((l) => !l.deleted), '应统计到打卡记录');
   assert(['已同步', '同步中', '待同步'].indexOf(page.data.sync.text) >= 0,
     '同步状态应是中性词，实际：' + page.data.sync.text);
 });
@@ -500,7 +558,7 @@ await test('看板正确汇总并生成 14 天柱状数据', async () => {
   eq(page.data.hasData, true);
   eq(page.data.chart.length, 14, '近 14 天应有 14 根柱子');
 
-  const cards = page.data.activeCards.concat(page.data.doneCards);
+  const cards = page.data.sections.reduce((acc, s) => acc.concat(s.cards), []);
   assert(cards.length >= 2, '应统计到目标数');
   assert(page.data.sections.length >= 1, '应按进行中 / 已完成分区');
 
@@ -510,28 +568,67 @@ await test('看板正确汇总并生成 14 天柱状数据', async () => {
   assert(cards[0].etaText && cards[0].etaText.length > 0, '每个目标都应有预计完成说明');
   assert(cards[0].pct >= 0 && cards[0].pct <= 100, '完成率应在 0~100');
   assert(page.data.legend.length >= 1, '近 14 天有记录的目标应进图例');
+
+  // 柱状段：flex-grow 按 amount 分配，颜色必须有兜底（透明段 = 柱子「半截白」）
+  page.data.chart.forEach((c) => {
+    c.segs.forEach((sg) => {
+      assert(sg.amount > 0, '段必须有正数量');
+      assert(sg.color && sg.color.indexOf('undefined') < 0, '段颜色不得为空/undefined');
+    });
+  });
 });
 
-await test('看板：展开记录后能删掉一条（两段式确认，不是长按）', async () => {
+await test('看板：展开记录后能删掉一天（两段式确认，天行整删）', async () => {
   const UB = freshUtils();
   await boot(UB);
   const page = mount('board');
   page.onLoad();
   page.render();
 
-  const card = page.data.activeCards.find((c) => c.logCount > 0);
+  const card = page.data.sections.reduce((a, s) => a.concat(s.cards), []).find((c) => c.logCount > 0);
   assert(card, '应有一个带记录的目标');
 
   page.toggleLogs({ currentTarget: { dataset: { gid: card.gid } } });
   eq(page.data.expanded, card.gid, '点一次应展开');
 
-  const logId = card.logs[0].id;
-  page.deleteLog({ currentTarget: { dataset: { id: logId } } });
-  eq(page.data.confirmDel, logId, '第一次点应进入待确认');
-  assert(!(UB.store.get().logs.find((l) => l.id === logId) || {}).deleted, '第一次点不该真的删');
+  const ids = String(card.logs[0].id).split(',');
+  page.deleteLog({ currentTarget: { dataset: { id: card.logs[0].id } } });
+  eq(page.data.confirmDel, card.logs[0].id, '第一次点应进入待确认');
+  assert(ids.every((x) => !((UB.store.get().logs.find((l) => l.id === x) || {}).deleted)),
+    '第一次点不该真的删');
 
-  page.deleteLog({ currentTarget: { dataset: { id: logId } } });
-  eq((UB.store.get().logs.find((l) => l.id === logId) || {}).deleted, true, '第二次点才真删');
+  page.deleteLog({ currentTarget: { dataset: { id: card.logs[0].id } } });
+  assert(ids.every((x) => (UB.store.get().logs.find((l) => l.id === x) || {}).deleted),
+    '第二次点才真删（当天整删）');
+});
+
+await test('看板：记录按天聚合——同一天多次打卡合成一行（合计+次数），按天整删', async () => {
+  const UC = freshUtils();
+  await boot(UC);
+  const t = UC.U.todayStr();
+  UC.store.addGoal({ id: 'pg-day', name: '聚合测试', unit: '个', total: 100, deadline: UC.U.addDays(t, 30), createdAt: t, color: '#6366f1', sample: false });
+  UC.store.addLog('pg-day', t, 1, null, false);
+  UC.store.addLog('pg-day', t, 3, null, false);
+  UC.store.addLog('pg-day', t, 2, null, true);
+
+  const page = mount('board');
+  page.onLoad();
+  page.render();
+
+  const card = page.data.sections.reduce((a, s) => a.concat(s.cards), []).find((c) => c.gid === 'pg-day');
+  assert(card, '新目标应有卡');
+  const day = card.logs.find((r) => r.id.indexOf(',') >= 0);
+  assert(day, '同一天多次打卡应合成一行');
+  eq(day.amount, '6', '当天合计');
+  eq(day.count, 3, '次数标注');
+  eq(day.makeup, true, '混有补记应标注');
+
+  page.toggleLogs({ currentTarget: { dataset: { gid: 'pg-day' } } });
+  page.deleteLog({ currentTarget: { dataset: { id: day.id } } });
+  page.deleteLog({ currentTarget: { dataset: { id: day.id } } });
+  const left = UC.store.get().logs.filter((l) => l.goalId === 'pg-day' && l.date === t && !l.deleted);
+  eq(left.length, 0, '确认后当天三条一起删掉');
+  if (typeof page.onUnload === 'function') page.onUnload();
 });
 
 await test('看板：统计条 / 热力图 / 最近动态 / 柱子点击', async () => {
@@ -586,12 +683,15 @@ await test('周报：四栏复盘可保存，并能生成可复制的周报文�
   const note = U16.store.get().notes[mon];
   assert(note && note.keep === '每天都打了卡', '复盘应写入 notes');
 
-  page.generate();
-  assert(page.data.hasReport, '应生成周报');
-  includes(page.data.report, '每天都在打了卡'.slice(0, 3), '周报应包含复盘内容');
+  eq(page.data.form.keep, '', '保存后表单应清空（内容进往期列表）');
+  const own = page.data.archive.find((a) => a.key === mon);
+  assert(own, '刚保存的周应出现在往期列表');
+  includes(own.snippet, '保持：每天都打了卡');
 
-  page.copyReport();
-  assert(env.log.some((x) => x.type === 'copy'), '应触发复制');
+  page.goArchive({ currentTarget: { dataset: { off: own.off } } });
+  eq(page.data.form.keep, '每天都打了卡', '点存档行应把内容装回 KPT 纸');
+  eq(page.data.offset, 0, '当前周的行也能打开');
+
 });
 
 await test('复盘会随打卡数据一起同步到云端', async () => {
@@ -605,6 +705,41 @@ await test('复盘会随打卡数据一起同步到云端', async () => {
   const mon = U17.U.mondayOf(U17.U.todayStr());
   assert(core.payload.notes[mon], '云端应存有这条复盘');
   eq(core.payload.notes[mon].keep, '每天都打了卡');
+});
+
+await test('往期复盘存档：新→旧排列、带摘录、点按直达那一周', async () => {
+  const U18 = freshUtils();
+  await boot(U18);
+  const page = mount('weekly');
+  page.onLoad();
+  page.render();
+
+  const mon0 = U18.U.mondayOf(U18.U.todayStr());
+  const w1 = U18.U.addDays(mon0, -7);
+  const w2 = U18.U.addDays(mon0, -14);
+  U18.store.setNote(w1, { keep: '第一周保持', problem: '', try: '', next: '' });
+  U18.store.setNote(w2, { keep: '', problem: '第二周问题', try: '', next: '' });
+  page.render();
+
+  const arc = page.data.archive;
+  // 共享环境里可能还有别的周写过复盘，按 key 找本周插入的两条
+  const byKey = {};
+  arc.forEach((a) => { byKey[a.key] = a; });
+  assert(byKey[w1] && byKey[w2], '写过复盘的两周都应在存档里');
+  eq(byKey[w1].snippet, '保持：第一周保持', '摘录取第一个非空栏');
+  eq(byKey[w2].snippet, '问题：第二周问题');
+  const iW1 = arc.indexOf(byKey[w1]);
+  const iW2 = arc.indexOf(byKey[w2]);
+  assert(iW1 < iW2, '新 → 旧排序');
+
+  eq(page.data.archiveOpen, false, '存档默认收起');
+  page.toggleArchive();
+  eq(page.data.archiveOpen, true, '标题行可展开');
+
+  page.goArchive({ currentTarget: { dataset: { off: byKey[w2].off } } });
+  eq(page.data.offset, -2, '应跳到两周前');
+  eq(page.data.form.problem, '第二周问题', 'KPT 纸应载入那周的复盘');
+  if (typeof page.onUnload === 'function') page.onUnload();
 });
 
 /* ================================================================= */
@@ -631,37 +766,7 @@ await test('新建目标：实时算出每日强度，日期早于今天会被�
   includes(page.data.preview.text, '每天 5', '应算出每天的量');
 });
 
-/** 过审模式下编辑页被拦住，下面两条用例只在完整版有意义 */
-const SAFE = require(path.join(HERE, '..', 'miniprogram', 'utils', 'config.js')).SAFE_MODE;
-
-await test('过审模式：新建目标不跳编辑页，改为打开预设选择', async () => {
-  await boot(freshUtils());
-
-  const page = mount('today');
-  page.onLoad();
-  page.render();
-  eq(page.data.safeMode, true, '应处于过审模式');
-  eq(page.data.presets.length, 4, '应提供 4 个预设目标');
-
-  let jumped = false;
-  const backup = wx.navigateTo;
-  wx.navigateTo = () => { jumped = true; };
-
-  page.goNewGoal();
-  eq(jumped, false, '过审模式不该跳到有输入框的页面');
-  eq(page.data.presetOn, true, '应打开预设选择弹层');
-
-  const before = page.data.rows.length;
-  page.pickPreset({ currentTarget: { dataset: { i: 0 } } });
-  eq(page.data.presetOn, false, '选完应关闭弹层');
-  eq(page.data.rows.length, before + 1, '应真的加了一个目标');
-
-  wx.navigateTo = backup;
-});
-
 await test('编辑已有目标会把改动写回并标记为待同步', async () => {
-  if (SAFE) return;   // 过审模式下这一页不可进入
-
   const U19 = freshUtils();
   await boot(U19);
   const page = mount('goalEdit');
@@ -708,35 +813,6 @@ await test('所有页面在未登录 + 空数据下渲染都不报错', async ()
 
 /* ================================================================= */
 
-group('周报文本');
-
-await test('生成的文本对齐基准格式：标题 / 每目标一行 / 四栏 / 合计', async () => {
-  const UW = freshUtils();
-  await boot(UW);
-
-  const t = UW.U.todayStr();
-  UW.store.addGoal({
-    id: 'w1', name: '背单词', unit: '个', total: 100,
-    deadline: UW.U.addDays(t, 10), createdAt: t, color: '#6366f1', sample: false
-  });
-  UW.store.addLog('w1', t, 5, null, false);
-
-  const page = mount('weekly');
-  page.onLoad();
-  page.render();
-
-  page.setData({ form: { keep: '保持A', problem: '问题B', try: '尝试C', next: '预案D' } });
-  page.generate();
-  const r = page.data.report;
-
-  includes(r, '【学习周报】', '应以基准的标题开头');
-  includes(r, '（累计', '每个目标行应带累计完成率');
-  includes(r, '保持：保持A', '四栏应写进文本');
-  includes(r, '下周预案：预案D');
-  assert(r.indexOf('分钟') < 0, '没有用时数据，文本里不该出现「分钟」');
-  assert(r.split('\n').length >= 3, '应有多行，不是一整段');
-});
-
 group('注销账号');
 
 await test('确认词不对时拦下，不发请求也不动登录态', async () => {
@@ -757,7 +833,7 @@ await test('确认词不对时拦下，不发请求也不动登录态', async ()
   page.submitDeleteAccount();
 
   eq(page.data.formError, '请输入「注销」两个字以确认');
-  eq(env.callCount.auth, before, '确认词不对时不该发云函数请求');
+  eq(env.callCount.auth, before, '第一次点只是上膛，不该发云函数请求');
   eq(UD.auth.isLogged(), true, '也不该动登录态');
 });
 
@@ -776,13 +852,216 @@ await test('注销成功后：账号没了、云端分片清零、本机回到�
   page.openDeleteAccount();
   page.setData({ form: { confirmDelete: '注销' } });
   page.submitDeleteAccount();
-  await new Promise((r) => setTimeout(r, 400));
+  /* 等 700ms：注销链路里有异步收尾（弹层关闭、渲染、toast），
+     让它们在本用例窗口内消化完，避免飘进后面用例 */
+  await new Promise((r) => setTimeout(r, 700));
 
   eq(page.data.logged, false, '应回到未登录');
   assert(!UD.auth.isLogged(), '本机身份缓存应已清空');
   eq(db.dump('accounts').filter((a) => a.openid === PAGE_OPENID).length, 0, '账号文档应已删除');
   eq(db.dump('sync_docs').filter((d) => d.userId === acc._id).length, 0, '云端分片应已清空');
   eq(UD.store.get().goals.length, 0, '本机数据也应清空');
+});
+
+group('示例数据升级（SEED_VERSION 迁移）');
+
+await test('旧版本的示例目标在启动时自动换成新版，用户自己的目标不动', () => {
+  const UD = freshUtils();
+  env.storage.clear();
+  const t = UD.U.todayStr();
+  const st = UD.M.blankState();
+  st.seedVersion = 4;                       // 旧名单
+  st.goals.push({ id: 'seed-g3', name: '读《马斯克传》', unit: '页', total: 440, deadline: UD.U.addDays(t, 40), createdAt: t, color: '#10b981', obstacle: '', plan: '', sample: true, updatedAt: 1 });
+  st.goals.push({ id: 'pg-own', name: '用户自己的目标', unit: '个', total: 100, deadline: UD.U.addDays(t, 30), createdAt: t, color: '#6366f1', obstacle: '', plan: '', sample: false, updatedAt: 1 });
+  st.seeded = true;
+  env.storage.set('lgt.state.v1', JSON.stringify(st));
+
+  UD.store.load();
+
+  const goals = UD.store.get().goals;
+  const samples = goals.filter((g) => g.sample && !g.deleted).map((g) => g.name);
+  eq(samples.length, 3, '应换成新版 3 个示例');
+  includes(samples.join(','), '币安人生', '新名单应生效');
+  assert(samples.join(',').indexOf('马斯克') < 0, '旧示例应被摘掉');
+  const own = goals.find((g) => !g.sample);
+  eq(own.name, '用户自己的目标', '用户自己的目标不受影响');
+  eq(UD.store.get().seedVersion, UD.M.SEED_VERSION, '版本号应对齐');
+});
+
+await test('清过示例的设备升级时不会重新塞入', () => {
+  const UD = freshUtils();
+  env.storage.clear();
+  const t = UD.U.todayStr();
+  const st = UD.M.blankState();
+  st.seedVersion = 4;
+  st.sampleCleared = true;                  // 用户明确清过
+  st.goals.push({ id: 'pg-own', name: '用户自己的目标', unit: '个', total: 100, deadline: UD.U.addDays(t, 30), createdAt: t, color: '#6366f1', obstacle: '', plan: '', sample: false, updatedAt: 1 });
+  env.storage.set('lgt.state.v1', JSON.stringify(st));
+
+  UD.store.load();
+
+  eq(UD.store.get().goals.length, 1, '不应重新塞入示例');
+  eq(UD.store.get().seedVersion, UD.M.SEED_VERSION, '版本号静默对齐');
+});
+
+/* ================================================================= */
+
+group('审查修复回归（2026-10-26）');
+
+await test('我的页：音效开关能来回拨（曾读 tap 的 e.detail.value 被钉死在关）', async () => {
+  const U20 = freshUtils();
+  await boot(U20);
+
+  const page = mount('mine');
+  page.onLoad();
+  page.render();
+
+  page.setData({ soundOn: true });
+  page.toggleSound();
+  eq(page.data.soundOn, false, '开着时拨一下应关上');
+  eq(U20.store.get().settings.sound, false, '开关应落到 store 的设置里');
+
+  page.toggleSound();
+  eq(page.data.soundOn, true, '再拨一下应回到开（旧 bug 恒为关）');
+  eq(U20.store.get().settings.sound, true);
+});
+
+await test('目标编辑：日期下限不再钉死在当前值（新建=今天，编辑=创建日）', async () => {
+  const U21 = freshUtils();
+  await boot(U21);
+  const t = U21.U.todayStr();
+
+  const pageNew = mount('goalEdit');
+  pageNew.onLoad({});
+  eq(pageNew.data.minDate, t, '新建时下限是今天，短期目标可选（旧 bug 钉在默认 60 天后）');
+
+  U21.store.addGoal({ id: 'ge-1', name: '编辑下限', unit: '个', total: 10, deadline: U21.U.addDays(t, 30), createdAt: t, color: '#6366f1', sample: false });
+  const pageEdit = mount('goalEdit');
+  pageEdit.onLoad({ id: 'ge-1' });
+  eq(pageEdit.data.minDate, t, '编辑时下限是创建日，允许把截止日提前');
+  eq(pageEdit.data.form.deadline, U21.U.addDays(t, 30), '表单回填原截止日');
+});
+
+await test('周报：未保存的复盘切周要先确认，不再静默丢稿', async () => {
+  const U22 = freshUtils();
+  await boot(U22);
+
+  const page = mount('weekly');
+  page.onLoad();
+  page.render();
+
+  page.onField({ currentTarget: { dataset: { field: 'keep' } }, detail: { value: '写得正投入' } });
+  eq(page.data.dirty, true, '输入过内容应置 dirty');
+
+  const modals = () => env.log.filter((x) => x.type === 'modal').length;
+  const before = modals();
+  page.prevWeek();
+  eq(page.data.offset, 0, '有未保存内容时切周应被拦下');
+  eq(modals(), before + 1, '应弹确认框');
+
+  page.setData({ dirty: false });
+  page.prevWeek();
+  eq(page.data.offset, -1, '干净状态下切周直接走');
+  eq(modals(), before + 1, '不需要再确认');
+});
+
+await test('今日页：全部达成不再是「还没有目标」空态，且保留新建入口', async () => {
+  env.storage.clear();   // 只留本用例自己的目标：统计口径断言不能被前面用例的遗留目标污染
+  const U23 = freshUtils();
+  await boot(U23);
+  const t = U23.U.todayStr();
+  U23.store.addGoal({ id: 'done-1', name: '已完成目标', unit: '个', total: 3, deadline: U23.U.addDays(t, 10), createdAt: t, color: '#6366f1', sample: false });
+  U23.store.addLog('done-1', t, 3, null, false);
+
+  const page = mount('today');
+  page.onLoad();
+  page.render();
+
+  eq(page.data.hasGoals, true, '有已完成目标时仍算「有目标」（旧 bug 空态卡与已完成区同屏）');
+  eq(page.data.hasActive, false, '统计条口径只看进行中的目标');
+  eq(page.data.doneRows.length, 1, '已完成区应有这张卡');
+  assert(page.data.allDoneText, '应给出达成/收工的绿条文案，而不是「还没有目标」空态');
+});
+
+await test('我的页：退出登录后留在本页（不强制跳登录），登录入口仍然在', async () => {
+  const U24 = freshUtils();
+  await boot(U24);
+  await U24.auth.login();
+
+  const page = mount('mine');
+  page.onLoad();
+  page.render();
+  eq(page.data.logged, true, '先处于登录态');
+
+  env.modalAnswer = { confirm: true, cancel: false };
+  const relaunchBefore = env.log.filter((x) => x.type === 'reLaunch').length;
+  page.logout();
+  await new Promise((r) => setTimeout(r, 700));
+  env.modalAnswer = null;
+
+  eq(U24.auth.isLogged(), false, '应已登出');
+  eq(env.log.filter((x) => x.type === 'reLaunch').length, relaunchBefore,
+    '退出登录不应把用户推去登录页（审核要求登录可选）');
+  eq(page.data.logged, false, '页面应回到未登录态');
+  eq(page.data.sync.text, '未登录', '同步行应提示未登录');
+});
+
+await test('看板入场喷涌：圆环先归零再扫回真实值，柱子挂喷涌类', async () => {
+  env.storage.clear();
+  const U26 = freshUtils();
+  await boot(U26);
+  const t = U26.U.todayStr();
+  U26.store.addGoal({ id: 'fx-1', name: '动效目标', unit: '个', total: 10, deadline: U26.U.addDays(t, 30), createdAt: t, color: '#6366f1', sample: false });
+  U26.store.addLog('fx-1', t, 4, null, false);
+
+  const page = mount('board');
+  page.onLoad();
+  page.render();
+  eq(page.data.sections[0].cards[0].pct, 40, '渲染先是真实完成率');
+
+  page.onShow();
+  eq(page.data.sections[0].cards[0].pct, 0, '动效第一拍：圆环归零等待扫描');
+  await new Promise((r) => setTimeout(r, 900));   // 40ms 起跑 + 14 步 × 36ms，整段在本用例内消化
+  eq(page.data.fxOn, true, '柱子的喷涌类已挂上');
+  eq(page.data.sections[0].cards[0].pct, 40, '扫描结束回到真实完成率');
+  if (typeof page.onUnload === 'function') page.onUnload();
+});
+
+await test('账号被停用：恢复会话与同步都会清掉本机身份，不留僵尸登录态', async () => {
+  env.storage.clear();
+  const U27 = freshUtils();
+  await boot(U27);
+  await U27.auth.login();
+
+  const acc = db.dump('accounts').find((a) => a.openid === PAGE_OPENID);
+  assert(acc, '应已有账号');
+  await db.collection('accounts').doc(acc._id).update({ data: { status: 'disabled' } });
+
+  try {
+    // 1) 冷启动恢复：服务端说账号停用 → 本机身份立即作废
+    const r = await U27.auth.restore();
+    eq(r.ok, false);
+    eq(r.reason, 'ACCOUNT_DISABLED');
+    eq(U27.auth.isLogged(), false, '停用后不应继续显示已登录');
+
+    // 2) 同步链路：停用后推 dirty 分片，同样清身份并回到未登录
+    await db.collection('accounts').doc(acc._id).update({ data: { status: 'active' } });
+    await U27.auth.login();
+    U27.store.addGoal({
+      id: 'disabled-1', name: '待停用目标', unit: '个', total: 5,
+      deadline: U27.U.addDays(U27.U.todayStr(), 10), createdAt: U27.U.todayStr(), color: '#6366f1', sample: false
+    });
+    U27.store.cancelScheduled();
+    await db.collection('accounts').doc(acc._id).update({ data: { status: 'disabled' } });
+
+    let code = '';
+    try { await U27.store.push(); } catch (e) { code = e && e.code; }
+    eq(code, 'ACCOUNT_DISABLED', '应把停用错误原样抛给上层');
+    eq(U27.auth.isLogged(), false, '同步遇停用也应清掉本机身份');
+    eq(U27.store.syncState().phase, 'needlogin');
+  } finally {
+    await db.collection('accounts').doc(acc._id).update({ data: { status: 'active' } });
+  }
 });
 
 export const suite = '页面集成';

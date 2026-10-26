@@ -30,6 +30,7 @@ const M = require('./model.js');
 const U = require('./util.js');
 const api = require('./api.js');
 const auth = require('./auth.js');
+const fork = require('./fork.js');
 
 const K = CFG.K;
 
@@ -93,6 +94,27 @@ function shard(key) {
  * H5 遗留数据只在首次迁移时读取，迁移后立刻标记 dirty，
  * 用户登录后这批数据会自动带上云。
  */
+/**
+ * 示例数据升级：名单改版后（SEED_VERSION 变更），把本机还挂着的旧示例整体
+ * 换成新版。只动 sample 目标 —— 用户自己的目标与打卡一根手指都不碰；
+ * 清过示例的只对齐版本号，不会重新塞入。
+ */
+function refreshSeed() {
+  if ((state.seedVersion || 0) >= M.SEED_VERSION) return;
+  if (state.goals.some((g) => g.sample && !g.deleted)) {
+    state.goals = state.goals.filter((g) => !g.sample);
+    const data = M.seedData();
+    const base = state.goals.reduce((mx, g) => Math.max(mx, typeof g.order === 'number' ? g.order : 0), 0);
+    data.goals.forEach((g, i) => {
+      g.order = base + i + 1;
+      state.goals.push(g);
+    });
+    state.seeded = true;
+  }
+  state.seedVersion = M.SEED_VERSION;
+  save();
+}
+
 function load() {
   const rawShards = U.safeJson(readRaw(K.SHARDS, ''), null);
   if (rawShards && typeof rawShards === 'object') {
@@ -106,6 +128,7 @@ function load() {
   const rawState = U.safeJson(readRaw(K.STATE, ''), null);
   if (rawState) {
     state = M.parseState(rawState).state;
+    refreshSeed();
     return { migrated: false };
   }
 
@@ -119,6 +142,7 @@ function load() {
       Object.keys(shards).forEach((k) => { shards[k].dirty = true; });
       shard(M.CORE_KEY).dirty = true;
       saveShards();
+      refreshSeed();
       return { migrated: true, goals: state.goals.length, logs: state.logs.length };
     }
   }
@@ -251,6 +275,12 @@ function replaceAll(nextState) {
 
 function scheduled() { return !!pushTimer; }
 
+/** 取消尚未触发的 debounce 推送。测试换模块实例前调用，避免旧实例的
+ *  定时器在共享 mock 上开火污染后续用例的调用计数。 */
+function cancelScheduled() {
+  if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+}
+
 function schedulePush() {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
@@ -326,8 +356,10 @@ function push(retried) {
     .catch((e) => {
       pushing = false;
       syncInfo.lastError = e;
-      if (api.isAuthError(e)) setPhase('needlogin', '登录已过期，请重新登录');
-      else setPhase('error', e.apiMessage || '同步失败，稍后会自动重试');
+      if (api.isAuthError(e)) {
+        auth.invalidate(e.code);
+        setPhase('needlogin', '登录已过期，请重新登录');
+      } else setPhase('error', e.apiMessage || '同步失败，稍后会自动重试');
       throw e;
     });
 }
@@ -372,10 +404,53 @@ function pull(opts) {
     .catch((e) => {
       pulling = false;
       syncInfo.lastError = e;
-      if (api.isAuthError(e)) setPhase('needlogin', '登录已过期，请重新登录');
-      else setPhase('error', e.apiMessage || '拉取失败，请检查网络');
+      if (api.isAuthError(e)) {
+        auth.invalidate(e.code);
+        setPhase('needlogin', '登录已过期，请重新登录');
+      } else setPhase('error', e.apiMessage || '拉取失败，请检查网络');
       throw e;
     });
+}
+
+/**
+ * 采纳微信缓存的预拉取快照（冷启动、代码包加载前就拿到的那份）。
+ *
+ * 三条闸门，缺一不可：
+ *   1. 快照必须属于当前本机缓存的这个账号 —— 换微信号后缓存里可能还是上一个人的；
+ *   2. 本机分片还有未推送改动（dirty）时不准覆盖，否则离线改动会被快照抹掉；
+ *   3. 只接受 rev 更大的分片，和普通 pull 的判定完全一致。
+ * 采纳后不标记 dirty：这份数据是云端来的，不需要再推回去。
+ *
+ * @returns {{applied:number, changed:boolean, at:number, reason?:string}}
+ */
+function applyPrefetched(payload) {
+  /* 冷启动时这一步跑在 auth.restore() 之前，内存态还没有账号，
+     所以不能只看 auth.user()，要回退读本机缓存的 user。 */
+  const me = auth.user() || (auth.readCached() || {}).user;
+  if (!payload || !me || !me.id) return { applied: 0, changed: false, at: 0, reason: 'no-account' };
+  if (payload.userId !== me.id) return { applied: 0, changed: false, at: 0, reason: 'other-account' };
+
+  const docs = [];
+  Object.keys(payload.shards || {}).forEach((key) => {
+    if (!M.isKnownShardKey(key)) return;
+    const s = payload.shards[key];
+    if (!s || typeof s.rev !== 'number' || !s.payload) return;
+    const local = shards[key];
+    if (local && local.dirty) return;
+    if (local && local.rev >= s.rev) return;
+    docs.push({ key: key, rev: s.rev, payload: s.payload });
+    shard(key).rev = s.rev;
+  });
+
+  if (!docs.length) return { applied: 0, changed: false, at: payload.at || 0 };
+
+  const r = M.mergeRemoteShards(state, docs);
+  if (r.changed) save();
+  saveShards();
+  const at = U.finiteNumber(payload.at, 0, 1e15) ? payload.at : 0;
+  if (at > syncInfo.lastSyncAt) syncInfo.lastSyncAt = at;
+  if (r.changed) emit({ type: 'state' });
+  return { applied: docs.length, changed: r.changed, at: at };
 }
 
 /** 完整同步：先推本机改动，再拉云端变更 */
@@ -393,10 +468,19 @@ function sync(opts) {
  * 顺序很关键：先全量拉（把账号已有的数据并进来），再把本机数据推上去。
  * 这样「游客期间打的卡」和「账号里原有的数据」都会保留。
  */
-function onLoggedIn() {
+function onLoggedIn(opts) {
   setPhase('syncing', '正在与账号数据对齐…');
-  return pull({ force: true })
+  // 分叉记录到此完成使命：游客期的目标与打卡并入账号，此后数据跟账号走
+  fork.clearOnLogin();
+  const skipPull = !!(opts && opts.skipPull);
+
+  return (skipPull ? Promise.resolve({ skipped: 'prefetch' }) : pull({ force: true }))
     .then(() => {
+      if (skipPull) {
+        /* 预拉取快照刚把本机基线对齐到云端（见 app.prefetchFresh），不必再全量拉一次：
+           只推真正脏的分片；别的设备若刚改过，CAS 会回传权威数据，合并后自动重推。 */
+        return push();
+      }
       // 本机全部标脏，确保合并后的结果完整回传
       Object.keys(shards).forEach((k) => { if (M.isKnownShardKey(k)) shards[k].dirty = true; });
       shard(M.CORE_KEY).dirty = true;
@@ -418,6 +502,11 @@ function onLoggedOut() {
   emit({ type: 'state' });
 }
 
+/** 网络不可用：身份保留、分片基线与 dirty 标记一概不动，只改同步状态文案 */
+function setOffline(message) {
+  setPhase('offline', message || '网络不可用，稍后自动同步');
+}
+
 function resetToRemote() {
   if (!auth.isLogged()) return Promise.resolve(false);
   shards = {};
@@ -432,8 +521,66 @@ function clearLocalOnly() {
   shards = {};
   save();
   saveShards();
+  // 「重置这台手机」对分叉记录同样成立：回到全新状态，之后的分享卡片可以重新分叉
+  fork.clear();
   emit({ type: 'state' });
 }
+
+/* ================= 分享分叉（模仿 H5 第 17 轮） ================= */
+
+/** 把模板种成这位同学自己的目标。只写本机（同 installSample 的取向）：
+ *  游客期不标记脏分片，登录时 onLoggedIn 会统一补推。 */
+function seedForkGoals(goals) {
+  goals.forEach((g, i) => {
+    g.order = i + 1;
+    M.touch(g);
+    state.goals.push(g);
+  });
+  commit();
+}
+
+/**
+ * 处理一次带 ?fr= 的打开（分享卡片进入）。
+ * 判定逻辑在 fork.planIncoming（纯函数），这里只负责落地：
+ * 先回到空白再种入 —— 模板是唯一来源，本机残留的示例目标不混进来
+ * （对齐 H5 第 17 轮 C 补丁「首次分叉前清掉本机残留」）。
+ */
+function applyShareQuery(query, logged) {
+  const plan = fork.planIncoming(query, logged, state);
+  if (!plan.apply) return { applied: false, reason: plan.reason };
+
+  state = M.blankState();
+  shards = {};
+  save();
+  saveShards();
+  seedForkGoals(plan.goals);
+  fork.write({ forked: true, at: Date.now(), welcomed: false, tpl: plan.tpl });
+  return { applied: true, goals: plan.goals.length };
+}
+
+/**
+ * 重新载入分享时的那份数据：丢弃这台手机上的全部改动，重新种一次模板。
+ * 欢迎横幅不再弹（H5 同款：一辈子只打一次招呼）。
+ */
+function reforkFromShare() {
+  if (auth.isLogged()) return { ok: false };
+  const rec = fork.read();
+  if (!rec || !rec.tpl) return { ok: false };
+  const goals = fork.goalsFromTpl(fork.decodeTpl(rec.tpl));
+  if (!goals.length) return { ok: false };
+
+  state = M.blankState();
+  shards = {};
+  save();
+  saveShards();
+  seedForkGoals(goals);
+  fork.write({ forked: true, at: Date.now(), welcomed: true, tpl: rec.tpl });
+  return { ok: true, goals: goals.length };
+}
+
+function forkWelcomePending() { return fork.pendingWelcome(); }
+function forkMarkWelcomed() { fork.markWelcomed(); }
+function forkInfo() { return fork.info(); }
 
 /* ================= 演示数据 =================
    示例目标带 sample:true：卡片显示琥珀底与「示例」徽标，和真实目标一眼分得开。
@@ -451,6 +598,7 @@ function installSample() {
   state.seeded = true;
   state.sampleCleared = false;
 
+  state.seedVersion = M.SEED_VERSION;
   /* 刻意不调用 markCore()：示例数据只活在这台设备上。
      推上云端会把演示内容混进真实账号，换设备时还会看到一堆不属于自己的目标。 */
   commit();
@@ -492,9 +640,18 @@ module.exports = {
   push: push,
   onLoggedIn: onLoggedIn,
   onLoggedOut: onLoggedOut,
+  setOffline: setOffline,
+  applyPrefetched: applyPrefetched,
   resetToRemote: resetToRemote,
   clearLocalOnly: clearLocalOnly,
   scheduled: scheduled,
+  cancelScheduled: cancelScheduled,
+
+  applyShareQuery: applyShareQuery,
+  reforkFromShare: reforkFromShare,
+  forkWelcomePending: forkWelcomePending,
+  forkMarkWelcomed: forkMarkWelcomed,
+  forkInfo: forkInfo,
 
   addGoal: addGoal,
   updateGoal: updateGoal,

@@ -2,7 +2,7 @@
  * 音效层测试。
  *
  * 三件事值得用测试钉住：
- *   1. **设置里的 60 必须真的变成 0.6 的播放增益**（相对基准的百分比）。
+ *   1. **设置里的 60 必须真的变成 1.8 的主增益**（百分比 0.6 × 补益 3）。
  *   2. **连击音阶必须是基准那张表**（E5 起，五声音阶一轮后回落），
  *      不是「听起来差不多」的自由发挥。
  *   3. **开关关掉就绝不能发声**，而试听要无视开关。
@@ -130,20 +130,21 @@ await test('默认音量是 60（相对基准的百分比）', () => {
   eq(sfx.volumePct(), 60);
 });
 
-await test('音量真的落到主增益上：60% → 0.6', () => {
+await test('音量真的落到主增益上：60% → √0.6 × 补益 4 ≈ 3.098（2026-10-26 幂曲线调响）', () => {
   sfx.plus1(1);
   const ctx = lastCtx();
   assert(ctx, '应已创建 WebAudio 上下文');
   const master = masterGain(ctx);
   assert(master, '主增益应已连到 destination');
-  near(master.gain.value, 0.6, 1e-6, '主增益');
+  near(master.gain.value, Math.sqrt(0.6) * 4, 1e-6, '主增益');
 });
 
-await test('改音量后下一次发声就跟着变：40% → 0.4', () => {
+await test('改音量后下一次发声就跟着变：40% → √0.4 × 4 ≈ 2.530；纯函数映射保持 0.4 不变', () => {
   store.updateSettings({ volume: 40 });
   sfx.plus1(1);
   const master = masterGain(lastCtx());
-  near(master.gain.value, 0.4, 1e-6, '主增益');
+  near(master.gain.value, Math.sqrt(0.4) * 4, 1e-6, '主增益');
+  eq(sfx.gainFromVolume(40), 0.4, 'gainFromVolume 仍是纯百分比映射');
 });
 
 await test('+1 一次会叠出「哒」+ 主音 + 高八度三个音', () => {
@@ -285,7 +286,7 @@ await test('拿不到 WebAudio 时 tap() 退回 assets/sounds/tap.wav', () => {
     const plays = audioLog(before);
     eq(plays.length, 1, '应播放一次 wav');
     eq(plays[0].src, '/assets/sounds/tap.wav');
-    near(plays[0].volume, 0.5, 1e-6, '兜底播放也应遵守音量百分比');
+    near(plays[0].volume, Math.sqrt(0.5), 1e-6, '兜底播放也应遵守音量百分比（幂曲线）');
   } finally {
     globalThis.wx.createWebAudioContext = real;
   }

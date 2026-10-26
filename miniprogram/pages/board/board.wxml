@@ -76,24 +76,28 @@
         <view
           wx:if="{{card.logCount > 0}}"
           class="log-toggle {{expanded === card.gid ? 'is-open' : ''}}"
+          aria-role="button"
           data-gid="{{card.gid}}"
           bindtap="toggleLogs"
-        >{{expanded === card.gid ? '收起记录' : '查看 ' + card.logCount + ' 条记录'}}</view>
+        >{{expanded === card.gid ? '收起记录' : '查看 ' + card.logCount + ' 天记录'}}</view>
 
         <view wx:if="{{expanded === card.gid}}" class="recent-logs">
           <view wx:for="{{card.logs}}" wx:for-item="lg" wx:key="id" class="log-item">
             <text class="log-date num">{{lg.date}}</text>
             <text class="log-amt num">+{{lg.amount}}</text>
             <text class="log-unit">{{card.unit}}</text>
+            <text wx:if="{{lg.count > 1}}" class="log-min">· {{lg.count}} 次</text>
             <text wx:if="{{lg.minutes}}" class="log-min">· {{lg.minutes}} 分钟</text>
             <text wx:if="{{lg.makeup}}" class="log-makeup">补</text>
             <view
               class="log-del {{confirmDel === lg.id ? 'is-confirm' : ''}}"
+              aria-role="button"
+              aria-label="删除这天的记录"
               data-id="{{lg.id}}"
               catchtap="deleteLog"
             >{{confirmDel === lg.id ? '确认删除' : '×'}}</view>
           </view>
-          <text wx:if="{{card.logCount > 10}}" class="log-more">仅显示最近 10 条</text>
+          <text wx:if="{{card.logCount > 10}}" class="log-more">仅显示最近 10 天</text>
         </view>
       </view>
     </view>
@@ -108,6 +112,8 @@
         wx:for="{{chart}}"
         wx:key="date"
         class="col {{item.isToday ? 'is-today' : ''}} {{picked === item.date ? 'is-picked' : ''}}"
+        aria-role="button"
+        aria-label="{{item.tipDate}}"
         data-date="{{item.date}}"
         bindtap="pickDay"
       >
@@ -122,13 +128,13 @@
         </view>
 
         <view class="col-track">
-          <view class="col-stack" style="height:{{item.pct}}%">
+          <view class="col-stack {{fxOn ? 'is-gush' : ''}}" style="height:{{item.pct + '%'}};animation-delay:{{index * 25}}ms">
             <view
               wx:for="{{item.segs}}"
               wx:for-item="seg"
               wx:key="key"
               class="seg"
-              style="--gc:{{seg.color}};height:{{seg.pct}}%"
+              style="--gc:{{seg.color}};flex-grow:{{seg.amount}}"
             ></view>
           </view>
         </view>
@@ -142,7 +148,6 @@
         <text class="legend-name">{{item.name}}</text>
       </view>
     </view>
-    <text class="chart-hint">每段代表一个目标；点一根柱子看当天明细</text>
   </view>
 
   <!-- ---------- 近 35 天热力 ---------- -->
@@ -166,8 +171,7 @@
       <view class="heat-cell l3"></view>
       <view class="heat-cell l4"></view>
       <text class="legend-k">多</text>
-    </view>
-    <text class="heat-note">颜色按当天打卡次数分档（不是时长）</text>
+    </view>  
   </view>
 
   <!-- ---------- 最近动态 ---------- -->
@@ -188,7 +192,7 @@
     <view class="empty-title">还没有可统计的数据</view>
     <view class="empty-desc">先去今日页新建一个目标，打卡几天后这里就会有节奏图。</view>
     <view class="empty-actions">
-      <button class="btn btn-primary" bindtap="goToday">去今日打卡</button>
+      <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="goToday">去今日打卡</button>
     </view>
   </view>
 </view>

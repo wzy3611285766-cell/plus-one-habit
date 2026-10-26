@@ -5,9 +5,9 @@
   <!-- ---------- 卡片一：周切换 + 本周汇总 ---------- -->
   <view class="card week-card">
     <view class="week-nav">
-      <view class="btn btn-ghost week-btn" bindtap="prevWeek">上一周</view>
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-ghost week-btn" aria-role="button" bindtap="prevWeek">上一周</view>
       <text class="week-label">{{range}}{{isCurrent ? '（本周）' : ''}}</text>
-      <view class="btn btn-ghost week-btn {{isCurrent ? 'is-off' : ''}}" bindtap="nextWeek">下一周</view>
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-ghost week-btn {{isCurrent ? 'is-off' : ''}}" aria-role="button" aria-disabled="{{isCurrent}}" bindtap="nextWeek">下一周</view>
     </view>
 
     <view wx:if="{{!summary.length}}" class="week-empty">这一周还没有打卡记录</view>
@@ -27,7 +27,7 @@
       </view>
 
       <view class="week-summary-row week-total">
-        <text class="wsr-total-k">合计打卡</text>
+        <text class="wsr-total-k">PLus one</text>
         <view class="vals">
           <text class="wsr-strong num">{{totals.count}}</text> 次
           <view wx:if="{{totals.prevCount > 0}}" class="week-compare">上周 {{totals.prevCount}} 次</view>
@@ -37,14 +37,12 @@
   </view>
 
   <!-- ---------- 卡片二：KPT 纸感复盘 ---------- -->
-  <view class="card">
+  <view class="card" id="kpt-card">
     <view class="card-title">
       <view class="title-dot"></view>
       <text>本周复盘</text>
     </view>
 
-    <!-- 过审模式：四栏是文本输入框，整块隐藏；上面那块自动汇总保留 -->
-    <block wx:if="{{!safeMode}}">
     <view class="kpt-row">
       <text class="kpt-label">保持 Keep<text class="kpt-hint"> · 做得好的，下周继续</text></text>
       <input
@@ -97,16 +95,29 @@
       />
     </view>
 
-    </block>
-
     <view class="kpt-actions">
-      <button wx:if="{{!safeMode}}" class="btn btn-ghost" bindtap="save">保存复盘</button>
-      <button class="btn btn-primary" bindtap="generate">生成周报文本</button>
+      <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="save">保存复盘</button>
     </view>
+  </view>
 
-    <view wx:if="{{hasReport}}" class="report-box">
-      <view class="report-preview">{{report}}</view>
-      <button class="btn btn-green" bindtap="copyReport">一键复制周报</button>
+  <!-- ---------- 卡片三：往期复盘（写过才出现，默认收起） ---------- -->
+  <view wx:if="{{archive.length}}" class="card">
+    <view class="card-title arc-head" aria-role="button" aria-label="往期复盘，点按展开" bindtap="toggleArchive">
+      <view class="title-dot"></view>
+      <text>往期复盘</text>
+      <view class="arc-meta">
+        <text class="arc-count">{{archive.length}} 篇</text>
+        <view class="arc-toggle {{archiveOpen ? 'is-open' : ''}}"></view>
+      </view>
+    </view>
+    <view wx:if="{{archiveOpen}}" class="arc-list">
+      <view wx:for="{{archive}}" wx:key="key" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="arc-row" aria-role="button" data-off="{{item.off}}" bindtap="goArchive">
+        <view class="arc-main">
+          <text class="arc-week">{{item.label}}</text>
+          <text class="arc-snippet">{{item.snippet}}</text>
+        </view>
+        <view class="arc-chev"></view>
+      </view>
     </view>
   </view>
 </view>

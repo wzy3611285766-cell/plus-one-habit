@@ -1,11 +1,11 @@
 {
-  "description": "学习目标管理台 · 微信小程序（原生 + 云开发）。账号体系与打卡数据同步的部署配置见 README.md。",
+  "description": "PLus one habit · 微信小程序（原生 + 云开发）。账号体系与打卡数据同步的部署配置见 README.md。",
   "appid": "wx7d33ce79272ca950",
   "projectname": "learning-goal-tracker",
   "miniprogramRoot": "miniprogram/",
   "cloudfunctionRoot": "cloudfunctions/",
   "compileType": "miniprogram",
-  "libVersion": "3.5.5",
+  "libVersion": "3.17.5",
   "setting": {
     "urlCheck": true,
     "es6": true,

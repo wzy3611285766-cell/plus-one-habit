@@ -143,6 +143,20 @@
   }
   @media (prefers-color-scheme: dark) { .tag-uniq { color: #4fd18b; } }
 
+  .tag-expired {
+    display: inline-block; padding: 1px 8px; border-radius: 4px;
+    background: var(--warn-soft); color: #b45309;
+    font-size: 11px; font-weight: 650;
+  }
+  @media (prefers-color-scheme: dark) { .tag-expired { color: #fbbf24; } }
+
+  .tag-ok2 {
+    display: inline-block; padding: 1px 8px; border-radius: 4px;
+    background: var(--ok-soft); color: #0a7a45;
+    font-size: 11px; font-weight: 650;
+  }
+  @media (prefers-color-scheme: dark) { .tag-ok2 { color: #4fd18b; } }
+
   /* 表单 */
   .form-row { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
   .form-label { width: 88px; flex: none; font-size: 13px; color: var(--ink-2); padding-top: 7px; }
@@ -164,14 +178,14 @@
   /* 权限选项 */
   .perm-row {
     display: flex; align-items: center; gap: 10px;
-    padding: 11px 14px; border-radius: 8px; margin-bottom: 8px;
+    padding: 11px 14px; border-radius: 8px; margin-bottom:  8px;
     border: 1px solid var(--line); font-size: 13.5px; color: var(--ink-2);
   }
   .perm-row.on { border-color: var(--ok); background: var(--ok-soft); color: var(--ink); font-weight: 600; }
   .perm-row .dot { flex: none; }
 
   /* 图例 */
-  .legend { margin: 18px 0 0; padding: 0; }
+  .legend { margin: 18px 0 0; padding:  0; }
   .legend li {
     list-style: none; display: flex; gap: 11px; align-items: flex-start;
     margin-bottom: 12px; font-size: 14px;
@@ -208,23 +222,70 @@
 
   <h1>云开发控制台 · 操作图解</h1>
   <p class="lead">
-    建集合、建索引、设权限——这三步<b>必须你自己在网页上点</b>，我代劳不了。
-    但我可以把每一步点哪儿画清楚，你照着点就行。
+    <b>2026-10-26 更正：</b>本项目的环境 <code>demo-d4ggmg7lf4736fb7c</code> 经确认
+    <b>没有过期</b>（控制台状态「正常」），不需要新建环境。
+    早前把登录失败归因于「试用环境过期」是误判 —— 真正的高频原因是 accounts 集合里
+    残留的旧唯一索引 <code>email_1</code> / <code>phone_1</code>：新模型所有账号
+    <code>email</code> 均为空，第二个用户登录必撞唯一键（报「服务暂时不可用」）。
+    先按图 4 检查索引，只有控制台确实显示「已过期」时才需要按图 1 新建环境。
+    建集合、建索引、设权限这些<b>必须你自己在网页上点</b>，我代劳不了。
   </p>
   <div class="caveat">
-    <b>再次提醒：界面可能因版本略有差异。</b>位置对不上不要紧，<b>认关键词</b>：
-    「数据库」「索引管理」「权限设置」「唯一」。
+    <b>提醒：界面可能因版本略有差异。</b>位置对不上不要紧，<b>认关键词</b>：
+    「新建环境」「数据库」「索引管理」「权限设置」「唯一」。
   </div>
 
   <!-- ================= 图 1 ================= -->
   <div class="figure">
-    <h2>图 1 · 控制台里三个要去的地方<span class="who">你来做</span></h2>
-    <p class="h2sub">在开发者工具点顶部「☁ 云开发」打开，就是这个窗口</p>
+    <h2>图 1 · 检查环境状态（显示「正常」就跳过这一图）<span class="who">你来做</span></h2>
+    <p class="h2sub">在开发者工具点顶部「☁ 云开发」打开，环境列表长这样</p>
 
     <div class="shot">
       <div class="console-top">
         <span>环境</span>
-        <span class="env-pill">demo-d4ggmg7lf4736fb7c ▾</span>
+        <span class="env-pill">plus-one-xxxx ▾</span>
+      </div>
+      <div class="console-body" style="min-height:auto;">
+        <div class="c-main">
+          <div class="bar">
+            <b style="font-size:14px;">环境列表（额度 2 个）</b>
+            <span class="btn-add mark">＋ 新建环境<i class="badge left">1</i></span>
+          </div>
+          <table class="tbl">
+            <tr><th>环境 ID</th><th>状态</th><th>计费</th></tr>
+            <tr><td class="mono">demo-d4ggmg7lf4736fb7c</td><td><span class="tag-ok2">正常</span></td><td>按量付费</td></tr>
+            <tr><td class="mono">plus-one-xxxx（仅当上行确实过期才新建）</td><td><span class="tag-ok2">正常</span></td><td>按量付费</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><span class="num">1</span><span><b>先看状态列</b>：显示「正常」→ 这一图整段跳过，直接去做图 2；
+        只有显示「已过期」才点「新建环境」→ 计费选<b>按量付费</b>（个人有免费额度，这个量级基本花不到钱）→
+        环境名随意（比如 <code>plus-one</code>）→ 确定，等半分钟创建完。</span></li>
+      <li><span class="num">2</span><span>确实新建了才做这一步：<b>复制新环境的完整环境 ID</b>（点进环境也能看到，形如
+        <code>plus-one-1a2b3c4d5e</code>）。</span></li>
+      <li><span class="num">3</span><span>确实新建了才改配置：打开 <code>miniprogram/utils/config.js</code>，
+        第 8 行替换成新 ID 并保存：<br>
+        <code>const ENV_ID = 'plus-one-1a2b3c4d5e';</code></span></li>
+    </ul>
+
+    <div class="caveat" style="margin-top:18px;">
+      环境没过期就不要动它 —— 换环境等于换一套空数据库，旧环境里的账号与分片不会自动迁过来，
+      还得把两个集合、两个索引、三个云函数全部重做一遍。
+    </div>
+  </div>
+
+  <!-- ================= 图 2 ================= -->
+  <div class="figure">
+    <h2>图 2 · 控制台里两个要去的地方<span class="who">你来做</span></h2>
+    <p class="h2sub">左上角先切到新建的环境，再看左边这排菜单</p>
+
+    <div class="shot">
+      <div class="console-top">
+        <span>环境</span>
+        <span class="env-pill mark">plus-one-xxxx ▾<i class="badge left">0</i></span>
       </div>
       <div class="console-body">
         <div class="c-side">
@@ -238,20 +299,21 @@
         <div class="c-main" style="color:var(--ink-3);font-size:13.5px;">
           <p>左边这排菜单是整个控制台的导航。</p>
           <p><b style="color:var(--ink-2);">「数据库」</b>——建集合、建索引、设权限，全在这里。</p>
-          <p><b style="color:var(--ink-2);">「云函数」</b>——看云函数有没有上传成功、配环境变量。</p>
+          <p><b style="color:var(--ink-2);">「云函数」</b>——最后来这里确认三个函数（auth / sync / prefetch）上传成功。</p>
         </div>
       </div>
     </div>
 
     <ul class="legend">
-      <li><span class="num">1</span><span><b>「数据库」</b> —— 第 2、3、4 步（建集合 / 建索引 / 设权限）都在这里做。</span></li>
-      <li><span class="num">2</span><span><b>「云函数」</b> —— 第 5、6 步（确认上传成功、配环境变量）在这里做。</span></li>
+      <li><span class="num">0</span><span>左上角环境切换器，<b>确认选中的是新环境</b>——建错环境等于白建。</span></li>
+      <li><span class="num">1</span><span><b>「数据库」</b> —— 第 3、4、5 步（建集合 / 建索引 / 设权限）都在这里做。</span></li>
+      <li><span class="num">2</span><span><b>「云函数」</b> —— 第 6 步（确认上传成功）在这里看。</span></li>
     </ul>
   </div>
 
-  <!-- ================= 图 2 ================= -->
+  <!-- ================= 图 3 ================= -->
   <div class="figure">
-    <h2>图 2 · 建 5 个集合<span class="who">你来做</span></h2>
+    <h2>图 3 · 建 2 个集合<span class="who">你来做</span></h2>
     <p class="h2sub">点「数据库」之后的样子</p>
 
     <div class="shot">
@@ -273,9 +335,6 @@
           <table class="tbl">
             <tr><th>集合名称</th><th>记录数</th></tr>
             <tr><td class="mono">accounts</td><td>0</td></tr>
-            <tr><td class="mono">sessions</td><td>0</td></tr>
-            <tr><td class="mono">verify_codes</td><td>0</td></tr>
-            <tr><td class="mono">rate_limits</td><td>0</td></tr>
             <tr><td class="mono">sync_docs</td><td>0</td></tr>
           </table>
         </div>
@@ -283,20 +342,20 @@
     </div>
 
     <ul class="legend">
-      <li><span class="num">1</span><span>点「新建集合」，<b>输入名字后回车</b>，重复 5 次。</span></li>
+      <li><span class="num">1</span><span>点「新建集合」，<b>输入名字后回车</b>，一共 2 次。</span></li>
     </ul>
 
     <div class="caveat" style="margin-top:18px;">
       <b>⚠️ 名字必须一字不差</b>（区分大小写，用<b>半角下划线</b>，别用中文标点）：
-      <code>accounts</code> <code>sessions</code> <code>verify_codes</code>
-      <code>rate_limits</code> <code>sync_docs</code><br>
-      打错了不会立刻报错，但账号功能会莫名其妙失败——<b>这是最难查的一类问题，所以建的时候慢一点。</b>
+      <code>accounts</code> <code>sync_docs</code><br>
+      旧版图解里建的 <code>sessions</code> <code>verify_codes</code> <code>rate_limits</code>
+      <b>都不需要了</b>——现在没有代码读写它们，旧环境里建过的也不用迁移。
     </div>
   </div>
 
-  <!-- ================= 图 3 ================= -->
+  <!-- ================= 图 4 ================= -->
   <div class="figure">
-    <h2>图 3 · 建索引（最容易漏「唯一」的一步）<span class="who">你来做</span></h2>
+    <h2>图 4 · 建索引（最容易漏「唯一」的一步）<span class="who">你来做</span></h2>
     <p class="h2sub">点某个集合的名字进入详情，上方有三个标签</p>
 
     <div class="shot">
@@ -314,29 +373,23 @@
         </div>
         <table class="tbl">
           <tr><th>索引名称</th><th>字段</th><th>属性</th></tr>
-          <tr><td class="mono">email_1</td><td class="mono">email</td><td><span class="tag-uniq">唯一</span></td></tr>
+          <tr><td class="mono">openid_1</td><td class="mono">openid</td><td><span class="tag-uniq">唯一</span></td></tr>
         </table>
       </div>
     </div>
 
     <ul class="legend">
       <li><span class="num">1</span><span>进集合后，点上方 <b>「索引管理」</b> 标签（默认停在「记录」上，需要手动切）。</span></li>
-      <li><span class="num">2</span><span>点「新建索引」，会弹出下面图 4 那个表单。</span></li>
+      <li><span class="num">2</span><span>点「新建索引」，会弹出下面这个表单。</span></li>
     </ul>
-  </div>
 
-  <!-- ================= 图 4 ================= -->
-  <div class="figure">
-    <h2>图 4 · 新建索引的表单，长这样<span class="who">你来做</span></h2>
-    <p class="h2sub">这张图最重要 —— 90% 的错误都在「唯一」这个开关上</p>
-
-    <div class="shot">
+    <div class="shot" style="margin-top:18px;">
       <div class="c-main" style="padding:26px;">
         <div style="font-size:15px;font-weight:650;margin-bottom:22px;">新建索引</div>
 
         <div class="form-row">
           <div class="form-label">索引名称</div>
-          <div><span class="field">email_1</span>
+          <div><span class="field">openid_1</span>
             <div style="font-size:11.5px;color:var(--ink-3);margin-top:6px;">随便起，能认出是哪个字段就行</div>
           </div>
         </div>
@@ -344,7 +397,7 @@
         <div class="form-row">
           <div class="form-label">索引属性</div>
           <div class="radio mark">
-            <i class="badge left">1</i>
+            <i class="badge left">3</i>
             <span><i class="dot"></i>非唯一</span>
             <span><i class="dot on"></i><b style="color:var(--ink);">唯一</b></span>
           </div>
@@ -353,15 +406,15 @@
         <div class="form-row">
           <div class="form-label">字段</div>
           <div class="mark">
-            <i class="badge left">2</i>
-            <span class="field">email</span>
+            <i class="badge left">4</i>
+            <span class="field">openid</span>
             <span class="field" style="min-width:90px;">升序 ▾</span>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-label"></div>
-          <div class="add-field mark">＋ 添加字段<i class="badge left">3</i></div>
+          <div class="add-field">＋ 添加字段（只有 sync_docs 用得到）</div>
         </div>
 
         <div style="text-align:right;padding-top:10px;border-top:1px solid var(--line);">
@@ -372,38 +425,22 @@
     </div>
 
     <ul class="legend">
-      <li><span class="num">1</span><span><b>「唯一」这个开关是重点。</b>
-        下面这张表里标了 ✅ 的，<b>必须选「唯一」</b>；标 ❌ 的选「非唯一」。<br>
-        <span class="warn">漏勾了不会立刻报错，但「两个人用同一个邮箱注册」时会出现两个账号 —— 这类问题事后很难补救。</span></span></li>
-
-      <li><span class="num">2</span><span><b>字段名要和你代码里用的一模一样</b>（区分大小写）。比如
-        <code>tokenHash</code> 不能写成 <code>tokenhash</code>。</span></li>
-
-      <li><span class="num">3</span><span>只有两处需要<b>多个字段</b>的组合索引：
-        <code>verify_codes</code> 的 <code>target</code>+<code>purpose</code>、
-        <code>sync_docs</code> 的 <code>userId</code>+<code>key</code>。
-        点「＋ 添加字段」加第二行即可。</span></li>
+      <li><span class="num">3</span><span><b>两个索引都必须勾「唯一」。</b>
+        <span class="warn">漏勾了不会立刻报错，但可能出现重复账号 / 分片冲突这类很难事后补救的问题。</span></span></li>
+      <li><span class="num">4</span><span><b>字段名和代码里用的一模一样</b>（区分大小写）。</span></li>
     </ul>
 
     <table class="tbl" style="margin-top:22px;background:var(--card);border-radius:10px;overflow:hidden;">
       <tr><th>集合</th><th>字段</th><th>要勾「唯一」吗</th></tr>
-      <tr><td class="mono">accounts</td><td class="mono">email</td><td>✅ <b>要</b></td></tr>
-      <tr><td class="mono">accounts</td><td class="mono">phone</td><td>✅ <b>要</b></td></tr>
-      <tr><td class="mono">accounts</td><td class="mono">openid</td><td>✅ <b>要</b></td></tr>
-      <tr><td class="mono">sessions</td><td class="mono">tokenHash</td><td>✅ <b>要</b></td></tr>
-      <tr><td class="mono">sessions</td><td class="mono">userId</td><td>❌ 不要</td></tr>
-      <tr><td class="mono">sessions</td><td class="mono">expiresAt</td><td>❌ 不要</td></tr>
-      <tr><td class="mono">verify_codes</td><td class="mono">target + purpose</td><td>❌ 不要</td></tr>
-      <tr><td class="mono">verify_codes</td><td class="mono">expiresAt</td><td>❌ 不要</td></tr>
-      <tr><td class="mono">rate_limits</td><td class="mono">expiresAt</td><td>❌ 不要</td></tr>
-      <tr><td class="mono">sync_docs</td><td class="mono">userId + key</td><td>✅ <b>要</b></td></tr>
+      <tr><td class="mono">accounts</td><td class="mono">openid</td><td>✅ <b>要</b>（一个微信一个账号的最后防线）</td></tr>
+      <tr><td class="mono">sync_docs</td><td class="mono">userId + key</td><td>✅ <b>要</b>（联合索引：点「＋ 添加字段」加第二行）</td></tr>
     </table>
   </div>
 
   <!-- ================= 图 5 ================= -->
   <div class="figure">
-    <h2>图 5 · 设权限 + 配环境变量<span class="who">你来做</span></h2>
-    <p class="h2sub">左边是集合的「权限设置」标签，右边是云函数的「配置」</p>
+    <h2>图 5 · 设权限 ＋ 确认云函数上传<span class="who">你来做</span></h2>
+    <p class="h2sub">左边是集合的「权限设置」标签，右边是「云函数」页面</p>
 
     <div class="shot">
       <div class="console-body" style="min-height:auto;">
@@ -414,21 +451,20 @@
           <div class="perm-row"><i class="dot"></i>所有用户可读</div>
           <div class="perm-row on mark"><i class="dot on"></i>所有用户不可读写<i class="badge left">1</i></div>
           <div style="font-size:12px;color:var(--ink-3);margin-top:12px;">
-            选最后一项。<b>5 个集合都要设。</b>
+            选最后一项。<b>2 个集合都要设。</b>
           </div>
         </div>
 
         <div class="c-main">
-          <div style="font-size:14px;font-weight:650;margin-bottom:14px;">云函数 → auth → 配置</div>
+          <div style="font-size:14px;font-weight:650;margin-bottom:14px;">云函数 → 函数列表</div>
           <table class="tbl">
-            <tr><th>变量名</th><th>值</th></tr>
-            <tr class="mark">
-              <td class="mono">AUTH_DEV_MODE<i class="badge left">2</i></td>
-              <td class="mono">1</td>
-            </tr>
+            <tr><th>函数名</th><th>状态</th></tr>
+            <tr class="mark"><td class="mono">auth<i class="badge left">2</i></td><td><span class="tag-ok2">部署成功</span></td></tr>
+            <tr><td class="mono">sync</td><td><span class="tag-ok2">部署成功</span></td></tr>
           </table>
           <div style="font-size:12px;color:var(--ink-3);margin-top:12px;">
-            只加这一条就够了。改完要<b>保存</b>。
+            上传在<b>开发者工具的文件树</b>里做（见清单第 6 条），这里只用来确认结果。
+            <b>环境变量一个都不用配。</b>
           </div>
         </div>
       </div>
@@ -436,12 +472,10 @@
 
     <ul class="legend">
       <li><span class="num">1</span><span><b>「所有用户不可读写」</b> —— 必须选这个。<br>
-        所有数据访问都走云函数（云函数有管理员权限）。<br>
+        所有数据访问都走云函数（云函数有管理员权限），客户端不直连数据库。<br>
         <span class="warn">留着默认权限的话，别人能直接读写你的数据库，绕过全部账号校验。</span></span></li>
 
-      <li><span class="num">2</span><span><b><code>AUTH_DEV_MODE = 1</code></b> —— 让它把「找回密码」的验证码
-        <b>直接显示在页面上</b>，而不是真发短信（个人主体发不了短信）。你就能自己把流程走完。<br>
-        以后接上真实通道，删掉这条即可。</span></li>
+      <li><span class="num">2</span><span>三个函数（<code>auth</code> / <code>sync</code> / <code>prefetch</code>）都显示「部署成功」才算完成。</span></li>
     </ul>
   </div>
 
@@ -449,27 +483,34 @@
   <div class="steps">
     <h2>你的完整勾选清单</h2>
     <ol>
-      <li>导入项目 <code>C:\Users\Lenovo\WorkBuddy\2026-10-05-12-45-40\v3_work\wxapp</code><br>
-        <span class="ok">✔ 文件树里能看到 auth 和 sync 两个云函数文件夹</span></li>
+      <li>云开发控制台 → 环境列表，确认 <code>demo-d4ggmg7lf4736fb7c</code> 状态是「正常」<br>
+        <span class="ok">✔ 状态「正常」→ 不需要新建环境（只有「已过期」才新建，见更正说明）</span></li>
 
-      <li>建 5 个集合：<code>accounts</code> <code>sessions</code> <code>verify_codes</code>
-        <code>rate_limits</code> <code>sync_docs</code><br>
-        <span class="ok">✔ 数据库里正好这 5 个</span></li>
+      <li>确认 <code>miniprogram/utils/config.js</code> 第 8 行的 <code>ENV_ID</code> 与这个环境一致<br>
+        <span class="ok">✔ 环境 ID 一字不差</span></li>
 
-      <li>按图 4 那张表建 10 个索引（4 个勾「唯一」）<br>
-        <span class="ok">✔ 每个集合的索引列表里都齐了</span></li>
+      <li>「数据库」里建 2 个集合：<code>accounts</code> <code>sync_docs</code><br>
+        <span class="ok">✔ 数据库里正好这 2 个</span></li>
 
-      <li>5 个集合的权限都设为「所有用户不可读写」<br>
+      <li>建 2 个唯一索引：<code>accounts</code> 的 <code>openid</code>；
+        <code>sync_docs</code> 的 <code>userId</code> + <code>key</code>（联合）<br>
+        <span class="ok">✔ 属性都是「唯一」</span></li>
+
+      <li>2 个集合的权限都设为「所有用户不可读写」<br>
         <span class="ok">✔ 权限设置里最后一项被选中</span></li>
 
-      <li>右键 <code>auth</code> → 上传并部署：云端安装依赖；再对 <code>sync</code> 做一次<br>
-        <span class="ok">✔ 云开发控制台的「云函数」里能看到这两个</span></li>
+      <li>开发者工具文件树 <code>cloudfunctions</code> 下，右键 <code>auth</code> →
+        「上传并部署：云端安装依赖」；再对 <code>sync</code>、<code>prefetch</code> 各做一次<br>
+        <span class="ok">✔ 控制台「云函数」里三个都显示部署成功（环境变量一个都不用配）</span></li>
 
-      <li>给 <code>auth</code> 加环境变量 <code>AUTH_DEV_MODE=1</code>，保存<br>
-        <span class="ok">✔ 环境变量列表里能看到</span></li>
+      <li>（可选，冷启动加速）小程序后台 → 开发管理 → 开发设置 → 数据预拉取 → 开启 →
+        数据来源「云开发」→ 选同一环境 → 云函数选 <code>prefetch</code><br>
+        <span class="ok">✔ 真机冷启动后，云函数日志出现 <code>ok via=event</code></span><br>
+        <span style="font-size:13px;color:var(--ink-3);">不开也不影响功能，只是少一次「代码包加载前就把数据准备好」的加速。</span></li>
 
       <li>点「编译」<br>
-        <span class="ok">✔ 看到「今日」页和底部四个页签 —— 成了 🎉</span></li>
+        <span class="ok">✔ 登录页显示「微信一键登录」按钮 → 点击 → 提示「账号已创建」进入今日页 —— 成了 🎉</span><br>
+        <span style="font-size:13px;color:var(--ink-3);">最后自测：新建目标、打卡一次、「我的 → 立即同步」提示已同步。</span></li>
     </ol>
   </div>
 

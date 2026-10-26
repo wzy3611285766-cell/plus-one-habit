@@ -11,11 +11,12 @@
 
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
 
-const LOG_ROWS = 10;   // 基准：仅显示最近 10 条
+const LOG_ROWS = 10;   // 按天聚合后：仅显示最近 10 天
 
 Page({
   data: {
@@ -25,10 +26,8 @@ Page({
     /* 统计条：累计打卡 / 累计活跃 */
     statCards: [],
 
-    /* 目标卡：进行中在前，已完成单独分区 */
+    /* 目标卡：进行中在前，已完成单独分区。卡片只存 sections 一份，WXML 也只消费它 */
     sections: [],
-    activeCards: [],
-    doneCards: [],
     hasData: false,
 
     /* 近 14 天堆叠图 */
@@ -47,7 +46,14 @@ Page({
     /** 当前展开记录的目标；空串表示都收起 */
     expanded: '',
     /** 正在等待二次确认删除的记录 id */
-    confirmDel: ''
+    confirmDel: '',
+    /** 入场喷涌开关：挂上后柱子播 CSS 喷涌动画，圆环由 JS 分步扫描 */
+    fxOn: false
+  },
+
+  /** 转发卡片带目标模板：同学点开即可得到一份自己的副本（见 utils/fork.js） */
+  onShareAppMessage() {
+    return fork.shareConfig(store.get());
   },
 
   onLoad() {
@@ -59,11 +65,60 @@ Page({
     if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('board');
     prefs.setStatusBarLight(true);
     this.render();
+    this.playEnterFx();
+  },
+
+  /* ================= 入场喷涌 =================
+     切到看板时图表从无到有「喷涌」成形：
+       柱子 —— fxOn 挂 is-gush 类，CSS scaleY 从地面依次弹起（每列错峰 25ms）；
+       圆环 —— conic-gradient 的 --p 无法做 CSS 过渡，用 14 步 easeOut 扫到
+               目标值，中心的百分比数字跟着一起数上来。
+     两拍式重启：先摘类并把圆环归零，下一拍再挂类起跑 —— 没有这个间隔，
+     上一轮还挂在节点上的动画类不会被重新触发。 */
+  playEnterFx() {
+    if (!this.data.sections.length) return;
+    this.stopEnterFx();
+    this._fxTargets = this.data.sections.map((sec) => sec.cards.map((c) => c.pct));
+    this.setData({
+      fxOn: false,
+      sections: this.data.sections.map((sec) => Object.assign({}, sec, {
+        cards: sec.cards.map((c) => Object.assign({}, c, { pct: 0 }))
+      }))
+    });
+    this.fxDelayTimer = setTimeout(() => {
+      this.setData({ fxOn: true });
+      const steps = 14;
+      let i = 0;
+      this.pctTimer = setInterval(() => {
+        i++;
+        const eased = 1 - Math.pow(1 - i / steps, 3);
+        const targets = this._fxTargets;
+        this.setData({
+          sections: this.data.sections.map((sec, si) => Object.assign({}, sec, {
+            cards: sec.cards.map((c, ci) => Object.assign({}, c, {
+              pct: Math.round((targets[si][ci] || 0) * eased)
+            }))
+          }))
+        });
+        if (i >= steps) { clearInterval(this.pctTimer); this.pctTimer = null; }
+      }, 36);
+    }, 40);
+  },
+
+  stopEnterFx() {
+    if (this.pctTimer) { clearInterval(this.pctTimer); this.pctTimer = null; }
+    if (this.fxDelayTimer) { clearTimeout(this.fxDelayTimer); this.fxDelayTimer = null; }
   },
 
   onUnload() {
     if (this.unsub) this.unsub();
     if (this.confirmTimer) clearTimeout(this.confirmTimer);
+    this.stopEnterFx();
+  },
+
+  /* 切走时收掉动效定时器：真实值由下一次 onShow 的 render() 恢复 */
+  onHide() {
+    this.stopEnterFx();
   },
 
   render() {
@@ -88,17 +143,32 @@ Page({
       else if (e.diff >= 0) etaText = U.fmtShort(e.date) + ' · 提前 ' + e.diff + ' 天';
       else etaText = U.fmtShort(e.date) + ' · 拖后 ' + (-e.diff) + ' 天';
 
-      const rows = logs
-        .filter((l) => l.goalId === g.id)
-        .sort((a, b) => (a.date < b.date ? 1 : (a.date > b.date ? -1 : (b.ts || 0) - (a.ts || 0))))
+      /* 记录按天聚合：一行 = 这一天在该目标上的合计（连点几次的 +1 不再逐条刷屏）。
+         复盘要看的是「哪天加了多少」；删除也按天整删（ids 串，两段式确认不变）。 */
+      const byDay = {};
+      logs.forEach((l) => {
+        if (l.goalId !== g.id) return;
+        const d = byDay[l.date] || (byDay[l.date] = { date: l.date, amount: 0, count: 0, minutes: 0, makeup: false, ids: [] });
+        d.amount += l.amount;
+        d.count += 1;
+        d.minutes += l.minutes || 0;
+        if (l.makeup) d.makeup = true;
+        d.ids.push(l.id);
+      });
+      const rows = Object.keys(byDay)
+        .sort((a, b) => (a < b ? 1 : -1))
         .slice(0, LOG_ROWS)
-        .map((l) => ({
-          id: l.id,
-          date: U.fmtShort(l.date),
-          amount: U.trimNum(l.amount),
-          minutes: l.minutes || 0,
-          makeup: !!l.makeup
-        }));
+        .map((date) => {
+          const d = byDay[date];
+          return {
+            id: d.ids.join(','),
+            date: U.fmtShort(date),
+            amount: U.trimNum(d.amount),
+            count: d.count,
+            minutes: d.minutes,
+            makeup: d.makeup
+          };
+        });
 
       return {
         gid: g.id,
@@ -116,7 +186,7 @@ Page({
         etaBehind: e.status === 'ok' && e.diff < 0,
         plan: g.plan || '',
         obstacle: g.obstacle || '',
-        logCount: logs.filter((l) => l.goalId === g.id).length,
+        logCount: Object.keys(byDay).length,
         logs: rows
       };
     };
@@ -140,7 +210,7 @@ Page({
       let total = 0;
       goals.forEach((g) => {
         const v = M.logsOn(st, g.id, d);
-        if (v > 0) segs.push({ key: g.id, name: g.name, unit: g.unit, color: U.gcolor(g.color), amount: v });
+        if (v > 0) segs.push({ key: g.id, name: g.name, unit: g.unit, color: U.gcolor(g.color || M.COLORS[0]), amount: v });
         total += v;
       });
       days.push({ date: d, label: String(Number(d.slice(8, 10))), isToday: d === today, total: total, segs: segs });
@@ -156,7 +226,10 @@ Page({
       tipRows: d.segs.slice(0, 4).map((s) => ({
         k: s.key, name: s.name, unit: s.unit, amount: U.trimNum(s.amount), color: s.color
       })),
-      segs: d.segs.map((s) => ({ key: s.key, color: s.color, pct: Math.round(s.amount / chartMax * 100) }))
+      /* 段高不再用百分比：柱身已按 total/chartMax 定高，段内用 flex-grow 按
+         数量比例分配即可精确填满 —— 嵌套百分比（段% × 柱%）会被二次缩放，
+         取整误差还会让最高那根溢出裁切或填不满（线上柱子半截的根因）。 */
+      segs: d.segs.map((s) => ({ key: s.key, color: s.color, amount: s.amount }))
     }));
 
     /* 图例：只列近 14 天真的出现过的目标（基准 usedGoals 的口径） */
@@ -211,8 +284,6 @@ Page({
       logged: auth.isLogged(),
       statCards: statCards,
       sections: sections,
-      activeCards: activeCards,
-      doneCards: doneCards,
       hasData: goals.length > 0,
       chart: chart,
       chartMax: chartMax,
@@ -242,18 +313,20 @@ Page({
    * 基准用的是同一套「点一次变色、再点确认」的交互，不是长按。
    */
   deleteLog(e) {
-    const id = e.currentTarget.dataset.id;
-    if (!id) return;
+    const raw = String(e.currentTarget.dataset.id || '');
+    if (!raw) return;
 
-    if (this.data.confirmDel !== id) {
-      this.setData({ confirmDel: id });
+    if (this.data.confirmDel !== raw) {
+      this.setData({ confirmDel: raw });
       if (this.confirmTimer) clearTimeout(this.confirmTimer);
       this.confirmTimer = setTimeout(() => this.setData({ confirmDel: '' }), 3000);
       return;
     }
 
     if (this.confirmTimer) clearTimeout(this.confirmTimer);
-    const ok = store.deleteLog(id);
+    // 行是「天」，id 是当天的记录 id 串：按天整删
+    let ok = false;
+    raw.split(',').forEach((id) => { if (store.deleteLog(id)) ok = true; });
     this.setData({ confirmDel: '' });
     if (ok) {
       this.render();

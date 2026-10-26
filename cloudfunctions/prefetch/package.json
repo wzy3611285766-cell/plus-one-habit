@@ -1,0 +1,10 @@
+{
+  "name": "prefetch",
+  "version": "1.0.0",
+  "description": "PLus one habit · 数据预拉取云函数（冷启动前把账号分片缓存到微信本地）",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -26,10 +26,12 @@ const CODES = [
 
 /**
  * 出现这些错误码时，本地的身份缓存已经不可信，应该清掉并回到未登录。
- * 只有 NOT_REGISTERED 符合：它表示「本地有缓存，但云端查不到这个微信的账号」。
+ *   NOT_REGISTERED   —— 本地有缓存，但云端查不到这个微信的账号；
+ *   ACCOUNT_DISABLED —— 账号被停用，服务端会拒绝一切登录与同步，
+ *                       继续留着本地登录态只会反复报错，不如回到未登录。
  * 网络类错误绝不能列进来 —— 一次断网不等于没登录。
  */
-const NEEDS_LOGIN = { NOT_REGISTERED: 1 };
+const NEEDS_LOGIN = { NOT_REGISTERED: 1, ACCOUNT_DISABLED: 1 };
 
 function ApiError(code, message, extra) {
   const e = new Error(message || code);

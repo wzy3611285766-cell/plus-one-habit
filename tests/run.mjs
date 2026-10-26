@@ -11,14 +11,16 @@ import * as H from './harness.mjs';
 const SUITES = [
   ['账号系统（注册/登录/会话/改密/找回/设备管理）', './auth.test.mjs'],
   ['打卡数据同步（分片/增量/冲突收敛/隔离）', './sync.test.mjs'],
+  ['数据预拉取（冷启动缓存/身份隔离/体积裁剪/采纳闸门）', './prefetch.test.mjs'],
   ['客户端数据模型（统计口径/合并算法）', './model.test.mjs'],
+  ['分享分叉（模板编解码/入站闸门/重载）', './fork.test.mjs'],
   ['页面纵向集成（页面→云函数→数据库）', './pages.test.mjs'],
   ['音效层（百分比增益/开关边界/实例复用）', './sfx.test.mjs'],
   ['共享内核一致性（auth 与 sync 的副本比对）', './shared-kernel.test.mjs'],
   ['小程序静态检查（WXML/WXSS/JSON/JS 语法）', './static.test.mjs']
 ];
 
-console.log('学习目标管理台 · 小程序测试');
+console.log('PLus one habit · 小程序测试');
 console.log('运行时 ' + process.version + '（Electron-as-Node ' + (process.versions.electron || '-') + '）');
 
 let loadFailed = 0;

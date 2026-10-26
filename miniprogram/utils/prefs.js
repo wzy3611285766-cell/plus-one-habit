@@ -44,8 +44,10 @@ function systemDark() {
       const info = wx.getAppBaseInfo();
       if (info && info.theme) return info.theme === 'dark';
     }
-    if (wx.getSystemInfoSync) {
-      const info = wx.getSystemInfoSync();
+    /* 不再回退 getSystemInfoSync（已废弃，调试器「问题」面板会记一条）：
+       getAppBaseInfo 拿不到 theme 时按浅色处理即可 */
+    if (wx.getWindowInfo && wx.getAppBaseInfo) {
+      const info = wx.getAppBaseInfo();
       if (info && info.theme) return info.theme === 'dark';
     }
   } catch (e) { /* 取不到就按浅色处理 */ }

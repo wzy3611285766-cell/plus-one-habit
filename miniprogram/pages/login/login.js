@@ -5,8 +5,9 @@
  * openid 由云函数从调用上下文里取，用户不需要输入任何东西，
  * 第一次点会顺手把账号建好（服务端 isNewAccount 标记）。
  *
- * 页面只有一个按钮、一句「先不登录」，不写隐私说明、不解释数据流向 ——
- * 那些属于文档，不属于界面。用户此刻只需要做一个选择：登录，或者先不登录。
+ * 页面只有一个按钮，不写隐私说明、不解释数据流向 ——
+ * 那些属于文档，不属于界面。2026-10-25 起登录是必经步骤（app 登录闸门）：
+ * 未登录进不来任何 tab 页，本页就是入口。
  */
 
 const auth = require('../../utils/auth.js');
@@ -68,7 +69,14 @@ Page({
           icon: 'none',
           duration: 1200
         });
-        setTimeout(() => wx.switchTab({ url: '/pages/today/today' }), 500);
+        /* 登录入口可能在「我的」：从页面栈进来就原路返回，
+           只有冷启动直接落在登录页（没有上一页）才回今日页。 */
+        const stack = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+        const fromOtherPage = !!(stack && stack.length > 1);
+        setTimeout(() => {
+          if (fromOtherPage) wx.navigateBack();
+          else wx.switchTab({ url: '/pages/today/today' });
+        }, 500);
       })
       .catch((e) => {
         this.setData({ busy: false, busyText: '' });
@@ -76,11 +84,15 @@ Page({
       });
   },
 
-  /* ================= 其他 ================= */
+  /**
+   * 不登录的出口。
+   * 审核规则要求「先体验功能、再自行选择授权」，所以这里必须留一条退路：
+   * 从页面栈进来就返回，直接从冷启动打开就回今日页。
+   */
+  browse() {
+    const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+    if (pages && pages.length > 1) { wx.navigateBack(); return; }
+    wx.switchTab({ url: '/pages/today/today' });
+  },
 
-  /** 先不登录，继续用本机数据 */
-  goGuest() {
-    if (getCurrentPages().length > 1) wx.navigateBack();
-    else wx.switchTab({ url: '/pages/today/today' });
-  }
 });

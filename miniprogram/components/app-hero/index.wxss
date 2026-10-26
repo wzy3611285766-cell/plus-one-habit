@@ -7,6 +7,26 @@
  * 双光晕 + 点阵都用伪元素画，零资源。
  */
 
+/* =====================================================================
+   启动加载点：三颗小点依次脉冲（opacity 是合成器动画，不吃帧率）
+   ===================================================================== */
+.boot-dots{
+  display:flex;align-items:center;gap:4px;
+  margin-left:10px;
+}
+.boot-dots .d{
+  width:4px;height:4px;
+  border-radius:50%;
+  background:rgba(255,255,255,.55);
+  animation:bootPulse 1s ease-in-out infinite;
+}
+.boot-dots .d2{ animation-delay:.16s; }
+.boot-dots .d3{ animation-delay:.32s; }
+@keyframes bootPulse{
+  0%,100%{ opacity:.3; }
+  50%{ opacity:1; }
+}
+
 .hero{
   position:relative;
   overflow:hidden;

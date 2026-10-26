@@ -3,11 +3,12 @@
  *
  * 复盘用 KPT 四栏（保持 / 问题 / 尝试 / 下一步），存进 notes[周一日期]。
  * 复盘内容和其他打卡数据走同一套同步：在手机上写完，回到电脑上就能看到。
- * 「生成周报文本」把这一周的客观数据 + 复盘拼成一段可以直接贴出去的文本。
+ * 复盘只保存在小程序里（随账号同步），不做导出文本。
  */
 
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -28,12 +29,14 @@ Page({
     form: { keep: '', problem: '', try: '', next: '' },
     hasNote: false,
     dirty: false,
-    report: '',
-    hasReport: false,
     savedTip: '',
+    /** 往期复盘默认收起：主任务是写本周，存档按需展开 */
+    archiveOpen: false,
+  },
 
-    /* 过审模式：四栏输入整体隐藏，只留自动汇总 */
-    safeMode: require('../../utils/config.js').SAFE_MODE
+  /** 转发卡片带目标模板：同学点开即可得到一份自己的副本（见 utils/fork.js） */
+  onShareAppMessage() {
+    return fork.shareConfig(store.get());
   },
 
   onLoad() {
@@ -47,7 +50,10 @@ Page({
     this.render(true);
   },
 
-  onUnload() { if (this.unsub) this.unsub(); },
+  onUnload() {
+    if (this.unsub) this.unsub();
+    if (this.savedTipTimer) clearTimeout(this.savedTipTimer);
+  },
 
   /* ================= 渲染 ================= */
 
@@ -108,6 +114,31 @@ Page({
 
     const note = st.notes[r.start] && !st.notes[r.start].deleted ? st.notes[r.start] : null;
 
+    /* 往期复盘存档：写过内容的周，新 → 旧；摘录取第一个非空栏。
+       用户翻旧复盘的真实动机是「回想当时写了什么」，列表直接给摘录（备忘录习惯），
+       比一周一周盲翻、也比纯日期点标更省一跳。 */
+    const mon0 = U.mondayOf(U.todayStr());
+    const archive = Object.keys(st.notes)
+      .filter((k) => {
+        const n = st.notes[k];
+        return n && !n.deleted && (n.keep || n.problem || n.try || n.next);
+      })
+      .sort(function (a, b) { return a < b ? 1 : -1; })
+      .map((k) => {
+        const n = st.notes[k];
+        let snippet = '';
+        for (let i = 0; i < FIELDS.length; i++) {
+          const v = String(n[FIELDS[i]] || '').trim();
+          if (v) { snippet = LABELS[FIELDS[i]] + '：' + v; break; }
+        }
+        return {
+          key: k,
+          off: Math.round(U.diffDays(mon0, k) / 7),
+          label: U.fmtShort(k) + ' - ' + U.fmtShort(U.addDays(k, 6)),
+          snippet: snippet.slice(0, 24)
+        };
+      });
+
     const patch = {
       themeClass: prefs.themeClassOf(st.settings && st.settings.theme),
       logged: auth.isLogged(),
@@ -120,7 +151,8 @@ Page({
         count: weekCount,
         prevCount: prevCount
       },
-      hasNote: !!note
+      hasNote: !!note,
+      archive: archive
     };
     if (!keepForm) {
       patch.form = {
@@ -136,15 +168,51 @@ Page({
 
   /* ================= 周切换 ================= */
 
+  /** 切周前的统一闸门：表单有未保存内容时必须让用户明确丢弃，否则静默清空等于丢稿 */
+  guardDirty(then) {
+    if (!this.data.dirty) { then(); return; }
+    wx.showModal({
+      title: '复盘还没保存',
+      content: '这周写的内容还没保存，切走会丢失。',
+      confirmText: '丢弃',
+      confirmColor: '#FF3B30',
+      success: (res) => { if (res.confirm) then(); }
+    });
+  },
+
   prevWeek() {
-    this.setData({ offset: this.data.offset - 1, savedTip: '' });
-    this.render();
+    this.guardDirty(() => {
+      this.setData({ offset: this.data.offset - 1, savedTip: '' });
+      this.render();
+    });
+  },
+
+  toggleArchive() {
+    // 先切状态再发声：音频引擎在部分真机上的同步异常不能挡住展开
+    this.setData({ archiveOpen: !this.data.archiveOpen });
+    try { sfx.tap(); } catch (e) { /* 静默 */ }
+  },
+
+  /** 存档直达：按周一日期换算回 offset，跳到那一周 */
+  goArchive(e) {
+    const off = Number(e.currentTarget.dataset.off);
+    if (isNaN(off)) return;
+    this.guardDirty(() => {
+      /* 即使就是当前周也执行：表单已清空，点存档行必须把内容装回 KPT 纸，
+         并滚到纸面 —— 否则点按毫无可见反馈（「展开不了」的主因） */
+      this.setData({ offset: off, savedTip: '' });
+      this.render();
+      try { wx.pageScrollTo({ selector: '#kpt-card', duration: 200 }); } catch (e) { /* 旧基础库静默 */ }
+      try { sfx.tap(); } catch (e) { /* 静默 */ }
+    });
   },
 
   nextWeek() {
     if (this.data.offset >= 0) return;
-    this.setData({ offset: this.data.offset + 1, savedTip: '' });
-    this.render();
+    this.guardDirty(() => {
+      this.setData({ offset: this.data.offset + 1, savedTip: '' });
+      this.render();
+    });
   },
 
   /* ================= 复盘表单 ================= */
@@ -160,62 +228,29 @@ Page({
     const r = this.weekRange();
     const f = this.data.form;
     const empty = FIELDS.every((k) => !String(f[k] || '').trim());
-    if (empty && !this.data.hasNote) { sfx.error(); this.toast('还没有填写内容'); return; }
+    /* 四栏全空一律不落库：保存后表单会清空，误触保存绝不能把已存的复盘清成空 */
+    if (empty) {
+      try { sfx.error(); } catch (e) { /* 静默 */ }
+      this.toast('还没有填写内容');
+      return;
+    }
 
     store.setNote(r.start, {
       keep: f.keep, problem: f.problem, try: f.try, next: f.next
     });
-    sfx.saved();
-    this.setData({ dirty: false, hasNote: !empty, savedTip: '已保存' });
-    setTimeout(() => this.setData({ savedTip: '' }), 1600);
+
+    /* 写完一篇的日记感：保存即入档，表单清空；
+       内容从下方「往期复盘」列表点开回看或继续编辑 */
+    this.setData({
+      dirty: false,
+      hasNote: true,
+      savedTip: '已保存',
+      form: { keep: '', problem: '', try: '', next: '' }
+    });
+    this.savedTipTimer = setTimeout(() => this.setData({ savedTip: '' }), 1600);
+    try { sfx.saved(); } catch (e) { /* 静默：保存反馈不能被音频异常吞掉 */ }
     this.toast(auth.isLogged() ? '已保存，正在同步' : '已保存');
   },
-
-  /* ================= 生成周报 ================= */
-
-  /**
-   * 生成周报文本，格式对齐基准 buildReport：
-   *   【学习周报】周一 - 周日
-   *   - 目标：+N 单位，打卡 X 天（累计 P%）｜上周 +N 单位
-   *   本周合计：N 次（上周 M 次）
-   *   保持 / 问题 / 尝试 / 下周预案
-   * 唯一的替换：基准的「本周总投入：N 分钟」→「本周合计：N 次」（没有用时数据）。
-   */
-  generate() {
-    const s = this.data.totals;
-    const lines = ['【学习周报】' + this.data.range];
-
-    this.data.summary.forEach((row) => {
-      let l = '- ' + row.name + '：+' + row.sum + ' ' + row.unit
-        + '，打卡 ' + row.days + ' 天（累计 ' + row.pct + '%）';
-      if (row.compare) l += '｜' + row.compare;
-      lines.push(l);
-    });
-
-    if (s.count > 0) {
-      let ml = '本周合计：' + s.count + ' 次';
-      if (s.prevCount > 0) ml += '（上周 ' + s.prevCount + ' 次）';
-      lines.push(ml);
-    }
-
-    FIELDS.forEach((k) => {
-      const v = String(this.data.form[k] || '').trim();
-      if (v) lines.push(LABELS[k] + '：' + v);
-    });
-
-    this.setData({ report: lines.join('\n'), hasReport: true });
-  },
-
-  copyReport() {
-    if (!this.data.report) return;
-    wx.setClipboardData({
-      data: this.data.report,
-      success: () => wx.showToast({ title: '已复制', icon: 'success' }),
-      fail: () => this.toast('复制失败，请长按选择文本')
-    });
-  },
-
-  goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
 
   toast(msg, ms) {
     wx.showToast({ title: msg, icon: 'none', duration: ms || 1800 });

@@ -34,13 +34,16 @@
 
 /* 新建目标：42×42 方键，不与 +1 抢注意力 */
 .add-goal{
-  position:relative;
+  /* iOS 导航区图标键：平时无底，按下浮现圆形灰高亮 */
   flex:none;
+  /* 两根加号线是 absolute，必须给它们一个定位基准：
+     少了这一行，线会跑到页面中心，按键看上去就「消失」了 */
+  position:relative;
   width:calc(42px);height:calc(42px);
-  border-radius:var(--r-sm);
-  background:var(--surface-2);
-  box-shadow:inset 0 0 0 1rpx var(--line);
-}
+  border-radius:var(--r-md);
+  background:none;
+ }
+.add-goal:active{ background:rgba(120,120,128,.18); }
 .add-h,.add-v{
   position:absolute;left:50%;top:50%;
   background:var(--brand-500);border-radius:2rpx;
@@ -80,7 +83,7 @@
 .stat-strip{
   display:flex;
   gap:8px;
-  margin-top:10px;
+  /* 与 hero 的间距由 app.wxss 的 app-hero 宿主统一提供 */
   margin-bottom:var(--gap-card);
   margin-left:calc(var(--pad-page) * -1);
   margin-right:calc(var(--pad-page) * -1);
@@ -237,16 +240,27 @@
   display:flex;align-items:center;justify-content:center;
   white-space:nowrap;
 }
-.tz-btn-red{ background:var(--danger-500);color:#fff; }
-.tz-btn-amber{ background:var(--amber-500);color:#fff;flex:none; }
+.tz-btn-red{
+  background:var(--gb-tint-red);color:#fff;
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
+  box-shadow:var(--gb-tint-red-edge),var(--gb-drop);
+ }
+.tz-btn-amber{
+  background:var(--gb-tint-amber);color:#fff;flex:none;
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
+  box-shadow:var(--gb-tint-amber-edge),var(--gb-drop);
+ }
 .tz-btn-ghost{
-  background:var(--surface);
-  color:var(--text-2);
-  box-shadow:inset 0 0 0 1rpx var(--line);
-}
+  /* iOS 次级：灰底胶囊，与全局 .btn-ghost 同语言 */
+  background:var(--surface-sunken);
+  color:var(--text-1);
+  box-shadow:none;
+ }
 .tz-btn-red:active,
 .tz-btn-amber:active,
-.tz-btn-ghost:active{ opacity:.86; }
+.tz-btn-ghost:active{ transform:scale(.97);opacity:.85; }
 
 .all-done{
   display:flex;align-items:center;justify-content:center;gap:10rpx;
@@ -328,16 +342,18 @@
 .badge-today{ background:var(--brand-50);color:var(--brand-600); }
 
 .more-btn{
+  /* 同 add-goal：iOS 导航区图标键 */
   flex:none;
   width:32px;height:32px;min-height:0;
   margin:-4px -4px -4px auto;
   display:flex;align-items:center;justify-content:center;
   border-radius:var(--r-sm);
+  background:none;
   color:var(--text-3);
   font-size:var(--fs-body);
   letter-spacing:1rpx;
 }
-.more-btn:active{ background:var(--brand-50);color:var(--brand-600); }
+.more-btn:active{ background:rgba(120,120,128,.18);color:var(--brand-600); }
 
 /* 进度条：凹槽 + 目标色填充 + 前沿白点 + 本次 +1 的追光 */
 .mini-progress{
@@ -364,7 +380,7 @@
 }
 .mp-fill.just-hit::before{
   content:"";
-  position:absolute;inset:0;
+  position:absolute;left:0;top:0;right:0;bottom:0;inset:0;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
   background-size:200% 100%;
   background-position:-120% 0;
@@ -539,8 +555,9 @@
   animation:p1Charged .7s cubic-bezier(.45,0,.55,1) infinite;
 }
 @keyframes p1Charged{
-  0%,100%{ filter:brightness(1); }
-  50%{ filter:brightness(1.10); }
+  /* opacity 走合成器；filter 会让大按钮的六层阴影每帧整体重绘，连击时掉帧 */
+  0%,100%{ opacity:1; }
+  50%{ opacity:.86; }
 }
 
 .p1-pop-a{ animation:p1PopA .42s cubic-bezier(.34,1.56,.64,1); }
@@ -565,7 +582,7 @@
 }
 
 .p1-fx{
-  position:fixed;inset:0;z-index:9000;pointer-events:none;
+  position:fixed;left:0;top:0;right:0;bottom:0;inset:0;z-index:9000;pointer-events:none;
 }
 .p1-ring{
   position:fixed;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;
@@ -607,7 +624,7 @@
 /* =====================================================================
    达成彩带
    ===================================================================== */
-.confetti-layer{ position:fixed;inset:0;z-index:8999;pointer-events:none; }
+.confetti-layer{ position:fixed;left:0;top:0;right:0;bottom:0;inset:0;z-index:8999;pointer-events:none; }
 .confetti-glow{
   position:fixed;left:0;right:0;top:0;height:38vh;pointer-events:none;
   background:radial-gradient(120% 100% at 50% 0%,rgba(124,92,255,.22),rgba(124,92,255,0) 70%);
@@ -657,47 +674,6 @@
   font-size:var(--fs-xs);
   font-weight:700;
   font-variant-numeric:tabular-nums;
-}
-
-/* =====================================================================
-   预设目标（过审模式的新建入口）
-   ===================================================================== */
-.preset-list{ display:flex;flex-direction:column;gap:8px;margin-top:6px; }
-
-.preset-item{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:12px 14px;
-  border-radius:var(--r-md);
-  background:var(--surface-2);
-  box-shadow:inset 0 0 0 1rpx var(--line);
-}
-.preset-item:active{ background:var(--brand-50); }
-
-.preset-dot{
-  flex:none;
-  width:12px;height:12px;
-  border-radius:4px;
-}
-.preset-main{
-  flex:1;min-width:0;
-  display:flex;flex-direction:column;gap:2px;
-}
-.preset-name{
-  font-size:var(--fs-body);
-  font-weight:600;
-  color:var(--text-1);
-}
-.preset-sub{
-  font-size:var(--fs-xs);
-  color:var(--text-3);
-}
-.preset-add{
-  flex:none;
-  font-size:var(--fs-sm);
-  font-weight:600;
-  color:var(--brand-500);
 }
 
 /* =====================================================================
@@ -754,6 +730,7 @@
    ===================================================================== */
 .goal-menu{
   position:fixed;
+  left:0;top:0;right:0;bottom:0;  /* inset 四边回退：旧内核缺了会让抽屉整层不可见 */
   inset:0;
   z-index:1200;
   display:flex;
@@ -762,6 +739,7 @@
 }
 .goal-menu-mask{
   position:absolute;
+  left:0;top:0;right:0;bottom:0;
   inset:0;
   background:var(--mask-bg);
   -webkit-backdrop-filter:blur(3px);
@@ -882,7 +860,60 @@
 
 /* 系统开了「减弱动态效果」：位移类特效整体不渲染，只留颜色变化 */
 @media (prefers-reduced-motion: reduce){
-  .p1-pop-a,.p1-pop-b,.plus1.p1-c6{ animation:none; }
+  .p1-pop-a,.p1-pop-b,.plus1.p1-c6,.fk-banner{ animation:none; }
   .p1-ring,.p1-spark,.p1-float,.confetti-bit,.confetti-glow{ display:none; }
   .mp-fill.just-hit::before{ display:none; }
 }
+
+/* =====================================================================
+   分叉欢迎横幅（模仿 H5 第 17 轮 .sync-banner.fork）
+   数值逐条取自基准：92vw/max 560、padding 13/15、圆角 r-lg、
+   blur(16px) saturate(180%)、入场 .32s cubic-bezier(.22,1,.36,1)、
+   按键 34px 胶囊 + :active scale(.96)。品牌蓝配色，不是错误红。
+   ===================================================================== */
+.fk-banner{
+  position:fixed;left:50%;transform:translateX(-50%);
+  z-index:120;width:92vw;max-width:560px;
+  display:flex;align-items:flex-start;gap:11px;
+  padding:13px 15px;border-radius:var(--r-lg);
+  background:var(--brand-50);border:1px solid var(--brand-100);
+  box-shadow:var(--sh-3),0 16px 40px -10px rgba(0,0,0,.10);
+  font-size:var(--fs-xs);color:var(--text-2);line-height:1.55;
+  -webkit-backdrop-filter:saturate(180%) blur(16px);
+  backdrop-filter:saturate(180%) blur(16px);
+  animation:fkIn .32s cubic-bezier(.22,1,.36,1);
+}
+/* 固定居中的元素，入场动画必须带着 translateX(-50%) 一起写，
+   否则动画期间整条横幅会向右偏半个身位（基准 sbIn 踩过同款坑）。 */
+@keyframes fkIn{
+  from{opacity:0;transform:translateX(-50%) translateY(-10px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}
+}
+.fk-ico{
+  flex:none;position:relative;width:19px;height:19px;margin-top:1px;
+  border:2px solid var(--brand-500);border-radius:50%;
+}
+.fk-ico-dot{position:absolute;left:50%;top:3px;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:var(--brand-500)}
+.fk-ico-stem{position:absolute;left:50%;bottom:3px;width:2px;height:7px;margin-left:-1px;border-radius:1px;background:var(--brand-500)}
+.fk-body{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.fk-title{font-weight:700;color:var(--text-1);margin-bottom:3px}
+.fk-text{color:var(--text-2)}
+.fk-act{display:flex;gap:8px;margin-top:10px}
+.fk-btn{
+  min-height:34px;padding:0 14px;margin:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-pill);border:none;
+  background:var(--gb-tint-brand);color:#fff;
+  font-size:var(--fs-nano);font-weight:600;line-height:1;
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
+  box-shadow:var(--gb-tint-brand-hi),var(--gb-tint-brand-edge),var(--gb-drop);
+  transition:filter .18s ease,transform .16s ease;
+}
+.fk-btn::after{border:none}
+.fk-btn:active{transform:scale(.96);filter:brightness(.96)}
+
+/* hover-class 按压态 */
+.add-goal.is-press{ background:rgba(120,120,128,.18); }
+.more-btn.is-press{ background:rgba(120,120,128,.18);color:var(--brand-600); }
+.tz-btn-ghost.is-press{ background:rgba(120,120,128,.16); }

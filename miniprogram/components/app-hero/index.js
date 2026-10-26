@@ -16,19 +16,22 @@ const U = require('../../utils/util.js');
 
 Component({
   properties: {
-    /** 主标题。四个页签统一是「学习目标管理台」 */
-    title: { type: String, value: '学习目标管理台' }
+    /** 主标题。四个页签统一是「PLus one habit」 */
+    title: { type: String, value: 'PLus one habit' }
   },
 
   data: {
     statusBar: 20,
     navH: 44,
     rightPad: 96,
-    chips: []
+    chips: [],
+    /** 会话恢复 + 首次对齐期间亮加载点（数据本身已在本机，这只标记后台窗口） */
+    booting: false
   },
 
   lifetimes: {
     attached() {
+      this._alive = true;
       let nav = null;
       try {
         const app = getApp();
@@ -40,11 +43,23 @@ Component({
         this.setData({ statusBar: nav.statusBar, navH: nav.navH, rightPad: nav.rightPad });
       }
 
+      // 启动加载点：bootPromise 落定即隐。测试环境没有 bootPromise 就当已启动
+      try {
+        const boot = getApp().globalData.bootPromise;
+        if (boot && typeof boot.then === 'function') {
+          this.setData({ booting: true });
+          // reLaunch 可能在 bootPromise 落定前拆掉组件：detached 之后不再 setData
+          const done = () => { if (this._alive) this.setData({ booting: false }); };
+          boot.then(done, done);
+        }
+      } catch (e2) { /* 忽略 */ }
+
       this.buildChips();
       this.unsub = store.on((e) => { if (e.type === 'state') this.buildChips(); });
     },
 
     detached() {
+      this._alive = false;
       if (this.unsub) this.unsub();
     }
   },
@@ -65,14 +80,17 @@ Component({
       let todayCount = 0;
       logs.forEach((l) => { if (l.date === today) todayCount++; });
 
-      this.setData({
-        chips: [
-          { k: 'hit', label: '今日', value: hit + '/' + goals.length },
-          { k: 'logs', label: '记录', value: todayCount + ' 次' },
-          { k: 'streak', label: '连续', value: M.globalStreak(st) + ' 天' },
-          { k: 'goals', label: '进行中', value: goals.length + ' 个' }
-        ]
-      });
+      const chips = [
+        { k: 'hit', label: '今日', value: hit + '/' + goals.length },
+        { k: 'logs', label: '记录', value: todayCount + ' 次' },
+        { k: 'streak', label: '连续', value: M.globalStreak(st) + ' 天' },
+        { k: 'goals', label: '进行中', value: goals.length + ' 个' }
+      ];
+      // store 一次动作连发 state+sync 两个事件，签名相同就只渲染一次
+      const sig = JSON.stringify(chips);
+      if (sig === this._chipsSig) return;
+      this._chipsSig = sig;
+      this.setData({ chips: chips });
     }
   }
 });

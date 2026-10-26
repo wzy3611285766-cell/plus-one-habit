@@ -9,7 +9,7 @@
 /* =====================================================================
    周切换
    ===================================================================== */
-.week-card{ margin-top:var(--gap-card); }
+/* week-card 紧跟 hero，上间距由 app.wxss 的 app-hero 宿主统一提供 */
 
 .week-nav{
   display:flex;
@@ -53,7 +53,7 @@
   align-items:flex-start;
   justify-content:space-between;
   gap:12px;
-  padding:10px 0;
+  padding:8px 0;
   border-bottom:1px solid var(--line-soft);
   font-size:var(--fs-body);
 }
@@ -103,7 +103,7 @@
 
 .week-total{
   margin-top:4px;
-  padding-top:12px;
+  padding-top:10px;
   border-top:1px solid var(--line);
   border-bottom:none;
 }
@@ -119,10 +119,10 @@
   background:#f59e0b;
 }
 
-.kpt-row{ margin-bottom:14px; }
+.kpt-row{ margin-bottom:10px; }
 .kpt-label{
   display:block;
-  margin-bottom:6px;
+  margin-bottom:4px;
   font-size:var(--fs-sm);
   font-weight:600;
   color:var(--text-2);
@@ -135,7 +135,7 @@
 /* 只有下边线：像在纸上写，而不是在表单里填 */
 .kpt-input{
   width:100%;
-  min-height:calc(44px);
+  min-height:calc(38px);
   padding:0 2px;
   border:none;
   border-bottom:2px solid var(--line-strong);
@@ -156,29 +156,6 @@
 }
 .kpt-actions .btn{ flex:1; }
 
-/* =====================================================================
-   生成的周报文本
-   ===================================================================== */
-.report-box{ margin-top:12px; }
-.report-preview{
-  padding:16px;
-  border-radius:var(--r-md);
-  background:var(--surface-inverse);
-  color:var(--text-on-inverse);
-  font-family:var(--font-mono,ui-monospace,Menlo,monospace);
-  font-size:var(--fs-sm);
-  line-height:1.85;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-.btn-green{
-  width:100%;
-  margin-top:10px;
-  background:var(--success-500);
-  color:#fff;
-  box-shadow:0 6px 16px -8px rgba(52,199,89,.55), inset 0 1px 0 rgba(255,255,255,.28);
-}
-
 .ph{ color:var(--text-4); }
 
 /* =====================================================================
@@ -186,5 +163,45 @@
    ===================================================================== */
 @media (min-width:640px){
   .week-label{ font-size:var(--fs-h3); }
-  .week-card{ margin-top:0; }
 }
+
+/* =====================================================================
+   往期复盘存档（备忘录/收藏的列表习惯：条目 + 一行摘录，点开细看）
+   ===================================================================== */
+.arc-list{ margin:0 calc(var(--pad-card) * -1); }
+.arc-row{
+  display:flex;align-items:center;gap:12px;
+  min-height:52px;padding:10px var(--pad-card);
+  border-bottom:.5px solid var(--line);
+  transition:background .14s ease-out;
+}
+.arc-list .arc-row:last-child{ border-bottom:0; }
+.arc-row:active{ background:rgba(120,120,128,.16); }
+.arc-main{ flex:1;min-width:0;display:flex;flex-direction:column;gap:2px; }
+.arc-week{ font-size:var(--fs-sm);font-weight:600;color:var(--text-1); }
+.arc-snippet{
+  font-size:var(--fs-xs);color:var(--text-3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.arc-chev{
+  flex:none;width:8px;height:8px;
+  border-top:1.6px solid var(--text-4);
+  border-right:1.6px solid var(--text-4);
+  transform:rotate(45deg);
+}
+
+/* 往期复盘折叠头：标题行即开关，右侧「N 篇」+ 展开箭头 */
+.arc-head{ cursor:pointer; }
+.arc-meta{ margin-left:auto;display:flex;align-items:center;gap:6px; }
+.arc-count{ font-size:var(--fs-xs);font-weight:600;color:var(--text-3); }
+.arc-toggle{
+  width:8px;height:8px;
+  border-right:1.6px solid var(--text-3);
+  border-bottom:1.6px solid var(--text-3);
+  transform:rotate(45deg);
+  transition:transform .18s ease-out;
+}
+.arc-toggle.is-open{ transform:rotate(-135deg); }
+
+/* hover-class 按压态 */
+.arc-row.is-press{ background:rgba(120,120,128,.16); }

@@ -13,11 +13,12 @@
 
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
 const sfx = require('../../utils/sfx.js');
-const CFG = require('../../utils/config.js');
+const ui = require('../../utils/ui.js');
 
 /* ================= 打卡反馈的常量 =================
    数值取自设计基准的 plus1Burst / celebrate。
@@ -47,11 +48,6 @@ Page({
     statCards: [],
     rhythm: [],
     rhythmTotal: 0,
-
-    /* 过审模式：新建目标是「选预设」而不是「填表单」 */
-    safeMode: CFG.SAFE_MODE,
-    presets: CFG.PRESETS,
-    presetOn: false,
     toast: '',
     toastOn: false,
 
@@ -72,12 +68,19 @@ Page({
     popClass: '',
     p1Level: '',
     confettiOn: false,
-    confetti: []
+    confetti: [],
+
+    /* 分享分叉的一次性欢迎横幅（模仿 H5 第 17 轮，参数取自基准 .sync-banner） */
+    forkBanner: false,
+    bannerTop: 108
   },
 
   onLoad() {
     this.unsub = store.on((e) => { if (e.type === 'state' || e.type === 'sync') this.render(); });
     this.unsubAuth = auth.on(() => this.render());
+    // 横幅贴在自绘 hero 下方：位置由胶囊量出来的导航高度决定（app.measureNav）
+    const nav = getApp().globalData.nav || {};
+    this.setData({ bannerTop: (nav.statusBar || 20) + (nav.navH || 44) + 10 });
     this.render();
   },
 
@@ -178,8 +181,6 @@ Page({
        为真就说明昨天那次漏打已经被休息日抵掉了。 */
     const todayStr = U.todayStr();
     const yesterday = U.addDays(todayStr, -1);
-    const rowMap = {};
-    rows.forEach((r) => { rowMap[r.gid] = r; });
 
     const missedRows = [];
     const restRows = [];
@@ -190,13 +191,11 @@ Page({
       if (dates[yesterday]) return;             // 昨天打过卡
       if (yesterday < g.createdAt) return;      // 昨天这个目标还不存在
 
-      const row = rowMap[g.id] || {};
       const left = U.diffDays(todayStr, g.deadline);   // 负数表示已过期
       const item = {
         gid: g.id,
         name: g.name,
         unit: g.unit,
-        quotaText: row.quotaText || '',
         overdue: left < 0,
         overdueDays: left < 0 ? -left : 0
       };
@@ -215,7 +214,7 @@ Page({
 
     let allDoneText = '';
     if (activeList.length === 0 && st.goals.length > 0) {
-      allDoneText = '所有目标都已达成。去「进度看板」回顾成果，或新建目标继续。';
+      allDoneText = '所有目标都已达成';
     } else if (st.goals.length > 0 && !missedRows.length && !restRows.length && pendingCount === 0) {
       allDoneText = '今天全部目标都已打卡，保持住这个节奏。';
     }
@@ -242,18 +241,14 @@ Page({
         sample: !!g.sample
       }));
 
-    /* ---------- 统计条：四张竖排数字卡（对齐基准 #todayStats） ----------
-       基准第二张是「今日投入（分钟）」；用时只在基准的「补记」弹窗里录，
-       本项目没有补记入口，所以改成「今日记录（次）」—— 形状一致，口径不同。 */
+    /* ---------- 统计条：两张卡 ----------
+       「今日记录（次）」与「进行中目标」已按用户要求移除（2026-10-25）；
+       完整的累计统计仍在进度看板页。 */
     const hitCount = activeRows.filter((r) => r.gotNum > 0).length;
     const bestStreak = activeRows.reduce((mx, r) => Math.max(mx, r.streakNum || 0), 0);
-    let todayCount = 0;
-    st.logs.forEach((l) => { if (!l.deleted && l.date === todayStr) todayCount++; });
 
     const statCards = [
       { k: 'hit', num: hitCount + '/' + activeRows.length, label: '今日已打卡', tone: 'is-brand' },
-      { k: 'logs', num: todayCount, label: '今日记录（次）', tone: 'is-amber' },
-      { k: 'goals', num: activeRows.length, label: '进行中目标', tone: 'is-green' },
       { k: 'flame', num: bestStreak + ' 天', label: '最长连续', tone: 'is-amber' }
     ];
 
@@ -281,18 +276,22 @@ Page({
     const hour = now.getHours();
     const greeting = hour < 6 ? '夜深了' : (hour < 11 ? '早上好' : (hour < 14 ? '中午好' : (hour < 18 ? '下午好' : '晚上好')));
 
-    this.setData({
+    const patch = {
       themeClass: prefs.themeClassOf(st.settings && st.settings.theme),
       logged: logged,
       user: auth.user(),
-      syncText: this.syncLabel(sync.phase),
-      syncDot: this.syncDot(sync.phase),
+      syncText: ui.syncLabel(sync.phase),
+      syncDot: ui.syncDot(sync.phase),
       syncTime: U.fmtAgo(sync.lastSyncAt),
       dateText: U.fmtShort(todayStr) + ' ' + U.weekdayCN(todayStr),
       greeting: greeting,
       rows: activeRows,
       doneRows: doneRows,
-      hasGoals: rows.length > 0,
+      /* hasGoals 含已完成目标：全部达成时页面不再是「还没有目标」的空态，
+         右上角 + 也保留住「新建目标继续」的入口（绿条文案里承诺过它）。
+         统计条只看进行中的目标 —— 全部达成后 0/0 没有信息量。 */
+      hasGoals: rows.length > 0 || doneRows.length > 0,
+      hasActive: rows.length > 0,
       statCards: statCards,
       rhythm: rhythm,
       rhythmTotal: rhythmTotal,
@@ -301,22 +300,20 @@ Page({
       missedRows: missedRows,
       restRows: restRows,
       allDoneText: allDoneText,
-      hasTodayZone: !!(missedRows.length || restRows.length || allDoneText)
-    });
+      hasTodayZone: !!(missedRows.length || restRows.length || allDoneText),
+
+      // 分叉欢迎横幅：记录里「还没打过招呼」才显示，一辈子一次
+      forkBanner: store.forkWelcomePending()
+    };
+    // store 一次动作先后发 state 与 sync 两个事件，内容完全相同；
+    // 连击时这就是双倍整页渲染 —— 相同签名直接跳过（首个 render 必发）。
+    const sig = JSON.stringify(patch);
+    if (sig === this._lastRenderSig) return;
+    this._lastRenderSig = sig;
+    this.setData(patch);
     /* 只有当天建议量的快照真的被写入了才落盘。
        这一页会因为同步事件被反复重绘，无条件 save 等于每次同步都整份写一次本地存储。 */
     if (ov.snapshotsWritten) store.save();
-  },
-
-  syncLabel(phase) {
-    return {
-      idle: '待同步', syncing: '同步中', synced: '已同步',
-      error: '同步失败', needlogin: '未登录', offline: '离线'
-    }[phase] || '待同步';
-  },
-
-  syncDot(phase) {
-    return { synced: 'ok', syncing: 'sync', error: 'err', needlogin: 'off', offline: 'off', idle: 'off' }[phase] || 'off';
   },
 
   /* ================= 打卡 ================= */
@@ -512,44 +509,23 @@ Page({
 
   goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
 
+  /* ================= 分享分叉 ================= */
+
+  /** 转发卡片：路径带目标模板，同学点开即可得到一份自己的副本。
+      四个页签共用 fork.shareConfig，保证从任何一页转发出去的体验一致。 */
+  onShareAppMessage() {
+    return fork.shareConfig(store.get());
+  },
+
+  dismissForkBanner() {
+    store.forkMarkWelcomed();
+    this.setData({ forkBanner: false });
+  },
+
   /** 顶部状态条点进来：同步明细在「我的」页 */
   goSync() { wx.switchTab({ url: '/pages/mine/mine' }); },
 
-  /**
-   * 过审模式：不跳编辑页（那里全是输入框），改成弹预设列表。
-   * 用户只需要挑一个，不需要打字。
-   */
-  goNewGoal() {
-    if (CFG.SAFE_MODE) { this.setData({ presetOn: true }); return; }
-    wx.navigateTo({ url: '/pages/goal-edit/goal-edit' });
-  },
-
-  closePreset() { this.setData({ presetOn: false }); },
-
-  pickPreset(e) {
-    const idx = Number(e.currentTarget.dataset.i);
-    const p = CFG.PRESETS[idx];
-    if (!p) return;
-
-    const t = U.todayStr();
-    store.addGoal({
-      id: 'g' + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36),
-      name: p.name,
-      unit: p.unit,
-      total: p.total,
-      deadline: U.addDays(t, p.days),
-      createdAt: t,
-      color: p.color,
-      sample: false,
-      obstacle: '',
-      plan: ''
-    });
-
-    this.setData({ presetOn: false });
-    this.render();
-    sfx.saved();
-    this.toast('已添加「' + p.name + '」');
-  },
+  goNewGoal() { wx.navigateTo({ url: '/pages/goal-edit/goal-edit' }); },
 
   goEditGoal(e) {
     const gid = e.currentTarget.dataset.gid;
@@ -589,24 +565,13 @@ Page({
     wx.navigateTo({ url: '/pages/goal-edit/goal-edit?id=' + encodeURIComponent(gid) });
   },
 
-  /** 删除的确认文案与 goal-edit 页逐字一致，避免同一操作出现两种说法 */
   menuDelete() {
     const gid = this.data.menuGid;
-    const st = store.get();
-    const done = M.doneAmount(st, gid);
-    const count = st.logs.filter((l) => l.goalId === gid && !l.deleted).length;
-    wx.showModal({
-      title: '删除这个目标？',
-      content: '连同它的 ' + count + ' 条打卡记录（共 ' + U.trimNum(done) + '）一起删除，所有设备同步生效。',
-      confirmText: '删除',
-      confirmColor: '#FF3B30',
-      success: (res) => {
-        if (!res.confirm) return;
-        store.deleteGoal(gid);
-        this.setData({ menuOn: false, menuGid: '', menuName: '', menuOverdue: false });
-        this.render();
-        this.toast('已删除');
-      }
+    ui.confirmDeleteGoal(store.get(), gid, () => {
+      store.deleteGoal(gid);
+      this.setData({ menuOn: false, menuGid: '', menuName: '', menuOverdue: false });
+      this.render();
+      this.toast('已删除');
     });
   },
 

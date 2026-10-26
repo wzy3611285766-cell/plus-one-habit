@@ -1,7 +1,6 @@
 <view class="page goal-edit {{themeClass}}">
 
   <view class="page-title">{{isNew ? '新建目标' : '编辑目标'}}</view>
-  <view class="page-sub">有总量、有终点，才能算出今天该做多少</view>
 
   <view class="card">
     <view class="field">
@@ -25,8 +24,8 @@
 
     <view class="field">
       <text class="field-label">截止日期</text>
-      <picker mode="date" value="{{form.deadline}}" start="{{form.deadline}}" bindchange="onDateChange">
-        <view class="input picker-value {{errors.deadline ? 'is-error' : ''}}">{{form.deadline || '请选择'}}</view>
+      <picker mode="date" value="{{form.deadline}}" start="{{minDate}}" bindchange="onDateChange">
+        <view class="input picker-value {{errors.deadline ? 'is-error' : ''}}" aria-role="button" aria-label="选择截止日期">{{form.deadline || '请选择'}}</view>
       </picker>
       <view wx:if="{{errors.deadline}}" class="field-hint is-error">{{errors.deadline}}</view>
     </view>
@@ -41,6 +40,8 @@
           wx:key="hex"
           class="swatch {{form.color === item.hex ? 'is-on' : ''}}"
           style="--gc:{{item.css}}"
+          aria-role="button"
+          aria-label="配色"
           data-hex="{{item.hex}}"
           bindtap="pickColor"
         ></view>
@@ -48,33 +49,38 @@
     </view>
   </view>
 
-  <!-- 障碍与对策：不做也没关系，但做了的目标明显更容易坚持 -->
+  <!-- 障碍与对策：可选项，默认收起不占屏；编辑已填过的目标时自动展开 -->
   <view class="card">
-    <view class="card-title">如果卡住了</view>
-    <view class="card-sub">可留空。写下最容易发生的阻碍，以及你打算怎么应对。</view>
-
-    <view class="field">
-      <text class="field-label">可能的阻碍</text>
-      <input class="input" value="{{form.obstacle}}" data-field="obstacle" bindinput="onInput" maxlength="60" placeholder="例如：晚上容易困" placeholder-class="ph" />
+    <view class="plan-head" aria-role="button" aria-label="如果卡住了，点按展开" bindtap="togglePlan">
+      <text class="plan-title">如果卡住了</text>
+      <text class="plan-opt">可不填</text>
+      <view class="plan-caret {{planOpen ? 'is-open' : ''}}"></view>
     </view>
-    <view class="field">
-      <text class="field-label">应对方式</text>
-      <input class="input" value="{{form.plan}}" data-field="plan" bindinput="onInput" maxlength="60" placeholder="例如：早上通勤时先背 20 个" placeholder-class="ph" />
+
+    <view wx:if="{{planOpen}}" class="plan-body">
+      <view class="field">
+        <text class="field-label">可能的阻碍</text>
+        <input class="input" value="{{form.obstacle}}" data-field="obstacle" bindinput="onInput" maxlength="60" placeholder="例如：晚上容易困" placeholder-class="ph" />
+      </view>
+      <view class="field">
+        <text class="field-label">应对方式</text>
+        <input class="input" value="{{form.plan}}" data-field="plan" bindinput="onInput" maxlength="60" placeholder="例如：早上通勤时先背 20 个" placeholder-class="ph" />
+      </view>
     </view>
   </view>
 
   <view class="actions">
-    <button class="btn btn-primary" bindtap="save">{{isNew ? '创建目标' : '保存修改'}}</button>
+    <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="save">{{isNew ? '创建目标' : '保存修改'}}</button>
   </view>
 
   <!-- 删除：两段式确认，先展开再确认，避免误触 -->
   <view wx:if="{{!isNew}}" class="danger">
-    <view wx:if="{{!dangerOpen}}" class="danger-open" bindtap="toggleDanger">删除这个目标</view>
+    <view wx:if="{{!dangerOpen}}" class="danger-open" aria-role="button" bindtap="toggleDanger">删除这个目标</view>
     <block wx:else>
       <view class="danger-note">删除会连同它的全部打卡记录一起消失，无法恢复。</view>
       <view class="sheet-actions">
-        <button class="btn btn-ghost" bindtap="toggleDanger">取消</button>
-        <button class="btn btn-danger" bindtap="confirmDelete">确认删除</button>
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-ghost" bindtap="toggleDanger">取消</button>
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-danger" bindtap="confirmDelete">确认删除</button>
       </view>
     </block>
   </view>

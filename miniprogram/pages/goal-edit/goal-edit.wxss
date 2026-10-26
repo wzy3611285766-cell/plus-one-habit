@@ -25,25 +25,63 @@
 }
 .preview.is-warn{ background:var(--amber-50);color:var(--amber-ink); }
 
-/* ---------- 配色 ---------- */
+/* ---------- 配色 ----------
+   始终一行：8 个色点等分屏宽（30–40px），不再换行把这一栏撑成两行。
+   极窄屏（<330px）下 30px 仍放不下，改为横向滑动，不折行。 */
 .swatches{
-  display:flex;
-  flex-wrap:wrap;
-  gap:14rpx;
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(30px,1fr);
+  gap:clamp(6px,1.8vw,8px);
+  /* 留出选中态外圈（7rpx）的位置，避免被滚动容器裁掉 */
+  padding:4px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
 }
+.swatches::-webkit-scrollbar{ width:0;height:0;display:none; }
 .swatch{
-  width:calc(40px);height:calc(40px);
+  position:relative;
+  width:100%;
+  max-width:40px;
+  justify-self:center;
   border-radius:50%;
   background:var(--gc, var(--brand-500));
   box-shadow:inset 0 0 0 1rpx rgba(0,0,0,.06);
   transition:transform .14s ease-out;
 }
+/* 正方形用 padding-top 撑（比 aspect-ratio 兼容更老的 WebView）：高度永远等于宽度 */
+.swatch::before{ content:"";display:block;padding-top:100%; }
 .swatch.is-on{
   transform:scale(1.06);
   box-shadow:
     0 0 0 4rpx var(--surface),
     0 0 0 7rpx var(--gc, var(--brand-500));
 }
+
+/* ---------- 如果卡住了：可选项默认收起，一行抬头 + 展开箭头（同「往期复盘」的语言） ---------- */
+.plan-head{
+  display:flex;
+  align-items:center;
+  gap:10rpx;
+  font-size:var(--fs-h3);
+  font-weight:800;
+  color:var(--text-1);
+}
+.plan-opt{
+  font-size:var(--fs-xs);
+  font-weight:400;
+  color:var(--text-4);
+}
+.plan-caret{
+  width:8px;height:8px;
+  margin-left:auto;
+  border-right:1.6px solid var(--text-3);
+  border-bottom:1.6px solid var(--text-3);
+  transform:rotate(45deg);
+  transition:transform .18s ease-out;
+}
+.plan-caret.is-open{ transform:rotate(-135deg); }
+.plan-body .field:first-child{ margin-top:14px; }
 
 /* ---------- 操作区 ---------- */
 .actions{ margin-top:clamp(20px,5vw,26px); }

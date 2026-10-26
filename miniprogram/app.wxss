@@ -1,5 +1,5 @@
 /* =====================================================================
-   学习目标管理台 · 全局样式
+   PLus one habit · 全局样式
    ---------------------------------------------------------------------
    token 体系与 H5 版 `v3_work/work.html` 一一对应（Apple 风：系统灰阶 +
    System Blue 主色 + 玻璃按键）。迁移到 WXSS 的三点差异：
@@ -17,14 +17,14 @@ page{
   /* ---- 字号阶梯 ---- */
   --fs-display:clamp(40px,12vw,64px);
   --fs-num-lg:clamp(28px,8vw,40px);
-  --fs-h1:clamp(22px,6.2vw,30px);
-  --fs-h2:clamp(18px,4.6vw,22px);
-  --fs-h3:clamp(16px,4vw,18px);
+  --fs-h1:clamp(24px,6.8vw,33px);
+  --fs-h2:clamp(19.5px,5.2vw,24px);
+  --fs-h3:clamp(17px,4.4vw,19.5px);
   --fs-body:clamp(15px,3.8vw,16px);
   --fs-sm:clamp(13px,3.2vw,14px);
   --fs-xs:clamp(11.5px,2.8vw,12.5px);
   --fs-nano:clamp(10.5px,2.6vw,11.5px);
-  --fs-p1:clamp(40px,11vw,52px);
+  --fs-p1:clamp(44px,12vw,58px);
 
   /* ---- 字重 / 字距 ---- */
   --fw-normal:400;--fw-med:500;--fw-semi:600;--fw-bold:700;--fw-black:800;
@@ -133,22 +133,28 @@ page{
   --noise-blend:overlay;
   --gb-blur:blur(24px) saturate(190%);
   --gb-blur-sm:blur(16px) saturate(180%);
+  /* 液态玻璃档：低模糊 + 高饱和 —— 中心透出内容色，靠边缘亮环与镜面给「液」感。
+     磨砂档 blur(16px) 保留给面板（弹层 / 横幅 / 状态条），按键不用它 */
+  --gb-blur-liq:blur(8px) saturate(200%);
   --gb-face:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.60) 100%);
-  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.74) 0%,rgba(255,255,255,.44) 100%);
+  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.16) 100%);
   --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.92);
   --gb-edge-lo:inset 0 -.5px 0 rgba(15,23,42,.06);
   --gb-hair:0 0 0 .5px rgba(15,23,42,.08);
-  --gb-drop:0 1px 2px rgba(15,23,42,.06),0 6px 16px -8px rgba(15,23,42,.18);
+  --gb-drop:0 2px 8px rgba(15,23,42,.10),0 8px 20px -8px rgba(15,23,42,.24);
   --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.16) 42%,rgba(255,255,255,0) 62%);
   --gb-press-lift:inset 0 2px 6px rgba(15,23,42,.10);
-  --gb-tint-brand:rgba(0,122,255,.88);
-  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.42);
+  /* tint 是「染色玻璃」不是实心底：上层白玻璃提亮（光感），下层染色只到 ~52%，
+     底下内容经 blur 后的颜色能透上来 —— 这才是 iOS 液态玻璃的透明度 */
+  --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(0,122,255,.54),rgba(0,122,255,.38));
+  --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,59,48,.54),rgba(255,59,48,.38));
+  --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(52,199,89,.54),rgba(52,199,89,.38));
+  --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,149,0,.56),rgba(255,149,0,.40));
+  /* hi 三件：顶缘亮线（1px，玻璃上最亮的一笔）+ 底缘反光 + 底部内弹光 */
+  --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.58),inset 0 -.5px 0 rgba(255,255,255,.22),inset 0 -8px 14px -8px rgba(255,255,255,.30);
   --gb-tint-brand-edge:0 0 0 .5px rgba(0,84,190,.42);
-  --gb-tint-red:rgba(255,59,48,.88);
   --gb-tint-red-edge:0 0 0 .5px rgba(190,32,24,.42);
-  --gb-tint-green:rgba(52,199,89,.88);
   --gb-tint-green-edge:0 0 0 .5px rgba(24,150,60,.42);
-  --gb-tint-amber:rgba(255,149,0,.90);
   --gb-tint-amber-edge:0 0 0 .5px rgba(190,105,0,.42);
   --bg:var(--bg-app);
   --card:var(--surface);
@@ -237,14 +243,14 @@ page{
     --gb-drop:0 1px 2px rgba(0,0,0,.34),0 8px 20px -10px rgba(0,0,0,.55);
     --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 42%,rgba(255,255,255,0) 62%);
     --gb-press-lift:inset 0 2px 6px rgba(0,0,0,.40);
-    --gb-tint-brand:rgba(10,132,255,.88);
-    --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.26);
+    --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(10,132,255,.62),rgba(10,132,255,.46));
+    --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,69,58,.62),rgba(255,69,58,.46));
+    --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(48,209,88,.58),rgba(48,209,88,.42));
+    --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,159,10,.62),rgba(255,159,10,.46));
+    --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -.5px 0 rgba(255,255,255,.12),inset 0 -8px 14px -8px rgba(255,255,255,.16);
     --gb-tint-brand-edge:0 0 0 .5px rgba(102,171,255,.34);
-    --gb-tint-red:rgba(255,69,58,.88);
     --gb-tint-red-edge:0 0 0 .5px rgba(255,138,128,.32);
-    --gb-tint-green:rgba(48,209,88,.86);
     --gb-tint-green-edge:0 0 0 .5px rgba(110,231,183,.30);
-    --gb-tint-amber:rgba(255,159,10,.88);
     --gb-tint-amber-edge:0 0 0 .5px rgba(252,211,77,.30);
 
   }
@@ -328,14 +334,14 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   --gb-drop:0 1px 2px rgba(0,0,0,.34),0 8px 20px -10px rgba(0,0,0,.55);
   --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 42%,rgba(255,255,255,0) 62%);
   --gb-press-lift:inset 0 2px 6px rgba(0,0,0,.40);
-  --gb-tint-brand:rgba(10,132,255,.88);
-  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.26);
+  --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(10,132,255,.62),rgba(10,132,255,.46));
+  --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,69,58,.62),rgba(255,69,58,.46));
+  --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(48,209,88,.58),rgba(48,209,88,.42));
+  --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,159,10,.62),rgba(255,159,10,.46));
+  --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -.5px 0 rgba(255,255,255,.12),inset 0 -8px 14px -8px rgba(255,255,255,.16);
   --gb-tint-brand-edge:0 0 0 .5px rgba(102,171,255,.34);
-  --gb-tint-red:rgba(255,69,58,.88);
   --gb-tint-red-edge:0 0 0 .5px rgba(255,138,128,.32);
-  --gb-tint-green:rgba(48,209,88,.86);
   --gb-tint-green-edge:0 0 0 .5px rgba(110,231,183,.30);
-  --gb-tint-amber:rgba(255,159,10,.88);
   --gb-tint-amber-edge:0 0 0 .5px rgba(252,211,77,.30);
 
 }
@@ -383,14 +389,14 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
   --fs-display:clamp(40px,12vw,64px);
   --fs-num-lg:clamp(28px,8vw,40px);
-  --fs-h1:clamp(22px,6.2vw,30px);
-  --fs-h2:clamp(18px,4.6vw,22px);
-  --fs-h3:clamp(16px,4vw,18px);
+  --fs-h1:clamp(24px,6.8vw,33px);
+  --fs-h2:clamp(19.5px,5.2vw,24px);
+  --fs-h3:clamp(17px,4.4vw,19.5px);
   --fs-body:clamp(15px,3.8vw,16px);
   --fs-sm:clamp(13px,3.2vw,14px);
   --fs-xs:clamp(11.5px,2.8vw,12.5px);
   --fs-nano:clamp(10.5px,2.6vw,11.5px);
-  --fs-p1:clamp(40px,11vw,52px);
+  --fs-p1:clamp(44px,12vw,58px);
   --fw-normal:400;
   --fw-med:500;
   --fw-semi:600;
@@ -445,22 +451,28 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   --noise-blend:overlay;
   --gb-blur:blur(24px) saturate(190%);
   --gb-blur-sm:blur(16px) saturate(180%);
+  /* 液态玻璃档：低模糊 + 高饱和 —— 中心透出内容色，靠边缘亮环与镜面给「液」感。
+     磨砂档 blur(16px) 保留给面板（弹层 / 横幅 / 状态条），按键不用它 */
+  --gb-blur-liq:blur(8px) saturate(200%);
   --gb-face:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,.60) 100%);
-  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.74) 0%,rgba(255,255,255,.44) 100%);
+  --gb-face-2:linear-gradient(180deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.16) 100%);
   --gb-edge-hi:inset 0 .5px 0 rgba(255,255,255,.92);
   --gb-edge-lo:inset 0 -.5px 0 rgba(15,23,42,.06);
   --gb-hair:0 0 0 .5px rgba(15,23,42,.08);
-  --gb-drop:0 1px 2px rgba(15,23,42,.06),0 6px 16px -8px rgba(15,23,42,.18);
+  --gb-drop:0 2px 8px rgba(15,23,42,.10),0 8px 20px -8px rgba(15,23,42,.24);
   --gb-sheen:linear-gradient(180deg,rgba(255,255,255,.58) 0%,rgba(255,255,255,.16) 42%,rgba(255,255,255,0) 62%);
   --gb-press-lift:inset 0 2px 6px rgba(15,23,42,.10);
-  --gb-tint-brand:rgba(0,122,255,.88);
-  --gb-tint-brand-hi:inset 0 .5px 0 rgba(255,255,255,.42);
+  /* tint 是「染色玻璃」不是实心底：上层白玻璃提亮（光感），下层染色只到 ~52%，
+     底下内容经 blur 后的颜色能透上来 —— 这才是 iOS 液态玻璃的透明度 */
+  --gb-tint-brand:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(0,122,255,.54),rgba(0,122,255,.38));
+  --gb-tint-red:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,59,48,.54),rgba(255,59,48,.38));
+  --gb-tint-green:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(52,199,89,.54),rgba(52,199,89,.38));
+  --gb-tint-amber:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 46%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,149,0,.56),rgba(255,149,0,.40));
+  /* hi 三件：顶缘亮线（1px，玻璃上最亮的一笔）+ 底缘反光 + 底部内弹光 */
+  --gb-tint-brand-hi:inset 0 1px 0 rgba(255,255,255,.58),inset 0 -.5px 0 rgba(255,255,255,.22),inset 0 -8px 14px -8px rgba(255,255,255,.30);
   --gb-tint-brand-edge:0 0 0 .5px rgba(0,84,190,.42);
-  --gb-tint-red:rgba(255,59,48,.88);
   --gb-tint-red-edge:0 0 0 .5px rgba(190,32,24,.42);
-  --gb-tint-green:rgba(52,199,89,.88);
   --gb-tint-green-edge:0 0 0 .5px rgba(24,150,60,.42);
-  --gb-tint-amber:rgba(255,149,0,.90);
   --gb-tint-amber-edge:0 0 0 .5px rgba(190,105,0,.42);
   --bg:var(--bg-app);
   --card:var(--surface);
@@ -490,6 +502,11 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   background-repeat:no-repeat;
   padding:calc(var(--gap-block) * .7) var(--pad-page) var(--pad-nav);
 }
+/* hero 组件宿主：hero 底缘到首个板块的间距基准，四个页签统一由这里出。
+   首个板块（统计条 / 周切换卡 / 空态卡）不再各自带 margin-top——
+   之前 0/10/12px 混着用，切页签时第一张卡的起点会跳。 */
+app-hero{ display:block; margin-bottom:10px; }
+
 .page-title{
   font-size:var(--fs-h1);
   font-weight:800;
@@ -523,7 +540,7 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   align-items:center;
   gap:8rpx;
   font-size:var(--fs-h3);
-  font-weight:700;
+  font-weight:800;
   letter-spacing:var(--ls-snap);
   color:var(--text-1);
 }
@@ -557,29 +574,74 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 /* ---------- 按钮 ---------- */
 .btn{
   display:flex;align-items:center;justify-content:center;gap:8rpx;
-  width:100%;height:calc(48px);
-  border-radius:var(--r-sm);
+  /* iOS 大键 = 50pt 胶囊，semibold + 收紧字距 */
+  width:100%;height:calc(50px);
+  border-radius:var(--r-pill);
+  /* 液态玻璃的镜面高光层挂在 ::after 上，这里要给它定位基准 */
+  position:relative;
+  overflow:hidden;
   border:none;
   font-size:var(--fs-body);
   font-weight:600;
+  letter-spacing:var(--ls-snap);
   line-height:1;
   transition:transform .12s ease-out,opacity .12s ease-out;
 }
 .btn::after{ border:none; }
-.btn:active{ transform:scale(.985); }
-.btn-primary{ background:var(--brand-gradient); color:var(--text-on-accent); box-shadow:var(--sh-accent); }
-/* 次级按钮走玻璃面：面本身是渐变的半透明白，不支持模糊时仍然是一块浅色按钮 */
+/* iOS 的按压是透明度衰减（highlight），不是变暗 */
+.btn:active{ transform:scale(.97);opacity:.85; }
+.btn-primary{
+  background:var(--gb-tint-brand);
+  color:var(--text-on-accent);
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
+  box-shadow:var(--gb-tint-brand-hi),var(--gb-tint-brand-edge),var(--gb-drop);
+ }
+/* 次级按钮 = iOS 的 systemGray5 灰底胶囊（SwiftUI .bordered 的灰）。
+   玻璃只留给栏与浮层（iOS 本来就用玻璃的地方），
+   内容区的次级操作用灰底——这是原生 iOS 最有辨识度的按键样式。 */
 .btn-ghost{
-  background:var(--gb-face-2);
+  background:var(--surface-sunken);
   color:var(--text-1);
-  -webkit-backdrop-filter:var(--gb-blur-sm);
-  backdrop-filter:var(--gb-blur-sm);
-  box-shadow:var(--gb-edge-hi),var(--gb-hair);
+  box-shadow:none;
 }
 .btn-plain{ background:transparent; color:var(--brand-500); box-shadow:none; }
-.btn-danger{ background:var(--danger-50); color:var(--danger-ink); }
-.btn[disabled]{ opacity:.45; box-shadow:none; }
-.btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-xs); width:auto; padding:0 20rpx; }
+.btn-danger{
+  background:var(--gb-tint-red);
+  color:#fff;
+  -webkit-backdrop-filter:var(--gb-blur-liq);
+  backdrop-filter:var(--gb-blur-liq);
+  box-shadow:var(--gb-tint-red-edge),var(--gb-drop);
+ }
+
+/* 液态玻璃的「湿感」来自顶部镜面反光：所有染色/清玻璃按键统一挂这层。
+   app.wxss 对全部页面生效，一处写完，页面不再各配一份。 */
+.btn-primary::after,
+.btn-danger::after,
+.btn-wx::after,
+.fk-btn::after,
+.tz-btn-red::after,
+.tz-btn-amber::after{
+  content:"";
+  position:absolute;
+  left:0;top:0;right:0;bottom:0;  /* inset 的四边回退：旧内核不认简写，缺了会塌成零尺寸 */
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.16) 30%,rgba(255,255,255,0) 55%);
+}
+
+/* 半透染色玻璃上的白字要立得住：轻投影是 iOS 的做法 */
+.btn-primary,
+.btn-danger,
+.btn-wx,
+.fk-btn,
+.tz-btn-red,
+.tz-btn-amber{
+  text-shadow:0 1px 2px rgba(0,0,0,.18);
+}
+.btn[disabled]{ opacity:.4; box-shadow:none; text-shadow:none; }
+.btn-sm{ height:calc(38px); font-size:var(--fs-sm); border-radius:var(--r-pill); width:auto; padding:0 20rpx; }
 
 /* ---------- 输入 ---------- */
 .field{ margin-top:16px; }
@@ -715,7 +777,7 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
 
 /* ---------- 玻璃遮罩层（弹层） ---------- */
 .mask{
-  position:fixed;inset:0;z-index:900;
+  position:fixed;left:0;top:0;right:0;bottom:0;inset:0;z-index:900;
   background:var(--mask-bg);
   /* 虚化身后的页面：这是「弹出层」最便宜也最有效的一层玻璃语言。
      不支持 backdrop-filter 时只是没有虚化，遮罩底色仍在，不会破版 */
@@ -775,4 +837,20 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
   .toast{ transition:none; }
   .bar > .fill{ transition:none; }
   .btn:active{ transform:none; }
+}
+
+/* =====================================================================
+   hover-class 按压态（全局基础规则）
+   :active 在开发者工具有「粘滞」怪癖（点击后卡住、下次点击才释放），
+   观感就是「再点同一颗才动」。hover-class 由框架在每次触摸期间挂类，
+   模拟器与真机都逐次必触发。0ms 进入、120ms 回弹。2026-10-26 重补：
+   上一笔提交时本规则被并行会话回滚，导致按压态整体失效。
+   ===================================================================== */
+/* 短按也能看到完整「按下弹起」：类一挂就播完整弹跳（与触摸时长无关），
+   动画结束后长按者停在 scale(.94) 的持续按压态，松手走过渡弹回 */
+.is-press{ transform:scale(.94);opacity:.82;animation:pressPop .24s ease-out; }
+@keyframes pressPop{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(.945); }
+  100%{ transform:scale(1); }
 }

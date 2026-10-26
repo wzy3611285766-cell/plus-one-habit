@@ -3,8 +3,8 @@
   <!-- 品牌区：全站唯一使用主色渐变的地方，登录页需要一点仪式感 -->
   <view class="brand">
     <view class="brand-mark">+1</view>
-    <view class="brand-title">学习目标管理台</view>
-    <view class="brand-sub">微信一键登录</view>
+    <view class="brand-title">PLus one habit</view>
+    <view class="brand-sub">不登录也能记录；登录后目标与打卡可跨设备同步</view>
   </view>
 
   <!-- 云开发没配好时，与其让用户反复试错，不如直接说清楚要做什么 -->
@@ -26,9 +26,6 @@
       </view>
     </view>
     <view class="field-hint">{{cloudError}}</view>
-    <view class="sheet-actions">
-      <button class="btn btn-ghost" bindtap="goGuest">先返回打卡</button>
-    </view>
   </view>
 
   <view wx:else class="card">
@@ -38,14 +35,16 @@
       <text class="banner-text">{{error}}</text>
     </view>
 
-    <button class="btn btn-wx" disabled="{{busy}}" bindtap="doLogin">
+    <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-wx" disabled="{{busy}}" bindtap="doLogin">
       <view class="wx-mark"></view>
       <text>{{busy ? busyText : '微信一键登录'}}</text>
     </button>
 
-    <view class="login-foot">
-      <text class="link" bindtap="goGuest">先不登录</text>
-    </view>
+  </view>
+
+  <!-- 不登录的出口：审核要求先体验功能、再自行选择授权 -->
+  <view class="login-foot">
+    <text class="link" aria-role="button" bindtap="browse">先随便看看，不登录</text>
   </view>
 
 </view>
