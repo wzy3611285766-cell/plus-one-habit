@@ -66,8 +66,6 @@ Page({
 
   onShow() {
     if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('mine');
-    const gate = getApp();
-    if (gate && typeof gate.ensureLoginGate === 'function') gate.ensureLoginGate();
     prefs.setStatusBarLight(true);
     this.render();
     if (auth.isLogged()) {
@@ -184,8 +182,8 @@ Page({
           store.onLoggedOut();
           this.render();
           this.toast('已退出登录');
-          /* 强制登录闸门要求登出即回登录页，不能等下一次切 tab 才被 onShow 兜走 */
-          setTimeout(() => wx.reLaunch({ url: '/pages/login/login' }), 600);
+          /* 不再跳登录页：退出后就在「我的」以未登录态继续用，
+             想同步时再点这一行的「微信一键登录」（用户自行选择）。 */
         });
       }
     });
@@ -259,7 +257,7 @@ Page({
         this.setData({ busy: false, sheet: '' });
         this.render();
         this.toast('账号已注销');
-        setTimeout(() => wx.reLaunch({ url: '/pages/login/login' }), 600);
+        /* 同上：留在「我的」的未登录态，不把用户推去登录页 */
       })
       .catch((e) => {
         this.setData({ busy: false, formError: (e && e.apiMessage) || '注销失败，请稍后重试' });

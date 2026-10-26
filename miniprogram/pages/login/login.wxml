@@ -4,7 +4,7 @@
   <view class="brand">
     <view class="brand-mark">+1</view>
     <view class="brand-title">PLus one habit</view>
-    <view class="brand-sub">微信一键登录</view>
+    <view class="brand-sub">不登录也能记录；登录后目标与打卡可跨设备同步</view>
   </view>
 
   <!-- 云开发没配好时，与其让用户反复试错，不如直接说清楚要做什么 -->
@@ -40,6 +40,11 @@
       <text>{{busy ? busyText : '微信一键登录'}}</text>
     </button>
 
+  </view>
+
+  <!-- 不登录的出口：审核要求先体验功能、再自行选择授权 -->
+  <view class="login-foot">
+    <text class="link" aria-role="button" bindtap="browse">先随便看看，不登录</text>
   </view>
 
 </view>

@@ -80,6 +80,20 @@ function isLogged() { return !!(current && current.user && current.user.id); }
 
 function user() { return current ? current.user : null; }
 
+/**
+ * 同步地把本机身份缓存载入内存（不发网络请求）。
+ *
+ * 冷启动必须在 onLaunch 里、页面渲染之前调用：否则第一帧的 auth.isLogged()
+ * 还是 false，老用户会先看到「登录」入口 / 「未登录」，等会话校验回来才翻过来。
+ * 本地缓存的 user 只用于渲染，不承担鉴权；真正的身份仍由云函数侧的 openid 决定。
+ */
+function hydrate() {
+  if (current) return user();
+  const cached = readCached();
+  if (cached) current = cached;
+  return user();
+}
+
 /* ================= 动作 ================= */
 
 /**
@@ -177,6 +191,7 @@ module.exports = {
   on: on,
   isLogged: isLogged,
   user: user,
+  hydrate: hydrate,
   deviceId: deviceId,
   login: login,
   restore: restore,

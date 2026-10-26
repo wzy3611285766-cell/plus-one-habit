@@ -86,8 +86,6 @@ Page({
 
   onShow() {
     if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('today');
-    const gate = getApp();
-    if (gate && typeof gate.ensureLoginGate === 'function') gate.ensureLoginGate();
     prefs.setStatusBarLight(true);   // hero 是深蓝底，状态栏要白字
     // 回到页面时对齐一次云端（store 内部有 20 秒节流）
     if (auth.isLogged()) {

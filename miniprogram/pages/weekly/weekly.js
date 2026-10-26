@@ -46,8 +46,6 @@ Page({
 
   onShow() {
     if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('weekly');
-    const gate = getApp();
-    if (gate && typeof gate.ensureLoginGate === 'function') gate.ensureLoginGate();
     prefs.setStatusBarLight(true);
     this.render(true);
   },

@@ -894,17 +894,34 @@ test('今日页顶栏 + 快捷键：只在有目标时显示（空状态用大�
     '加号两根线应各自绝对定位在按键中心');
 });
 
-test('登录闸门：进入必须先一键登录（用户 2026-10-25 决策）', () => {
+test('目标编辑页配色：8 个色点固定一行，窄屏横滑也不换行', () => {
+  const css = stripCssComments(read(path.join(MP, 'pages', 'goal-edit', 'goal-edit.wxss')));
+  const row = firstBody(css, '.swatches');
+  assert(row.indexOf('grid-auto-flow:column') >= 0, '配色行应是一行网格（column）');
+  assert(row.indexOf('flex-wrap:wrap') < 0, '配色行不得再换行');
+  assert(row.indexOf('overflow-x:auto') >= 0, '极窄屏应横滑兜底，而不是折成第二行');
+
+  const dot = firstBody(css, '.swatch');
+  assert(dot.indexOf('max-width:40px') >= 0, '色点最大 40px，避免平板上一行铺得过开');
+  assert(firstBody(css, '.swatch::before').indexOf('padding-top:100%') >= 0,
+    '正方形应走 padding-top 方案，不依赖 aspect-ratio');
+});
+
+test('不强制登录：先能浏览功能，授权登录由用户自行选择（2026-10-26 提审驳回后撤销闸门）', () => {
   const appJs = read(path.join(MP, 'app.js'));
   const loginWxml = read(path.join(MP, 'pages', 'login', 'login.wxml'));
-  assert(appJs.indexOf('ensureLoginGate') >= 0 && appJs.indexOf("wx.reLaunch({ url: '/pages/login/login' })") >= 0,
-    'app.js 应有登录闸门');
+
+  assert(appJs.indexOf('ensureLoginGate') < 0, 'app.js 不应再有登录闸门');
+  assert(appJs.indexOf("wx.reLaunch({ url: '/pages/login/login' })") < 0,
+    '启动链路不得主动跳登录页');
   ['today', 'board', 'weekly', 'mine'].forEach((p) => {
     const js = read(path.join(MP, 'pages', p, p + '.js'));
-    assert(js.indexOf('ensureLoginGate') >= 0, p + ' 的 onShow 应调用登录闸门');
+    assert(js.indexOf('ensureLoginGate') < 0, p + ' 的 onShow 不应再拦截未登录用户');
   });
-  assert(loginWxml.indexOf('先返回打卡') < 0 && loginWxml.indexOf('先不登录') < 0,
-    '登录页不应再有游客逃生门（闸门必须真的拦住）');
+
+  // 登录页必须留退路：审核员要先体验功能，再自行选择授权
+  assert(loginWxml.indexOf('先随便看看') >= 0, '登录页应提供不登录的出口');
+  assert(loginWxml.indexOf('不登录也能记录') >= 0, '登录页应说明不登录也能使用');
 });
 
 export const suite = '小程序静态检查';

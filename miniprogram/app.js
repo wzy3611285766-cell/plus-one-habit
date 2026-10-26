@@ -36,6 +36,8 @@ App({
     this.measureNav();
     this.initCloud();
     this.loadLocal();
+    // 先把本机身份缓存同步载入内存：页面第一帧就要是登录态，不能等网络
+    auth.hydrate();
     this.handleShareEntry(options);
     this.applyTheme();
     // 预拉取是本地同步读微信缓存，很快；放在 restoreSession 之前，
@@ -193,32 +195,26 @@ App({
       if (r && r.ok) {
         return store.onLoggedIn({ skipPull: this.prefetchFresh() }).then(() => r, () => r);
       }
+      /* 网络失败不等于登出：本机身份还在（auth.restore 保留了缓存），
+         这时清分片基线会丢掉待推送标记，也会把界面写成「未登录」。 */
+      if (r && r.keepLocal) {
+        store.setOffline('网络不可用，稍后自动同步');
+        return r;
+      }
       store.onLoggedOut();
       return r;
     }).then((r) => {
       this.globalData.bootResult = r;
-      this.ensureLoginGate();
       return r;
     }).catch(() => {
       this.globalData.bootResult = { ok: false, reason: 'error' };
-      this.ensureLoginGate();
       return this.globalData.bootResult;
     });
   },
 
-  /**
-   * 登录闸门（2026-10-25 用户决策：进入小程序必须先微信一键登录）。
-   * 云开发可用而未登录时，任何 tab 页都会回到登录页；
-   * 只在会话恢复有结论（bootResult 已定）后判定，不和 restore 抢跑。
-   * 未配置 ENV_ID 的离线模式不设闸 —— 那时登录不可用，打卡仍需可用。
-   */
-  ensureLoginGate() {
-    const g = this.globalData;
-    if (!g.cloudReady) return;
-    if (!g.bootResult) return;
-    if (auth.isLogged()) return;
-    wx.reLaunch({ url: '/pages/login/login' });
-  },
+  /* 不做登录闸门（2026-10-26 提审驳回后撤销）：
+     未登录也能完整使用今日打卡 / 看板 / 周报，登录只在「同步到账号」时才需要。
+     审核规则要求先体验功能、再自行选择授权，进入即跳登录页会被驳回。 */
 
   /** 供页面在需要时手动重试启动流程 */
   retryBoot() {

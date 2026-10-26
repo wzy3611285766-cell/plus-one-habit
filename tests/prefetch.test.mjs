@@ -340,11 +340,59 @@ await test('app 启动顺序（集成）：先采纳快照 → 再恢复会话 �
   assert(app && app.boot, 'app.js 应导出 boot()');
 
   app.onLaunch({});
+  eq(rt.auth.isLogged(), true, 'onLaunch 同步阶段就应恢复身份：页面第一帧不能闪「未登录」');
   await app.globalData.bootPromise;
 
   eq(rt.store.get().goals.length, 1, '首屏数据应来自预拉取快照');
   eq(rt.store.get().goals[0].id, 'g-app');
   eq(rt.env.callCount.sync, 0, '快照新鲜时不应再发 sync 调用');
+});
+
+await test('断网冷启动：身份留在登录态，只把同步状态标成离线（不清 dirty 基线）', async () => {
+  const rt = freshRuntime();
+  rt.env.storage.set('lgt.wxuser.v1', JSON.stringify({ user: { id: 'u_off', nickname: '' } }));
+  rt.env.storage.set('lgt.shards.v1', JSON.stringify({ core: { rev: 3, dirty: true } }));
+  rt.env.cloudFail = true;
+
+  const appPath = path.join(MP, 'app.js');
+  delete require.cache[require.resolve(appPath)];
+  require(appPath);
+  const app = rt.env.appOptions;
+
+  app.onLaunch({});
+  eq(rt.auth.isLogged(), true, '断网不应把用户踢下线');
+  await app.globalData.bootPromise;
+
+  eq(rt.store.syncState().phase, 'offline', '应显示离线，而不是「未登录」');
+  const shards = JSON.parse(rt.env.storage.get('lgt.shards.v1'));
+  eq(shards.core.rev, 3, '分片基线不能被清掉');
+  eq(shards.core.dirty, true, '待推送标记不能被清掉');
+  eq(rt.auth.isLogged(), true, '会话仍保留，网络恢复后可直接继续同步');
+});
+
+await test('全新用户冷启动（提审场景）：不跳登录页，可直接建目标打卡', async () => {
+  const rt = freshRuntime();
+  rt.env.prefetchData = null;
+
+  const appPath = path.join(MP, 'app.js');
+  delete require.cache[require.resolve(appPath)];
+  require(appPath);
+  const app = rt.env.appOptions;
+
+  app.onLaunch({});
+  await app.globalData.bootPromise;
+
+  eq(rt.auth.isLogged(), false, '全新用户本来就没有登录态');
+  const jumps = rt.env.log.filter((x) =>
+    (x.type === 'reLaunch' || x.type === 'redirectTo') && String(x.url || '').indexOf('login') >= 0);
+  eq(jumps.length, 0, '不能让新用户一进来就被送去登录页（2026-10-26 驳回项）');
+
+  rt.store.addGoal({
+    id: 'g-guest', name: '游客目标', unit: '个', total: 10,
+    deadline: '2026-12-31', createdAt: '2026-10-26', color: '#6366f1', sample: false
+  });
+  eq(rt.store.get().goals.length, 1, '未登录也应能新建目标');
+  eq(rt.env.callCount.sync, 0, '游客写本机，不发同步请求');
 });
 
 await test('快照过期路径：没有 skipPull 时仍然照常全量拉取', async () => {

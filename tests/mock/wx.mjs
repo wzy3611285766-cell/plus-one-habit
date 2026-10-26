@@ -200,6 +200,10 @@ export function installWxEnv(opts) {
       init() { },
       callFunction(arg) {
         const name = arg && arg.name;
+        if (state.cloudFail) {
+          // 模拟断网：wx.cloud.callFunction 自身 reject（不是云函数返回错误信封）
+          return Promise.reject({ errMsg: 'cloud.callFunction:fail network error' });
+        }
         if (name !== 'auth' && name !== 'sync') {
           return Promise.reject(new Error('unknown cloud function ' + name));
         }

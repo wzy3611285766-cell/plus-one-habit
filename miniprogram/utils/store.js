@@ -498,6 +498,11 @@ function onLoggedOut() {
   emit({ type: 'state' });
 }
 
+/** 网络不可用：身份保留、分片基线与 dirty 标记一概不动，只改同步状态文案 */
+function setOffline(message) {
+  setPhase('offline', message || '网络不可用，稍后自动同步');
+}
+
 function resetToRemote() {
   if (!auth.isLogged()) return Promise.resolve(false);
   shards = {};
@@ -631,6 +636,7 @@ module.exports = {
   push: push,
   onLoggedIn: onLoggedIn,
   onLoggedOut: onLoggedOut,
+  setOffline: setOffline,
   applyPrefetched: applyPrefetched,
   resetToRemote: resetToRemote,
   clearLocalOnly: clearLocalOnly,

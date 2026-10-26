@@ -125,6 +125,14 @@ await test('未登录也能正常使用，不做任何拦截', () => {
   eq(todayPage.data.hasGoals, false, '新环境还没有目标');
 });
 
+await test('启动不跳登录页：未登录直接看到今日页（审核要求先体验功能）', () => {
+  const loginJumps = env.log.filter((x) =>
+    (x.type === 'reLaunch' || x.type === 'redirectTo') && String(x.url || '').indexOf('login') >= 0);
+  eq(loginJumps.length, 0, '未登录进入时不应被送去登录页');
+  eq(todayPage.data.logged, false);
+  eq(todayPage.data.hasGoals, false);
+});
+
 await test('未登录时新建目标仍然可用（写本机）', () => {
   U1.store.addGoal({
     id: 'pg1', name: '背单词', unit: '个', total: 100,
@@ -358,6 +366,28 @@ await test('登录后当日打卡会同步到云端', async () => {
   const logs = docs.filter((d) => d.key.indexOf('logs:') === 0)
     .reduce((a, d) => a.concat(d.payload.items || []), []);
   assert(logs.some((l) => l.goalId === 'pg1'), '云端应出现这个目标今天的打卡记录');
+});
+
+await test('登录页有「先随便看看」出口：不登录也能回到今日页', () => {
+  env.storage.clear();
+  freshUtils();                 // 清掉上一段的内存登录态，模拟一个还没登录的人
+  const page = mount('login');
+  page.onLoad();
+
+  // 冷启动直接落在登录页（没有页面栈）→ 回今日页
+  const before = env.log.length;
+  page.browse();
+  const nav = env.log.slice(before);
+  assert(nav.some((x) => x.type === 'switchTab' && x.url === '/pages/today/today'),
+    '没有页面栈时应 switchTab 回今日页，而不是把用户困在登录页');
+
+  // 从今日页点「登录」进来（有页面栈）→ 直接返回上一页
+  env.pageStack = [{}, {}];
+  const before2 = env.log.length;
+  page.browse();
+  const nav2 = env.log.slice(before2);
+  assert(nav2.some((x) => x.type === 'navigateBack'), '有页面栈时应返回上一页');
+  env.pageStack = [];
 });
 
 /* ================================================================= */
@@ -803,8 +833,8 @@ await test('注销成功后：账号没了、云端分片清零、本机回到�
   page.openDeleteAccount();
   page.setData({ form: { confirmDelete: '注销' } });
   page.submitDeleteAccount();
-  /* 等 700ms：注销成功后有 600ms 的「回登录页 reLaunch」定时器，
-     必须在本用例窗口内消化掉，否则会飘进后面用例的执行窗口 */
+  /* 等 700ms：注销链路里有异步收尾（弹层关闭、渲染、toast），
+     让它们在本用例窗口内消化完，避免飘进后面用例 */
   await new Promise((r) => setTimeout(r, 700));
 
   eq(page.data.logged, false, '应回到未登录');
@@ -934,7 +964,7 @@ await test('今日页：全部达成不再是「还没有目标」空态，且�
   assert(page.data.allDoneText, '应给出达成/收工的绿条文案，而不是「还没有目标」空态');
 });
 
-await test('我的页：退出登录后直接回登录页（不等下次切 tab 才被闸门兜走）', async () => {
+await test('我的页：退出登录后留在本页（不强制跳登录），登录入口仍然在', async () => {
   const U24 = freshUtils();
   await boot(U24);
   await U24.auth.login();
@@ -947,13 +977,14 @@ await test('我的页：退出登录后直接回登录页（不等下次切 tab 
   env.modalAnswer = { confirm: true, cancel: false };
   const relaunchBefore = env.log.filter((x) => x.type === 'reLaunch').length;
   page.logout();
-  await new Promise((r) => setTimeout(r, 700));   // 回登录页有 600ms 延迟：先把提示露给用户
+  await new Promise((r) => setTimeout(r, 700));
   env.modalAnswer = null;
 
   eq(U24.auth.isLogged(), false, '应已登出');
-  const relaunches = env.log.filter((x) => x.type === 'reLaunch');
-  eq(relaunches.length, relaunchBefore + 1, '应 reLaunch 一次');
-  eq(relaunches[relaunches.length - 1].url, '/pages/login/login');
+  eq(env.log.filter((x) => x.type === 'reLaunch').length, relaunchBefore,
+    '退出登录不应把用户推去登录页（审核要求登录可选）');
+  eq(page.data.logged, false, '页面应回到未登录态');
+  eq(page.data.sync.text, '未登录', '同步行应提示未登录');
 });
 
 await test('看板入场喷涌：圆环先归零再扫回真实值，柱子挂喷涌类', async () => {

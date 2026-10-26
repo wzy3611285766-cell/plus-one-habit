@@ -77,4 +77,15 @@ Page({
       });
   },
 
+  /**
+   * 不登录的出口。
+   * 审核规则要求「先体验功能、再自行选择授权」，所以这里必须留一条退路：
+   * 从页面栈进来就返回，直接从冷启动打开就回今日页。
+   */
+  browse() {
+    const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+    if (pages && pages.length > 1) { wx.navigateBack(); return; }
+    wx.switchTab({ url: '/pages/today/today' });
+  },
+
 });
