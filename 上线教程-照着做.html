@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>上线教程 · 明天照着做</title>
+<title>上线教程 · 照着做</title>
 <style>
   /* 这一页是可打勾的清单。勾选状态存在浏览器本地，关掉再打开还在。 */
 
@@ -366,11 +366,11 @@
 <div class="wrap">
 
   <header>
-    <h1>上线教程 · 明天照着做</h1>
+    <h1>上线教程 · 照着做</h1>
     <p class="lead">
-      一共 9 个步骤（第 0 步是准备，看一眼就行），约 50 分钟。
-      做完你手上就是一个<b>能注册、能打卡、能多设备同步</b>的真产品。
-      勾选会记在浏览器里，关掉明天再打开还在。
+      一共 9 个步骤（第 0 步是准备，看一眼就行），约 40 分钟。
+      做完你手上就是一个<b>能微信一键登录、能打卡、能多设备同步</b>的真产品。
+      勾选会记在浏览器里，关掉再打开还在。
     </p>
 
     <div class="progress-card">
@@ -401,7 +401,7 @@
       <table>
         <tr><th>项</th><th>值</th><th>在哪</th></tr>
         <tr><td>AppID</td><td class="m">wx7d33ce79272ca950</td><td>project.config.json</td></tr>
-        <tr><td>环境 ID</td><td class="m">demo-d4ggmg7lf4736fb7c</td><td>miniprogram/utils/config.js</td></tr>
+        <tr><td>云函数</td><td class="m">auth / sync 两个文件夹</td><td>cloudfunctions/</td></tr>
       </table>
 
       <p>项目路径（第 1 步要用）：</p>
@@ -410,9 +410,12 @@
         <span class="chip" data-copy="C:\Users\Lenovo\WorkBuddy\2026-10-05-12-45-40\v3_work\wxapp">复制<span class="cp">路径</span></span>
       </div>
 
+      <p><b>环境 ID 这一栏现在是过期的旧值</b>（<code>demo-</code> 开头的试用环境已到期），
+      第 2 步会新建环境并替换它——这正是这次要修的东西。</p>
+
       <div class="check-line">
         <span class="ico">✓</span>
-        <span>打开这两个文件，能看到上面那两个值就对了。</span>
+        <span>AppID 对得上、路径能打开，就可以开始第 1 步了。</span>
       </div>
     </div>
   </div>
@@ -424,30 +427,31 @@
     <div class="step-head">
       <div class="cb"></div>
       <span class="step-no">1</span>
-      <div class="step-title">导入项目
-        <small>把这个产品项目在开发者工具里打开</small>
+      <div class="step-title">确认项目已在开发者工具里打开
+        <small>如果已经开着，看一眼就能勾掉</small>
       </div>
-      <span class="time">3 分钟</span>
+      <span class="time">2 分钟</span>
     </div>
     <div class="step-body">
       <ol>
-        <li>打开微信开发者工具（你现在应该开着登录 demo 那个项目）</li>
-        <li>左上角 <b>「项目」→「查看所有项目」</b></li>
-        <li>点 <b>「导入项目」</b>，目录粘贴上面那个路径</li>
-        <li>AppID 会自动读出来，直接点「导入」</li>
+        <li>打开微信开发者工具</li>
+        <li>如果项目列表里没有它：<b>「导入项目」</b>，目录粘贴上面那个路径，
+          AppID 会自动读出来，直接点「导入」</li>
+        <li>如果已经开着：确认左侧文件树就行</li>
       </ol>
 
       <div class="check-line">
         <span class="ico">✓</span>
-        <span>左侧文件树里能看到 <b><code>cloudfunctions</code></b> 下面有
-          <b><code>auth</code></b> 和 <b><code>sync</code></b> 两个文件夹。</span>
+        <span>左侧文件树里能看到 <b><code>miniprogram</code></b> 和
+          <b><code>cloudfunctions</code></b>（下面有 <b><code>auth</code></b> 和
+          <b><code>sync</code></b> 两个文件夹）。</span>
       </div>
 
       <details>
-        <summary>导入后提示「AppID 不匹配」怎么办？</summary>
+        <summary>提示「AppID 不匹配」怎么办？</summary>
         <div class="inner">
           <p>说明 <code>project.config.json</code> 里的 AppID 没生效。
-          打开那个文件，第 2 行应该是 <code>"appid": "wx7d33ce79272ca950"</code>。
+          打开那个文件，第 3 行应该是 <code>"appid": "wx7d33ce79272ca950"</code>。
           如果不对，手动改掉，保存，然后重新导入。</p>
         </div>
       </details>
@@ -461,32 +465,34 @@
     <div class="step-head">
       <div class="cb"></div>
       <span class="step-no">2</span>
-      <div class="step-title">建 5 个数据库集合
-        <small>名字必须一字不差，点下面的标签直接复制</small>
+      <div class="step-title">新建云开发环境，替换 ENV_ID
+        <small>旧环境已过期——这就是登录页显示「账号功能尚未启用」的原因</small>
       </div>
-      <span class="time">8 分钟</span>
+      <span class="time">5 分钟</span>
     </div>
     <div class="step-body">
-      <p>路径：开发者工具顶部 <b>「☁ 云开发」</b> → 左侧 <b>「数据库」</b> → <b>「＋ 新建集合」</b>。</p>
-
-      <p><b>点下面这 5 个标签直接复制</b>（别手打，最容易错的就是这里）：</p>
-      <div class="chips">
-        <span class="chip" data-copy="accounts">accounts<span class="cp">复制</span></span>
-        <span class="chip" data-copy="sessions">sessions<span class="cp">复制</span></span>
-        <span class="chip" data-copy="verify_codes">verify_codes<span class="cp">复制</span></span>
-        <span class="chip" data-copy="rate_limits">rate_limits<span class="cp">复制</span></span>
-        <span class="chip" data-copy="sync_docs">sync_docs<span class="cp">复制</span></span>
-      </div>
+      <ol>
+        <li>开发者工具顶部 <b>「☁ 云开发」</b> → 环境列表里能看到旧环境
+          <code>demo-d4ggmg7lf4736fb7c</code>，状态「已过期」</li>
+        <li>点 <b>「＋ 新建环境」</b> → 计费选<b>按量付费</b>（个人有免费额度，
+          这个量级基本花不到钱）→ 环境名随意（比如 <code>plus-one</code>）→ 确定，
+          等半分钟</li>
+        <li>创建完成后<b>复制新环境的完整 ID</b>（形如 <code>plus-one-1a2b3c4d5e</code>）</li>
+        <li>回到编辑器，打开 <code>miniprogram/utils/config.js</code>，
+          <b>第 8 行</b>替换成新 ID 并保存：<br>
+          <code>const ENV_ID = 'plus-one-1a2b3c4d5e';</code></li>
+      </ol>
 
       <div class="check-line">
         <span class="ico">✓</span>
-        <span>数据库列表里<b>正好 5 个</b>，一个不多一个不少。</span>
+        <span>环境列表里出现新环境（状态「正常」），config.js 已保存。</span>
       </div>
 
       <div class="warn-line">
         <span class="ico">!</span>
-        <span><b>打错了不会立刻报错</b>，但账号功能会莫名其妙失败——这是最难查的一类问题。
-          全部用<b>半角小写字母 + 下划线</b>，别用中文标点。</span>
+        <span><b>旧的过期环境先留着别删</b>，等第 7 步登录跑通了再删，释放名额。
+          新环境是全新数据库，后面 3、4、5 步都是在<b>新环境</b>里做——
+          做之前看一眼控制台左上角，确认选中的是新环境。</span>
       </div>
     </div>
   </div>
@@ -498,76 +504,38 @@
     <div class="step-head">
       <div class="cb"></div>
       <span class="step-no">3</span>
-      <div class="step-title">建 10 个索引
-        <small>最琐碎的一步，重点是「唯一」这个开关</small>
+      <div class="step-title">建 2 个数据库集合
+        <small>名字必须一字不差，点下面的标签直接复制</small>
       </div>
-      <span class="time">15 分钟</span>
+      <span class="time">3 分钟</span>
     </div>
     <div class="step-body">
-      <p>路径：点集合名字进入详情 → 上方 <b>「索引管理」</b> 标签 → <b>「＋ 新建索引」</b>。</p>
+      <p>路径：开发者工具顶部 <b>「☁ 云开发」</b> → 左侧 <b>「数据库」</b> → <b>「＋ 新建集合」</b>。</p>
 
-      <p><b>索引名称随便起</b>（比如 <code>email_1</code> <code>tokenHash_1</code>），
-      关键是<b>字段名</b>和<b>唯一开关</b>：</p>
-
-      <table>
-        <tr><th>集合</th><th>字段</th><th>要勾「唯一」吗</th></tr>
-        <tr><td class="m">accounts</td><td class="m">email</td><td class="u">✅ 要</td></tr>
-        <tr><td class="m">accounts</td><td class="m">phone</td><td class="u">✅ 要</td></tr>
-        <tr><td class="m">accounts</td><td class="m">openid</td><td class="u">✅ 要</td></tr>
-        <tr><td class="m">sessions</td><td class="m">tokenHash</td><td class="u">✅ 要</td></tr>
-        <tr><td class="m">sessions</td><td class="m">userId</td><td class="nu">不要</td></tr>
-        <tr><td class="m">sessions</td><td class="m">expiresAt</td><td class="nu">不要</td></tr>
-        <tr><td class="m">verify_codes</td><td class="m">target + purpose</td><td class="nu">不要（两个字段）</td></tr>
-        <tr><td class="m">verify_codes</td><td class="m">expiresAt</td><td class="nu">不要</td></tr>
-        <tr><td class="m">rate_limits</td><td class="m">expiresAt</td><td class="nu">不要</td></tr>
-        <tr><td class="m">sync_docs</td><td class="m">userId + key</td><td class="u">✅ 要（两个字段）</td></tr>
-      </table>
-
-      <p>字段名也可以点着复制：</p>
+      <p><b>点下面这 2 个标签直接复制</b>（别手打，最容易错的就是这里）：</p>
       <div class="chips">
-        <span class="chip" data-copy="email">email<span class="cp">复制</span></span>
-        <span class="chip" data-copy="phone">phone<span class="cp">复制</span></span>
-        <span class="chip" data-copy="openid">openid<span class="cp">复制</span></span>
-        <span class="chip" data-copy="tokenHash">tokenHash<span class="cp">复制</span></span>
-        <span class="chip" data-copy="userId">userId<span class="cp">复制</span></span>
-        <span class="chip" data-copy="expiresAt">expiresAt<span class="cp">复制</span></span>
-        <span class="chip" data-copy="target">target<span class="cp">复制</span></span>
-        <span class="chip" data-copy="purpose">purpose<span class="cp">复制</span></span>
-        <span class="chip" data-copy="key">key<span class="cp">复制</span></span>
+        <span class="chip" data-copy="accounts">accounts<span class="cp">复制</span></span>
+        <span class="chip" data-copy="sync_docs">sync_docs<span class="cp">复制</span></span>
       </div>
 
       <div class="check-line">
         <span class="ico">✓</span>
-        <span>5 个集合的索引列表加起来，一共 <b>10 个索引</b>。
-          其中 <b>4 个带「唯一」标记</b>：accounts 三个 + sync_docs 一个。</span>
+        <span>数据库列表里<b>正好 2 个</b>，一个不多一个不少。</span>
       </div>
 
       <div class="warn-line">
         <span class="ico">!</span>
-        <span><b>漏勾「唯一」不会立刻报错。</b>但「两个人同时用同一个邮箱注册」时会出现两个账号，
-          这类问题事后很难补救。<b>四个唯一的，一个都别漏。</b></span>
+        <span><b>打错了不会立刻报错</b>，但账号功能会莫名其妙失败——这是最难查的一类问题。
+          全部用<b>半角小写字母 + 下划线</b>，别用中文标点。</span>
       </div>
 
       <details>
-        <summary>「索引名称」填什么？会不会报错？</summary>
+        <summary>旧教程说建 5 个集合，现在只要 2 个？</summary>
         <div class="inner">
-          <p>索引名称只是给你自己看的标识，随便起都行，习惯上叫
-          <code>字段名_1</code>（比如 <code>email_1</code>、<code>tokenHash_1</code>）。
-          组合索引起成 <code>userId_key</code> 这种就行。</p>
-          <p>唯一的要求是<b>同集合内不重名</b>。</p>
-        </div>
-      </details>
-
-      <details>
-        <summary>组合索引怎么建？（verify_codes 和 sync_docs）</summary>
-        <div class="inner">
-          <p>在「新建索引」的表单里，填完第一个字段后，点 <b>「＋ 添加字段」</b>，
-          加第二行：</p>
-          <ul>
-            <li><code>verify_codes</code>：第一行 <code>target</code>，第二行 <code>purpose</code>，<b>不勾唯一</b></li>
-            <li><code>sync_docs</code>：第一行 <code>userId</code>，第二行 <code>key</code>，<b>勾唯一</b></li>
-          </ul>
-          <p>两行的排序都选「升序」即可。</p>
+          <p>对。账号体系改成「微信一键登录」之后，旧版的
+          <code>sessions</code>、<code>verify_codes</code>、<code>rate_limits</code>
+          三个集合<b>不再需要</b>——已经没有代码读写它们。</p>
+          <p>旧环境里建过的也不用迁移；新环境里不用建。</p>
         </div>
       </details>
     </div>
@@ -580,18 +548,72 @@
     <div class="step-head">
       <div class="cb"></div>
       <span class="step-no">4</span>
-      <div class="step-title">设集合权限
-        <small>不设等于把数据库敞开给所有人</small>
+      <div class="step-title">建 2 个唯一索引
+        <small>重点是「唯一」这个开关，两个都要勾</small>
       </div>
-      <span class="time">3 分钟</span>
+      <span class="time">5 分钟</span>
     </div>
     <div class="step-body">
-      <p>每个集合 → 上方 <b>「权限设置」</b> 标签 → 选 <b>「所有用户不可读写」</b>。</p>
-      <p><b>5 个集合都要设一遍。</b></p>
+      <p>路径：点集合名字进入详情 → 上方 <b>「索引管理」</b> 标签（默认停在「记录」上，要手动切）→
+        <b>「＋ 新建索引」</b>。</p>
+
+      <p><b>索引名称随便起</b>（比如 <code>openid_1</code>），
+      关键是<b>字段名</b>和<b>唯一开关</b>：</p>
+
+      <table>
+        <tr><th>集合</th><th>字段</th><th>要勾「唯一」吗</th></tr>
+        <tr><td class="m">accounts</td><td class="m">openid</td><td class="u">✅ 要（一个微信一个账号的最后防线）</td></tr>
+        <tr><td class="m">sync_docs</td><td class="m">userId + key</td><td class="u">✅ 要（两个字段的联合索引）</td></tr>
+      </table>
+
+      <p>字段名也可以点着复制：</p>
+      <div class="chips">
+        <span class="chip" data-copy="openid">openid<span class="cp">复制</span></span>
+        <span class="chip" data-copy="userId">userId<span class="cp">复制</span></span>
+        <span class="chip" data-copy="key">key<span class="cp">复制</span></span>
+      </div>
 
       <div class="check-line">
         <span class="ico">✓</span>
-        <span>5 个集合的权限设置里，都是最后一项「所有用户不可读写」被选中。</span>
+        <span>两个索引都建好，属性列都带<b>「唯一」</b>标记。</span>
+      </div>
+
+      <div class="warn-line">
+        <span class="ico">!</span>
+        <span><b>漏勾「唯一」不会立刻报错</b>，但可能出现重复账号、分片冲突这类
+          很难事后补救的问题。<b>两个都要勾，一个都别漏。</b></span>
+      </div>
+
+      <details>
+        <summary>sync_docs 的联合索引怎么建？</summary>
+        <div class="inner">
+          <p>在「新建索引」的表单里，第一行填 <code>userId</code>，然后点
+          <b>「＋ 添加字段」</b> 加第二行填 <code>key</code>，两行排序都选「升序」，
+          索引属性勾<b>唯一</b>。索引名称可以起 <code>userId_key</code>。</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 5 -->
+  <!-- ============================================ -->
+  <div class="step" data-step="5">
+    <div class="step-head">
+      <div class="cb"></div>
+      <span class="step-no">5</span>
+      <div class="step-title">设集合权限
+        <small>不设等于把数据库敞开给所有人</small>
+      </div>
+      <span class="time">2 分钟</span>
+    </div>
+    <div class="step-body">
+      <p>每个集合 → 上方 <b>「权限设置」</b> 标签 → 选 <b>「所有用户不可读写」</b>。</p>
+      <p><b>2 个集合都要设一遍。</b></p>
+
+      <div class="check-line">
+        <span class="ico">✓</span>
+        <span>2 个集合的权限设置里，都是最后一项「所有用户不可读写」被选中。</span>
       </div>
 
       <div class="warn-line">
@@ -604,14 +626,14 @@
   </div>
 
   <!-- ============================================ -->
-  <!-- 5 -->
+  <!-- 6 -->
   <!-- ============================================ -->
-  <div class="step" data-step="5">
+  <div class="step" data-step="6">
     <div class="step-head">
       <div class="cb"></div>
-      <span class="step-no">5</span>
+      <span class="step-no">6</span>
       <div class="step-title">上传两个云函数
-        <small>代码还在你电脑上，要传到微信服务器</small>
+        <small>代码还在你电脑上，要传到微信服务器；环境变量一个都不用配</small>
       </div>
       <span class="time">3 分钟</span>
     </div>
@@ -625,7 +647,14 @@
 
       <div class="check-line">
         <span class="ico">✓</span>
-        <span>云开发控制台 → <b>「云函数」</b> → 能看到 <code>auth</code> 和 <code>sync</code> 两个。</span>
+        <span>云开发控制台 → <b>「云函数」</b> → <code>auth</code> 和 <code>sync</code>
+          都在列表里，状态正常。</span>
+      </div>
+
+      <div class="warn-line">
+        <span class="ico">!</span>
+        <span><b>确认上传到的是新环境</b>——开发者工具右上角 / 云开发控制台左上角的环境名要对上。
+          传到过期环境里等于白传。</span>
       </div>
 
       <details>
@@ -659,48 +688,6 @@
   </div>
 
   <!-- ============================================ -->
-  <!-- 6 -->
-  <!-- ============================================ -->
-  <div class="step" data-step="6">
-    <div class="step-head">
-      <div class="cb"></div>
-      <span class="step-no">6</span>
-      <div class="step-title">配一个环境变量
-        <small>让「找回密码」的验证码直接显示在页面上</small>
-      </div>
-      <span class="time">2 分钟</span>
-    </div>
-    <div class="step-body">
-      <p>云开发控制台 → <b>「云函数」</b> → 点 <code>auth</code> → <b>「配置」</b> →
-      <b>「环境变量」</b> → 添加一条：</p>
-
-      <table>
-        <tr><th>变量名</th><th>值</th></tr>
-        <tr><td class="m">AUTH_DEV_MODE</td><td class="m">1</td></tr>
-      </table>
-
-      <p>改完记得点 <b>保存</b>。</p>
-
-      <div class="check-line">
-        <span class="ico">✓</span>
-        <span>环境变量列表里能看到 <code>AUTH_DEV_MODE = 1</code>。</span>
-      </div>
-
-      <details>
-        <summary>这个变量是干什么的？会不会有安全隐患？</summary>
-        <div class="inner">
-          <p>个人主体的小程序<b>没有短信资质，云开发也不带邮件能力</b>，所以「找回密码」
-          的验证码没法真的发出去。</p>
-          <p>打开这个开关后，验证码会<b>直接返回给页面显示</b>，你就能把流程自己走完。</p>
-          <p><b>正式上线给外人用之前，应该把它关掉</b>，改用真实的短信/邮件通道
-          （或者干脆不做找回密码，只保留「改密码」）。现在这个阶段开着没问题，
-          因为只有你自己在用。</p>
-        </div>
-      </details>
-    </div>
-  </div>
-
-  <!-- ============================================ -->
   <!-- 7 -->
   <!-- ============================================ -->
   <div class="step" data-step="7">
@@ -713,8 +700,8 @@
       <span class="time">10 分钟</span>
     </div>
     <div class="step-body">
-      <p>点顶部 <b>「编译」</b>。页面应该是一个<b>今日打卡页</b>，底部四个页签：
-      <b>今日 / 看板 / 周报 / 我的</b>。</p>
+      <p>点顶部 <b>「编译」</b>。此时登录页应该显示 <b>「微信一键登录」按钮</b>
+      （不再是「账号功能尚未启用」的配置卡）。</p>
 
       <p>然后按顺序做这四件事：</p>
 
@@ -722,12 +709,12 @@
         <tr><th>#</th><th>做什么</th><th>应该看到</th></tr>
         <tr>
           <td>1</td>
-          <td>点「我的」→ 登录/注册 → 用邮箱注册一个账号</td>
-          <td>提示注册成功，跳到今日页</td>
+          <td>点 <b>「微信一键登录」</b></td>
+          <td>提示「账号已创建」，自动进入今日页</td>
         </tr>
         <tr>
           <td>2</td>
-          <td>回今日页 → 新建一个目标（比如「背单词 100 个」）→ 点几次 +1</td>
+          <td>新建一个目标（比如「背单词 100 个」）→ 点几次 +1</td>
           <td>进度条往前走，连续天数变成 1</td>
         </tr>
         <tr>
@@ -738,7 +725,7 @@
         <tr>
           <td>4</td>
           <td>开发者工具左上角 <b>清缓存 → 清除数据缓存</b>，再点「编译」，
-            用同一个邮箱登录</td>
+            再点一次「微信一键登录」</td>
           <td><b>你的目标、打卡记录全回来了</b> —— 这一条最关键</td>
         </tr>
       </table>
@@ -746,13 +733,14 @@
       <div class="check-line">
         <span class="ico">✓</span>
         <span>第 4 条过了，说明<b>账号 + 云端同步整条链路是通的</b>。
-          到这儿，你的产品就真的跑起来了 🎉</span>
+          到这儿，你的产品就真的跑起来了 🎉<br>
+          顺手可以把过期的旧环境删掉了，释放名额。</span>
       </div>
 
       <div class="warn-line">
         <span class="ico">!</span>
-        <span>第 4 条如果数据没回来，先别急着重做。把「我的 → 数据与同步」那里的状态
-          和提示文案发给我，我能判断是集合/索引没建对，还是别的原因。</span>
+        <span>第 4 条如果数据没回来，先别急着重做。把调试器 Console 里的红色报错
+          抄下来发给我，我能判断是集合/索引没建对、云函数没传对环境，还是别的原因。</span>
       </div>
     </div>
   </div>
@@ -788,8 +776,8 @@
       <div class="warn-line">
         <span class="ico">!</span>
         <span><b>备案没通过是发不出去的。</b>备案要等 2～4 周，
-          最长的一根链条。如果明天还没提交，<b>先花 10 分钟把备案提交了</b>，
-          再回来做前面 7 步。</span>
+          最长的一根链条。如果还没提交，<b>先花 10 分钟把备案提交了</b>，
+          再回来做前面几步。</span>
       </div>
 
       <details>
