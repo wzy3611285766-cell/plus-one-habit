@@ -36,6 +36,9 @@
 .add-goal{
   /* iOS 导航区图标键：平时无底，按下浮现圆形灰高亮 */
   flex:none;
+  /* 两根加号线是 absolute，必须给它们一个定位基准：
+     少了这一行，线会跑到页面中心，按键看上去就「消失」了 */
+  position:relative;
   width:calc(42px);height:calc(42px);
   border-radius:var(--r-md);
   background:none;

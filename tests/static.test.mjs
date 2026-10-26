@@ -885,6 +885,13 @@ test('今日页顶栏 + 快捷键：只在有目标时显示（空状态用大�
   const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
   assert(/wx:if="\{\{hasGoals\}\}"[^>]*class="add-goal"/.test(wxml),
     '顶栏 + 快捷键应挂在 hasGoals 上');
+
+  const css = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  const box = firstBody(css, '.add-goal');
+  assert(box.indexOf('position:relative') >= 0,
+    '+ 键必须给 absolute 的加号线提供定位基准（少了它，线会跑到页面中心，按键看起来消失）');
+  assert(firstBody(css, '.add-h,.add-v').indexOf('position:absolute') >= 0,
+    '加号两根线应各自绝对定位在按键中心');
 });
 
 test('登录闸门：进入必须先一键登录（用户 2026-10-25 决策）', () => {
