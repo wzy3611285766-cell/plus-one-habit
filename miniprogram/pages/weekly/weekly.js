@@ -252,8 +252,6 @@ Page({
     this.toast(auth.isLogged() ? '已保存，正在同步' : '已保存');
   },
 
-  goLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
-
   toast(msg, ms) {
     wx.showToast({ title: msg, icon: 'none', duration: ms || 1800 });
   }

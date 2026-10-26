@@ -52,6 +52,16 @@ function clearCached() {
   try { wx.removeStorageSync(K.USER); } catch (e) { }
 }
 
+/**
+ * 服务端明确否定了这个身份（未注册 / 账号停用）时调用：
+ * 清掉本机缓存并广播登出，让页面立刻回到未登录态。
+ * 与 logout() 的区别：那个是用户主动退出，这个是身份失效。
+ */
+function invalidate(reason) {
+  clearCached();
+  emit({ type: 'logout', reason: reason || 'invalid' });
+}
+
 /* ================= 设备信息 ================= */
 
 /**
@@ -135,8 +145,7 @@ function restore() {
     })
     .catch((e) => {
       if (api.isAuthError(e)) {
-        clearCached();
-        emit({ type: 'logout', reason: e.code });
+        invalidate(e.code);
         return { ok: false, reason: e.code, user: null };
       }
       return { ok: false, reason: 'network', keepLocal: true, user: cached.user, error: e };
@@ -179,10 +188,7 @@ function updateProfile(patch) {
 /** 同步失败时如果发现账号没了，清本地并广播登出 */
 function requireLogin(promiseFactory) {
   return promiseFactory().catch((e) => {
-    if (api.isAuthError(e)) {
-      clearCached();
-      emit({ type: 'logout', reason: e.code });
-    }
+    if (api.isAuthError(e)) invalidate(e.code);
     throw e;
   });
 }
@@ -199,6 +205,7 @@ module.exports = {
   deleteAccount: deleteAccount,
   updateProfile: updateProfile,
   requireLogin: requireLogin,
+  invalidate: invalidate,
   readCached: readCached,
   clearCached: clearCached
 };

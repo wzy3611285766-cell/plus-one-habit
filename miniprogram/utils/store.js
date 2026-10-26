@@ -356,8 +356,10 @@ function push(retried) {
     .catch((e) => {
       pushing = false;
       syncInfo.lastError = e;
-      if (api.isAuthError(e)) setPhase('needlogin', '登录已过期，请重新登录');
-      else setPhase('error', e.apiMessage || '同步失败，稍后会自动重试');
+      if (api.isAuthError(e)) {
+        auth.invalidate(e.code);
+        setPhase('needlogin', '登录已过期，请重新登录');
+      } else setPhase('error', e.apiMessage || '同步失败，稍后会自动重试');
       throw e;
     });
 }
@@ -402,8 +404,10 @@ function pull(opts) {
     .catch((e) => {
       pulling = false;
       syncInfo.lastError = e;
-      if (api.isAuthError(e)) setPhase('needlogin', '登录已过期，请重新登录');
-      else setPhase('error', e.apiMessage || '拉取失败，请检查网络');
+      if (api.isAuthError(e)) {
+        auth.invalidate(e.code);
+        setPhase('needlogin', '登录已过期，请重新登录');
+      } else setPhase('error', e.apiMessage || '拉取失败，请检查网络');
       throw e;
     });
 }

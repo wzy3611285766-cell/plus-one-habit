@@ -1008,4 +1008,41 @@ await test('看板入场喷涌：圆环先归零再扫回真实值，柱子挂�
   if (typeof page.onUnload === 'function') page.onUnload();
 });
 
+await test('账号被停用：恢复会话与同步都会清掉本机身份，不留僵尸登录态', async () => {
+  env.storage.clear();
+  const U27 = freshUtils();
+  await boot(U27);
+  await U27.auth.login();
+
+  const acc = db.dump('accounts').find((a) => a.openid === PAGE_OPENID);
+  assert(acc, '应已有账号');
+  await db.collection('accounts').doc(acc._id).update({ data: { status: 'disabled' } });
+
+  try {
+    // 1) 冷启动恢复：服务端说账号停用 → 本机身份立即作废
+    const r = await U27.auth.restore();
+    eq(r.ok, false);
+    eq(r.reason, 'ACCOUNT_DISABLED');
+    eq(U27.auth.isLogged(), false, '停用后不应继续显示已登录');
+
+    // 2) 同步链路：停用后推 dirty 分片，同样清身份并回到未登录
+    await db.collection('accounts').doc(acc._id).update({ data: { status: 'active' } });
+    await U27.auth.login();
+    U27.store.addGoal({
+      id: 'disabled-1', name: '待停用目标', unit: '个', total: 5,
+      deadline: U27.U.addDays(U27.U.todayStr(), 10), createdAt: U27.U.todayStr(), color: '#6366f1', sample: false
+    });
+    U27.store.cancelScheduled();
+    await db.collection('accounts').doc(acc._id).update({ data: { status: 'disabled' } });
+
+    let code = '';
+    try { await U27.store.push(); } catch (e) { code = e && e.code; }
+    eq(code, 'ACCOUNT_DISABLED', '应把停用错误原样抛给上层');
+    eq(U27.auth.isLogged(), false, '同步遇停用也应清掉本机身份');
+    eq(U27.store.syncState().phase, 'needlogin');
+  } finally {
+    await db.collection('accounts').doc(acc._id).update({ data: { status: 'active' } });
+  }
+});
+
 export const suite = '页面集成';
