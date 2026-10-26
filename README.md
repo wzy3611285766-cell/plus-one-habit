@@ -351,16 +351,16 @@ H5 版第 17 轮把公开链接改成「分叉副本」；小程序没有公开�
 
 ### 版本与回退（git）
 
-本目录已是 git 仓库。本轮功能在 `feature/share-fork` 分支：
+`master` 是当前主线（2026-10-26 已合并 `feature/share-fork`）。
+2026-10-24「加分享分叉之前」的基线保留在 tag 上：
 
 ```
-git log --oneline                 # 看提交历史
-git checkout master               # 回到没有分叉功能的基线（整体回退）
-git checkout feature/share-fork   # 回到带分叉功能的版本
+git log --oneline                    # 看提交历史
+git checkout baseline-2026-10-24     # 回到加分享分叉之前的基线
+git checkout master                  # 回到当前主线
 ```
 
-不满意时整体回退用 checkout master；只想撤销分叉功能本身，revert 掉
-「分享分叉（模仿 verify17 第 17 轮）」那条提交即可。
+只想撤销某一项功能，用 `git revert` 对应的提交，不要移动 master 指针。
 
 ### 从旧版本（邮箱/密码模型）升级的数据库清理清单（2026-10-25 线上实锤）
 
