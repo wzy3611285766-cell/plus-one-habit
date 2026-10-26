@@ -332,7 +332,9 @@ await test('一键登录成功后身份被保存，并自动把本机游客数�
 
   loginPage.doLogin();
 
-  await new Promise((r) => setTimeout(r, 400));
+  /* 700ms：登录成功 500ms 后还有一次导航（无页面栈时 switchTab 今日页），
+     在本用例窗口内消化掉，避免它飘进后面的导航断言 */
+  await new Promise((r) => setTimeout(r, 700));
   assert(U2.auth.isLogged(), '应已登录，错误：' + JSON.stringify(loginPage.data.error));
   assert(U2.auth.user().id, '应拿到账号 id');
   assert(U2.store.syncState().lastSyncAt > 0, '登录后应完成一次数据对齐');
@@ -366,6 +368,23 @@ await test('登录后当日打卡会同步到云端', async () => {
   const logs = docs.filter((d) => d.key.indexOf('logs:') === 0)
     .reduce((a, d) => a.concat(d.payload.items || []), []);
   assert(logs.some((l) => l.goalId === 'pg1'), '云端应出现这个目标今天的打卡记录');
+});
+
+await test('从「我的」进入登录：成功后返回上一页，不再强制跳今日', async () => {
+  env.storage.clear();
+  freshUtils();
+  const page = mount('login');
+  page.onLoad();
+
+  env.pageStack = [{}, {}];       // 模拟今日/我的 → navigateTo 登录页
+  const before = env.log.length;
+  page.doLogin();
+  await new Promise((r) => setTimeout(r, 700));   // 成功提示 500ms 后才导航
+  env.pageStack = [];
+
+  const nav = env.log.slice(before);
+  assert(nav.some((x) => x.type === 'navigateBack'), '有页面栈时应原路返回');
+  assert(!nav.some((x) => x.type === 'switchTab'), '不应强制切到今日页');
 });
 
 await test('登录页有「先随便看看」出口：不登录也能回到今日页', () => {

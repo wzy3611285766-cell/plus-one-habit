@@ -210,6 +210,13 @@ group('预拉取客户端 · 采纳与闸门');
 /** 每个用例一套全新的模块与存储（store/auth 都是模块级单例） */
 function freshRuntime() {
   const utilNames = ['config.js', 'util.js', 'model.js', 'api.js', 'auth.js', 'fork.js', 'prefetch.js', 'store.js'];
+  /* 换模块实例前先掐掉旧 store 的 debounce 推送：
+     否则旧定时器会在后面的套件里开火，把这一套的 state 推给另一套的 mock 数据库
+     （表现为 pages 的账号里凭空多出一个目标）。 */
+  try {
+    const prev = require.cache[require.resolve(path.join(MP, 'utils', 'store.js'))];
+    if (prev && prev.exports && prev.exports.cancelScheduled) prev.exports.cancelScheduled();
+  } catch (e) { /* 首次调用时还没有旧实例 */ }
   utilNames.forEach((f) => { delete require.cache[require.resolve(path.join(MP, 'utils', f))]; });
   const db = createMockDb();
   const env = installWxEnv({ db: db, openid: 'oa' });

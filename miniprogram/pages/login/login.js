@@ -69,7 +69,14 @@ Page({
           icon: 'none',
           duration: 1200
         });
-        setTimeout(() => wx.switchTab({ url: '/pages/today/today' }), 500);
+        /* 登录入口可能在「我的」：从页面栈进来就原路返回，
+           只有冷启动直接落在登录页（没有上一页）才回今日页。 */
+        const stack = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+        const fromOtherPage = !!(stack && stack.length > 1);
+        setTimeout(() => {
+          if (fromOtherPage) wx.navigateBack();
+          else wx.switchTab({ url: '/pages/today/today' });
+        }, 500);
       })
       .catch((e) => {
         this.setData({ busy: false, busyText: '' });
