@@ -201,10 +201,6 @@
   <!-- ---------- 空态 ---------- -->
   <view wx:if="{{!hasGoals}}" class="card empty">
     <view class="empty-title">还没有目标</view>
-    <view class="empty-desc">
-      目标要有总量和终点，才能算出「今天建议做多少」。
-      比如「背 1200 个单词，12 月 20 日前完成」。
-    </view>
     <view class="empty-actions">
       <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="goNewGoal">新建目标</button>
     </view>
