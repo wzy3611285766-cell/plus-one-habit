@@ -222,8 +222,12 @@
 
   <h1>云开发控制台 · 操作图解</h1>
   <p class="lead">
-    旧环境（<code>demo-</code> 开头的试用环境）已过期，这是登录失败的根源。
-    下面从<b>新建环境</b>开始，到登录跑通，一共 5 张图。
+    <b>2026-10-26 更正：</b>本项目的环境 <code>demo-d4ggmg7lf4736fb7c</code> 经确认
+    <b>没有过期</b>（控制台状态「正常」），不需要新建环境。
+    早前把登录失败归因于「试用环境过期」是误判 —— 真正的高频原因是 accounts 集合里
+    残留的旧唯一索引 <code>email_1</code> / <code>phone_1</code>：新模型所有账号
+    <code>email</code> 均为空，第二个用户登录必撞唯一键（报「服务暂时不可用」）。
+    先按图 4 检查索引，只有控制台确实显示「已过期」时才需要按图 1 新建环境。
     建集合、建索引、设权限这些<b>必须你自己在网页上点</b>，我代劳不了。
   </p>
   <div class="caveat">
@@ -233,7 +237,7 @@
 
   <!-- ================= 图 1 ================= -->
   <div class="figure">
-    <h2>图 1 · 新建环境（旧环境已过期）<span class="who">你来做</span></h2>
+    <h2>图 1 · 检查环境状态（显示「正常」就跳过这一图）<span class="who">你来做</span></h2>
     <p class="h2sub">在开发者工具点顶部「☁ 云开发」打开，环境列表长这样</p>
 
     <div class="shot">
@@ -249,26 +253,27 @@
           </div>
           <table class="tbl">
             <tr><th>环境 ID</th><th>状态</th><th>计费</th></tr>
-            <tr><td class="mono">demo-d4ggmg7lf4736fb7c</td><td><span class="tag-expired">已过期</span></td><td>—</td></tr>
-            <tr><td class="mono">plus-one-xxxx（新建的）</td><td><span class="tag-ok2">正常</span></td><td>按量付费</td></tr>
+            <tr><td class="mono">demo-d4ggmg7lf4736fb7c</td><td><span class="tag-ok2">正常</span></td><td>按量付费</td></tr>
+            <tr><td class="mono">plus-one-xxxx（仅当上行确实过期才新建）</td><td><span class="tag-ok2">正常</span></td><td>按量付费</td></tr>
           </table>
         </div>
       </div>
     </div>
 
     <ul class="legend">
-      <li><span class="num">1</span><span>点「新建环境」→ 计费选<b>按量付费</b>（个人有免费额度，这个量级基本花不到钱）→
+      <li><span class="num">1</span><span><b>先看状态列</b>：显示「正常」→ 这一图整段跳过，直接去做图 2；
+        只有显示「已过期」才点「新建环境」→ 计费选<b>按量付费</b>（个人有免费额度，这个量级基本花不到钱）→
         环境名随意（比如 <code>plus-one</code>）→ 确定，等半分钟创建完。</span></li>
-      <li><span class="num">2</span><span>创建完成后，<b>复制新环境的完整环境 ID</b>（点进环境也能看到，形如
+      <li><span class="num">2</span><span>确实新建了才做这一步：<b>复制新环境的完整环境 ID</b>（点进环境也能看到，形如
         <code>plus-one-1a2b3c4d5e</code>）。</span></li>
-      <li><span class="num">3</span><span>回到开发者工具，打开 <code>miniprogram/utils/config.js</code>，
+      <li><span class="num">3</span><span>确实新建了才改配置：打开 <code>miniprogram/utils/config.js</code>，
         第 8 行替换成新 ID 并保存：<br>
         <code>const ENV_ID = 'plus-one-1a2b3c4d5e';</code></span></li>
     </ul>
 
     <div class="caveat" style="margin-top:18px;">
-      旧的过期环境<b>先留着别删</b>，等新环境登录跑通了再删，释放名额。
-      新环境是全新数据库，旧环境里就算有过数据也不会自动迁过来。
+      环境没过期就不要动它 —— 换环境等于换一套空数据库，旧环境里的账号与分片不会自动迁过来，
+      还得把两个集合、两个索引、三个云函数全部重做一遍。
     </div>
   </div>
 
@@ -294,7 +299,7 @@
         <div class="c-main" style="color:var(--ink-3);font-size:13.5px;">
           <p>左边这排菜单是整个控制台的导航。</p>
           <p><b style="color:var(--ink-2);">「数据库」</b>——建集合、建索引、设权限，全在这里。</p>
-          <p><b style="color:var(--ink-2);">「云函数」</b>——最后来这里确认两个函数上传成功。</p>
+          <p><b style="color:var(--ink-2);">「云函数」</b>——最后来这里确认三个函数（auth / sync / prefetch）上传成功。</p>
         </div>
       </div>
     </div>
@@ -470,7 +475,7 @@
         所有数据访问都走云函数（云函数有管理员权限），客户端不直连数据库。<br>
         <span class="warn">留着默认权限的话，别人能直接读写你的数据库，绕过全部账号校验。</span></span></li>
 
-      <li><span class="num">2</span><span>两个函数都显示「部署成功」才算完成。</span></li>
+      <li><span class="num">2</span><span>三个函数（<code>auth</code> / <code>sync</code> / <code>prefetch</code>）都显示「部署成功」才算完成。</span></li>
     </ul>
   </div>
 
@@ -478,10 +483,10 @@
   <div class="steps">
     <h2>你的完整勾选清单</h2>
     <ol>
-      <li>云开发控制台 → 「新建环境」（按量付费）<br>
-        <span class="ok">✔ 拿到新环境 ID</span></li>
+      <li>云开发控制台 → 环境列表，确认 <code>demo-d4ggmg7lf4736fb7c</code> 状态是「正常」<br>
+        <span class="ok">✔ 状态「正常」→ 不需要新建环境（只有「已过期」才新建，见更正说明）</span></li>
 
-      <li>把环境 ID 填进 <code>miniprogram/utils/config.js</code> 第 8 行的 <code>ENV_ID</code>，保存<br>
+      <li>确认 <code>miniprogram/utils/config.js</code> 第 8 行的 <code>ENV_ID</code> 与这个环境一致<br>
         <span class="ok">✔ 环境 ID 一字不差</span></li>
 
       <li>「数据库」里建 2 个集合：<code>accounts</code> <code>sync_docs</code><br>
@@ -495,8 +500,13 @@
         <span class="ok">✔ 权限设置里最后一项被选中</span></li>
 
       <li>开发者工具文件树 <code>cloudfunctions</code> 下，右键 <code>auth</code> →
-        「上传并部署：云端安装依赖」；再对 <code>sync</code> 做一次<br>
-        <span class="ok">✔ 控制台「云函数」里两个都显示部署成功（环境变量一个都不用配）</span></li>
+        「上传并部署：云端安装依赖」；再对 <code>sync</code>、<code>prefetch</code> 各做一次<br>
+        <span class="ok">✔ 控制台「云函数」里三个都显示部署成功（环境变量一个都不用配）</span></li>
+
+      <li>（可选，冷启动加速）小程序后台 → 开发管理 → 开发设置 → 数据预拉取 → 开启 →
+        数据来源「云开发」→ 选同一环境 → 云函数选 <code>prefetch</code><br>
+        <span class="ok">✔ 真机冷启动后，云函数日志出现 <code>ok via=event</code></span><br>
+        <span style="font-size:13px;color:var(--ink-3);">不开也不影响功能，只是少一次「代码包加载前就把数据准备好」的加速。</span></li>
 
       <li>点「编译」<br>
         <span class="ok">✔ 登录页显示「微信一键登录」按钮 → 点击 → 提示「账号已创建」进入今日页 —— 成了 🎉</span><br>

@@ -46,7 +46,10 @@ export function installWxEnv(opts) {
     callCount: { auth: 0, sync: 0 },
     log: [],
     app: null,
-    pageStack: []
+    pageStack: [],
+    /* 数据预拉取：测试直接塞字符串（微信缓存里的原文），null 表示本次没有缓存 */
+    prefetchData: null,
+    prefetchTimeStamp: 0
   };
 
   const wx = {
@@ -78,6 +81,30 @@ export function installWxEnv(opts) {
     stopPullDownRefresh: () => { },
     vibrateShort: (arg) => { state.log.push({ type: 'vibrate' }); if (arg && arg.fail) { /* 不调用 fail，模拟支持震动 */ } },
     setNavigationBarColor: () => { },
+
+    /* 数据预拉取：真实环境里由微信在冷启动前写好缓存，
+       这里用 state.prefetchData 直接喂原文，客户端逻辑（解析/闸门）照常走。 */
+    setBackgroundFetchToken: (arg) => {
+      state.log.push({ type: 'fetchToken', token: arg && arg.token });
+      if (arg && arg.success) arg.success();
+    },
+    getBackgroundFetchData: (arg) => {
+      const raw = state.prefetchData;
+      if (raw === null || raw === undefined || raw === '') {
+        if (arg && arg.fail) arg.fail({ errMsg: 'getBackgroundFetchData:fail no prefetch data' });
+        return;
+      }
+      if (arg && arg.success) {
+        arg.success({
+          fetchedData: raw,
+          timeStamp: state.prefetchTimeStamp || Date.now(),
+          path: '',
+          query: {},
+          scene: 1001,
+          fetchType: (arg && arg.fetchType) || 'pre'
+        });
+      }
+    },
 
     /* 音频：桩实例把每次 play 时的 src 与 volume 记进日志，
        音效测试据此断言「60% 真的变成了 0.6 的增益」。

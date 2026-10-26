@@ -28,7 +28,9 @@ const TIMING = {
   /** 进入前台时的自动同步节流 */
   AUTO_SYNC_THROTTLE_MS: 20 * 1000,
   /** 写操作后的推送 debounce */
-  PUSH_DEBOUNCE_MS: 600
+  PUSH_DEBOUNCE_MS: 600,
+  /** 预拉取快照多久内算「刚拉过」，可以直接跳过登录后的全量 pull */
+  PREFETCH_FRESH_MS: 10 * 60 * 1000
 };
 
 module.exports = { ENV_ID, AUTH_FN, SYNC_FN, K, TIMING };

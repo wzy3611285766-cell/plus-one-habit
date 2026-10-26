@@ -408,6 +408,47 @@ function pull(opts) {
     });
 }
 
+/**
+ * 采纳微信缓存的预拉取快照（冷启动、代码包加载前就拿到的那份）。
+ *
+ * 三条闸门，缺一不可：
+ *   1. 快照必须属于当前本机缓存的这个账号 —— 换微信号后缓存里可能还是上一个人的；
+ *   2. 本机分片还有未推送改动（dirty）时不准覆盖，否则离线改动会被快照抹掉；
+ *   3. 只接受 rev 更大的分片，和普通 pull 的判定完全一致。
+ * 采纳后不标记 dirty：这份数据是云端来的，不需要再推回去。
+ *
+ * @returns {{applied:number, changed:boolean, at:number, reason?:string}}
+ */
+function applyPrefetched(payload) {
+  /* 冷启动时这一步跑在 auth.restore() 之前，内存态还没有账号，
+     所以不能只看 auth.user()，要回退读本机缓存的 user。 */
+  const me = auth.user() || (auth.readCached() || {}).user;
+  if (!payload || !me || !me.id) return { applied: 0, changed: false, at: 0, reason: 'no-account' };
+  if (payload.userId !== me.id) return { applied: 0, changed: false, at: 0, reason: 'other-account' };
+
+  const docs = [];
+  Object.keys(payload.shards || {}).forEach((key) => {
+    if (!M.isKnownShardKey(key)) return;
+    const s = payload.shards[key];
+    if (!s || typeof s.rev !== 'number' || !s.payload) return;
+    const local = shards[key];
+    if (local && local.dirty) return;
+    if (local && local.rev >= s.rev) return;
+    docs.push({ key: key, rev: s.rev, payload: s.payload });
+    shard(key).rev = s.rev;
+  });
+
+  if (!docs.length) return { applied: 0, changed: false, at: payload.at || 0 };
+
+  const r = M.mergeRemoteShards(state, docs);
+  if (r.changed) save();
+  saveShards();
+  const at = U.finiteNumber(payload.at, 0, 1e15) ? payload.at : 0;
+  if (at > syncInfo.lastSyncAt) syncInfo.lastSyncAt = at;
+  if (r.changed) emit({ type: 'state' });
+  return { applied: docs.length, changed: r.changed, at: at };
+}
+
 /** 完整同步：先推本机改动，再拉云端变更 */
 function sync(opts) {
   if (!auth.isLogged()) { setPhase('needlogin', '未登录'); return Promise.resolve({ guest: true }); }
@@ -423,12 +464,19 @@ function sync(opts) {
  * 顺序很关键：先全量拉（把账号已有的数据并进来），再把本机数据推上去。
  * 这样「游客期间打的卡」和「账号里原有的数据」都会保留。
  */
-function onLoggedIn() {
+function onLoggedIn(opts) {
   setPhase('syncing', '正在与账号数据对齐…');
   // 分叉记录到此完成使命：游客期的目标与打卡并入账号，此后数据跟账号走
   fork.clearOnLogin();
-  return pull({ force: true })
+  const skipPull = !!(opts && opts.skipPull);
+
+  return (skipPull ? Promise.resolve({ skipped: 'prefetch' }) : pull({ force: true }))
     .then(() => {
+      if (skipPull) {
+        /* 预拉取快照刚把本机基线对齐到云端（见 app.prefetchFresh），不必再全量拉一次：
+           只推真正脏的分片；别的设备若刚改过，CAS 会回传权威数据，合并后自动重推。 */
+        return push();
+      }
       // 本机全部标脏，确保合并后的结果完整回传
       Object.keys(shards).forEach((k) => { if (M.isKnownShardKey(k)) shards[k].dirty = true; });
       shard(M.CORE_KEY).dirty = true;
@@ -583,6 +631,7 @@ module.exports = {
   push: push,
   onLoggedIn: onLoggedIn,
   onLoggedOut: onLoggedOut,
+  applyPrefetched: applyPrefetched,
   resetToRemote: resetToRemote,
   clearLocalOnly: clearLocalOnly,
   scheduled: scheduled,

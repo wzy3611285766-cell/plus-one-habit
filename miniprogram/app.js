@@ -1,10 +1,11 @@
 /**
- * 小程序入口：初始化云开发 → 恢复会话 → 载入本机数据 → 启动自动同步。
+ * 小程序入口：初始化云开发 → 载入本机数据 → 采纳预拉取快照 → 恢复会话。
  *
  * 启动顺序是有讲究的（决定了用户看到什么）：
  *   1. 先 load 本机数据 —— 无论有没有网、有没有登录，界面都要能立刻渲染；
- *   2. 再 restore 会话    —— 有本地凭据就静默校验，实现「自动登录」；
- *   3. 最后对齐云端      —— 登录成功时先拉后推，失败也不影响前两步的结果。
+ *   2. 再读微信的预拉取缓存 —— 冷启动前就拿到的云端快照，按 rev/dirty 闸门采纳；
+ *   3. 最后 restore 会话 —— 有本地身份就静默校验；命中新鲜快照时跳过全量拉取，
+ *      只推本机真正脏的分片，失败也不影响前两步的结果。
  */
 
 const CFG = require('./utils/config.js');
@@ -12,6 +13,7 @@ const store = require('./utils/store.js');
 const auth = require('./utils/auth.js');
 const prefs = require('./utils/prefs.js');
 const sfx = require('./utils/sfx.js');
+const prefetch = require('./utils/prefetch.js');
 
 App({
   globalData: {
@@ -24,6 +26,8 @@ App({
     bootResult: null,
     /** 是否已完成一次数据加载 */
     dataReady: false,
+    /** 本次冷启动采纳的预拉取快照：{ userId, at, partial, shards } */
+    prefetch: null,
     /** 自定义导航栏尺寸：状态栏高度 / 导航高度 / 右侧胶囊留白（由 measureNav 填充） */
     nav: { statusBar: 20, navH: 44, rightPad: 96 }
   },
@@ -34,11 +38,43 @@ App({
     this.loadLocal();
     this.handleShareEntry(options);
     this.applyTheme();
-    this.globalData.bootPromise = this.restoreSession();
+    // 预拉取是本地同步读微信缓存，很快；放在 restoreSession 之前，
+    // 让「拉会话」和「采纳快照」串成一次启动，页面只需要等一个 bootPromise。
+    this.globalData.bootPromise = this.boot();
     // 悄悄预热音效引擎（不发声）：等首屏渲染稳定后再做，不跟启动抢主线程
     setTimeout(() => {
       try { sfx.preload(); } catch (e) { /* 预热失败不影响任何功能 */ }
     }, 500);
+  },
+
+  /** 启动：先采纳微信缓存的预拉取快照，再恢复会话 */
+  boot() {
+    prefetch.ensureToken();
+    return prefetch.read()
+      .then((payload) => {
+        if (!payload) return null;
+        const r = store.applyPrefetched(payload);
+        if (r && r.applied) {
+          this.globalData.prefetch = {
+            userId: payload.userId,
+            at: r.at || payload.at || 0,
+            partial: !!payload.partial,
+            shards: r.applied
+          };
+        }
+        return r;
+      })
+      .catch(() => null)
+      .then(() => this.restoreSession());
+  },
+
+  /** 预拉取快照是否新鲜到可以跳过登录后的全量拉取（partial 快照不跳） */
+  prefetchFresh() {
+    const p = this.globalData.prefetch;
+    if (!p || p.partial) return false;
+    if (!prefetch.isFresh({ at: p.at })) return false;
+    const u = auth.user();
+    return !!(u && u.id === p.userId);
   },
 
   /**
@@ -155,7 +191,7 @@ App({
     return auth.restore().then((r) => {
       this.globalData.bootResult = r;
       if (r && r.ok) {
-        return store.onLoggedIn().then(() => r, () => r);
+        return store.onLoggedIn({ skipPull: this.prefetchFresh() }).then(() => r, () => r);
       }
       store.onLoggedOut();
       return r;

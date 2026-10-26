@@ -435,11 +435,25 @@ test('不出现 emoji（设计约束：图标一律用内联 SVG 或纯 CSS）',
 
 group('云函数结构');
 
-test('两个云函数都有入口与依赖声明', () => {
-  ['auth', 'sync'].forEach((fn) => {
+test('三个云函数都有入口与依赖声明', () => {
+  ['auth', 'sync', 'prefetch'].forEach((fn) => {
     assert(fs.existsSync(path.join(CF, fn, 'index.js')), fn + ' 缺少 index.js');
     assert(fs.existsSync(path.join(CF, fn, 'package.json')), fn + ' 缺少 package.json');
   });
+});
+
+test('预拉取云函数返回字符串缓存体（微信协议），不套 { ok, data } 信封', () => {
+  const src = read(path.join(CF, 'prefetch', 'index.js'));
+  assert(src.indexOf('service.build') >= 0, '应走 service.build');
+  assert(src.indexOf('JSON.stringify(service.emptyPayload') >= 0, '异常兜底也应返回字符串');
+  assert(src.indexOf('toEnvelope') < 0, '预拉取不能返回错误信封');
+});
+
+test('预拉取身份只在小程序上下文为空时才采信 event（客户端可伪造）', () => {
+  const svc = read(path.join(CF, 'prefetch', 'lib', 'service.js'));
+  assert(/if \(ctx && ctx\.openid\) return \{ openid: ctx\.openid/.test(svc), 'ctx.openid 必须优先');
+  assert(svc.indexOf('payload.userId') < 0, '不得信任请求体里的 userId');
+  assert(svc.indexOf('MAX_BODY_BYTES = 200 * 1024') >= 0, '必须自己卡在 256KB 以下');
 });
 
 test('云函数入口都做了统一错误封装，不把异常直接抛给客户端', () => {
