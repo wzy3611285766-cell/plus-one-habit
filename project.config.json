@@ -15,7 +15,7 @@
     "showShadowRootInWxmlPanel": true,
     "packNpmManually": false,
     "packNpmRelationList": [],
-    "ignoreUploadUnusedFiles": true,
+    "ignoreUploadUnusedFiles": false,
     "checkInvalidKey": true,
     "coverView": true,
     "lazyloadPlaceholderEnable": false,

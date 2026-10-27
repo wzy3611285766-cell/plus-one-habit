@@ -117,6 +117,20 @@ test('全部 JSON 文件格式正确', () => {
   });
 });
 
+test('不能开启「忽略未使用文件」：页面 json 被裁会让 app-hero 解析成 wx://not-found', () => {
+  /* 2026-10-27 实测：private.config 里 ignoreDevUnusedFiles=true 时，模拟器包会漏掉
+     pages/today/today.json，页面丢了 navigationStyle 和 usingComponents，
+     app-hero 解析成 wx://not-found，整页白屏。关掉后立刻恢复。 */
+  const cfg = JSON.parse(read(path.join(ROOT, 'project.config.json')));
+  eq(cfg.setting.ignoreUploadUnusedFiles, false, 'project.config.json 不应开启 ignoreUploadUnusedFiles');
+
+  const privPath = path.join(ROOT, 'project.private.config.json');
+  if (fs.existsSync(privPath)) {
+    const priv = JSON.parse(read(privPath));
+    eq(priv.setting.ignoreDevUnusedFiles, false, 'project.private.config.json 不应开启 ignoreDevUnusedFiles');
+  }
+});
+
 const appJson = JSON.parse(read(path.join(MP, 'app.json')));
 
 test('app.json 的每个页面都有完整的四件套文件', () => {
