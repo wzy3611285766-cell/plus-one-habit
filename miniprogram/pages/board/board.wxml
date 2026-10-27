@@ -2,6 +2,9 @@
 
   <app-hero />
 
+  <!-- 离屏分享卡：只生成图，不占页面布局 -->
+  <share-card id="shareCard"></share-card>
+
   <!-- ---------- 统计条：两张卡（累计打卡 / 累计活跃） ---------- -->
   <view wx:if="{{hasData}}" class="stat-strip">
     <view wx:for="{{statCards}}" wx:key="k" class="stat-card">

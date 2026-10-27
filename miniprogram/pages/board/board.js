@@ -12,6 +12,7 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const fork = require('../../utils/fork.js');
+const shareCard = require('../../utils/share-card.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -53,7 +54,7 @@ Page({
 
   /** 转发卡片带目标模板：同学点开即可得到一份自己的副本（见 utils/fork.js） */
   onShareAppMessage() {
-    return fork.shareConfig(store.get());
+    return shareCard.decorate(fork.shareConfig(store.get()), this);
   },
 
   onLoad() {
@@ -65,6 +66,7 @@ Page({
     if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('board');
     prefs.setStatusBarLight(true);
     this.render();
+    shareCard.refresh(this);
     this.playEnterFx();
   },
 

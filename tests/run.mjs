@@ -14,6 +14,7 @@ const SUITES = [
   ['数据预拉取（冷启动缓存/身份隔离/体积裁剪/采纳闸门）', './prefetch.test.mjs'],
   ['客户端数据模型（统计口径/合并算法）', './model.test.mjs'],
   ['分享分叉（模板编解码/入站闸门/重载）', './fork.test.mjs'],
+  ['分享卡（今日总结/文案/页面胶水）', './share.test.mjs'],
   ['页面纵向集成（页面→云函数→数据库）', './pages.test.mjs'],
   ['音效层（百分比增益/开关边界/实例复用）', './sfx.test.mjs'],
   ['共享内核一致性（auth 与 sync 的副本比对）', './shared-kernel.test.mjs'],

@@ -1,0 +1,9 @@
+/* 画布必须真实存在（有尺寸），但放到视口外，用户看不到 */
+.sc-canvas{
+  position:fixed;
+  left:-9999px;
+  top:0;
+  width:500px;
+  height:400px;
+  pointer-events:none;
+}

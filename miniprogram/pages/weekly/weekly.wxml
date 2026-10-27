@@ -2,6 +2,9 @@
 
   <app-hero />
 
+  <!-- 离屏分享卡：只生成图，不占页面布局 -->
+  <share-card id="shareCard"></share-card>
+
   <!-- ---------- 卡片一：周切换 + 本周汇总 ---------- -->
   <view class="card week-card">
     <view class="week-nav">

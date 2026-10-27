@@ -11,6 +11,7 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const fork = require('../../utils/fork.js');
+const shareCard = require('../../utils/share-card.js');
 const api = require('../../utils/api.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -68,6 +69,7 @@ Page({
     if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('mine');
     prefs.setStatusBarLight(true);
     this.render();
+    shareCard.refresh(this);
     if (auth.isLogged()) {
       store.pull().then(() => this.render()).catch(() => this.render());
     }
@@ -148,7 +150,7 @@ Page({
 
   /** 「分享」按钮（open-type="share"）走这里，与右上角 ⋯ 转发同一条路 */
   onShareAppMessage() {
-    return fork.shareConfig(store.get());
+    return shareCard.decorate(fork.shareConfig(store.get()), this);
   },
 
   /**

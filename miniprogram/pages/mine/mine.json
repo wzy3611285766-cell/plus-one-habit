@@ -1,6 +1,7 @@
 {
   "navigationStyle": "custom",
   "usingComponents": {
-    "app-hero": "/components/app-hero/index"
+    "app-hero": "/components/app-hero/index",
+    "share-card": "/components/share-card/index"
   }
 }

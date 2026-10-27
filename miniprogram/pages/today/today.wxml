@@ -2,6 +2,9 @@
 
   <app-hero />
 
+  <!-- 离屏分享卡：只生成图，不占页面布局 -->
+  <share-card id="shareCard"></share-card>
+
   <!-- ---------- 分叉欢迎横幅：一辈子只打一次（参数取自基准 .sync-banner.fork） ---------- -->
   <view wx:if="{{forkBanner}}" class="fk-banner" style="top:{{bannerTop}}px">
     <view class="fk-ico"><view class="fk-ico-dot"></view><view class="fk-ico-stem"></view></view>

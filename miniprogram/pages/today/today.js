@@ -14,6 +14,7 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const fork = require('../../utils/fork.js');
+const shareCard = require('../../utils/share-card.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -92,6 +93,7 @@ Page({
       store.pull().then(() => this.render()).catch(() => this.render());
     }
     this.render();
+    shareCard.refresh(this);
   },
 
   onUnload() {
@@ -337,6 +339,7 @@ Page({
 
     prefs.feedback();
     this.render();
+    shareCard.refresh(this);
     this.bump(gid);
     this.strike(e, goal);
 
@@ -516,7 +519,7 @@ Page({
   /** 转发卡片：路径带目标模板，同学点开即可得到一份自己的副本。
       四个页签共用 fork.shareConfig，保证从任何一页转发出去的体验一致。 */
   onShareAppMessage() {
-    return fork.shareConfig(store.get());
+    return shareCard.decorate(fork.shareConfig(store.get()), this);
   },
 
   dismissForkBanner() {

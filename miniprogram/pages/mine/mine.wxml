@@ -2,6 +2,9 @@
 
   <app-hero />
 
+  <!-- 离屏分享卡：只生成图，不占页面布局 -->
+  <share-card id="shareCard"></share-card>
+
   <!-- ---------- 账号（基准没有这一行，但没有它就没有登录入口） ---------- -->
   <view wx:if="{{!cloudReady}}" class="card setup-card">
     <view class="card-title">账号功能尚未启用</view>

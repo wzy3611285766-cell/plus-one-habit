@@ -1,0 +1,2 @@
+<!-- 离屏画布：只用于生成分享图，不参与页面布局 -->
+<canvas type="2d" id="sc" class="sc-canvas"></canvas>

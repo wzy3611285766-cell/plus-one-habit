@@ -946,4 +946,29 @@ test('不强制登录：先能浏览功能，授权登录由用户自行选择�
   assert(loginWxml.indexOf('不登录也能记录') >= 0, '登录页应说明不登录也能使用');
 });
 
+test('分享卡：四个页签挂同一个离屏组件，分享时补图与数据标题', () => {
+  const comp = path.join(MP, 'components', 'share-card');
+  ['index.js', 'index.json', 'index.wxml', 'index.wxss'].forEach((f) => {
+    assert(fs.existsSync(path.join(comp, f)), '分享卡组件缺少 ' + f);
+  });
+
+  const util = read(path.join(MP, 'utils', 'share-card.js'));
+  ['summarize', 'draw', 'decorate', 'refresh'].forEach((k) => {
+    assert(util.indexOf(k) >= 0, 'share-card.js 缺少 ' + k);
+  });
+
+  ['today', 'board', 'weekly', 'mine'].forEach((p) => {
+    const json = JSON.parse(read(path.join(MP, 'pages', p, p + '.json')));
+    eq(json.usingComponents['share-card'], '/components/share-card/index',
+      p + ' 未声明 share-card 组件');
+
+    const wxml = read(path.join(MP, 'pages', p, p + '.wxml'));
+    assert(wxml.indexOf('<share-card id="shareCard">') >= 0, p + ' 未挂载分享卡画布');
+
+    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    assert(js.indexOf('shareCard.decorate') >= 0, p + ' 分享时未补分享图');
+    assert(js.indexOf('shareCard.refresh') >= 0, p + ' 页面显示时未刷新分享卡');
+  });
+});
+
 export const suite = '小程序静态检查';
