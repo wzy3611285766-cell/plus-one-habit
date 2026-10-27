@@ -56,15 +56,6 @@
     </view>
 
     <view class="mine-list">
-      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="toggleSound">
-        <view class="mine-ico ico-sound"></view>
-        <view class="mine-body">
-          <text class="mine-txt">打卡音效</text>
-          <text class="mine-sub">点 +1 时有声音反馈</text>
-        </view>
-        <view class="switch {{soundOn ? 'on' : 'off'}}"><view class="knob"></view></view>
-      </view>
-
       <view class="mine-vol">
         <view class="mine-ico ico-vol"></view>
         <view class="mine-body">
@@ -92,15 +83,6 @@
           <text class="mine-sub">{{themeOn ? '始终深色' : '跟随系统'}}</text>
         </view>
         <view class="switch {{themeOn ? 'on' : 'off'}}"><view class="knob"></view></view>
-      </view>
-
-      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="toggleHaptic">
-        <view class="mine-ico ico-vibe"></view>
-        <view class="mine-body">
-          <text class="mine-txt">打卡震动</text>
-          <text class="mine-sub">点 +1 时轻微震动</text>
-        </view>
-        <view class="switch {{haptic ? 'on' : 'off'}}"><view class="knob"></view></view>
       </view>
     </view>
   </view>

@@ -35,9 +35,8 @@ Page({
 
     theme: 'auto',
     themeText: '跟随系统',
-    haptic: true,
 
-    soundOn: true,
+    /* 音效开关与震动已固定开启，只保留音量调节 */
     volume: 60,
     minVol: sfx.MIN_PCT,
     maxVol: sfx.MAX_PCT,
@@ -136,8 +135,6 @@ Page({
         msg: sync.phase === 'error' ? (sync.message || '同步失败，稍后会自动重试') : ''
       },
       themeOn: this.themePref() === 'dark',
-      haptic: this.hapticPref(),
-      soundOn: sfx.soundEnabled(),
       volume: sfx.volumePct()
     });
   },
@@ -336,40 +333,19 @@ Page({
     this.syncTabBarTheme();
   },
 
-  hapticPref() { return prefs.haptic(); },
-
-  toggleHaptic() {
-    const next = !this.data.haptic;
-    prefs.setHaptic(next);
-    this.setData({ haptic: next });
-    if (next) prefs.feedback();   // 打开时立刻给一次，让用户知道「这就是那个反馈」
-  },
-
-  /* ---------- 音效 ---------- */
-
-  toggleSound() {
-    /* 绑定点是自绘开关那行 view 的 tap（detail 只有坐标，没有 value），
-       不能读 e.detail.value —— 那样恒为 undefined，开关会被钉死在「关」 */
-    const next = !this.data.soundOn;
-    store.updateSettings({ sound: next });
-    this.setData({ soundOn: next });
-    // 打开时立刻响一下：用户能马上确认「就是这个音」。
-    // 关闭时不响 —— 用户刚关掉声音，再补一声反而冒犯。
-    if (next) sfx.toggle(true);
-  },
+  /* ---------- 音效音量（音效本身固定开启，只留音量） ---------- */
 
   /**
-   * 拖动滑块时实时试听。
-   * 这里只改界面、不写库（写库放在 change 里）：
-   * 拖动一次会触发几十次 changing，每次都落盘是没必要的开销。
-   * 所以把当前值直接作为 override 传给 preview，而不是让它去读还没更新的设置。
+   * 拖动滑块时实时试听：只改界面、不写库（写库放在 change 里）。
+   * 拖动一次会触发几十次 changing，每次都落盘没必要；
+   * 因此把当前值直接作为 override 传给 preview，而不是读还没更新的设置。
    */
   onVolumeChanging(e) {
     const v = e.detail.value;
     this.setData({ volume: v });
 
     const now = Date.now();
-    if (now - (this._volPreviewAt || 0) < 110) return;   // 节流，别每像素播一次
+    if (now - (this._volPreviewAt || 0) < 110) return;
     this._volPreviewAt = now;
     sfx.preview(v);
   },
@@ -379,10 +355,6 @@ Page({
     store.updateSettings({ volume: v });
     this.setData({ volume: v });
     sfx.preview(v);
-  },
-
-  previewSound() {
-    if (!sfx.preview(this.data.volume)) this.toast('这台设备无法播放音频');
   },
 
   /* ================= 弹层通用 ================= */

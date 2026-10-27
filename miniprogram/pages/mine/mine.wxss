@@ -33,8 +33,7 @@
   color:var(--text-1);
   transition:background .14s ease-out,box-shadow .14s ease-out;
 }
-.mine-list .mine-btn:last-child,
-.mine-list .mine-vol:last-child{ border-bottom:0; }
+.mine-list .mine-btn:last-child{ border-bottom:0; }
 .mine-btn:active{
   /* iOS 列表行的高亮是中性灰（设置 App 的行为），不是品牌色 */
   background:rgba(120,120,128,.16);
@@ -102,21 +101,6 @@
   box-sizing:border-box;
 }
 
-/* 音效：喇叭 */
-.ico-sound::before{
-  left:1px;top:5px;
-  width:5px;height:6px;
-  background:currentColor;
-  border-radius:1px;
-}
-.ico-sound::after{
-  left:5px;top:3px;
-  width:0;height:0;
-  border-left:6px solid currentColor;
-  border-top:5px solid transparent;
-  border-bottom:5px solid transparent;
-}
-
 /* 音量：三根高低竖条 */
 .ico-vol::before{
   left:1px;top:7px;
@@ -147,21 +131,6 @@
   border-radius:50%;
   background:var(--surface);
   box-shadow:inset 1px 0 0 0 var(--surface);
-}
-
-/* 震动：两根波浪线 */
-.ico-vibe::before{
-  left:2px;top:3px;
-  width:1.8px;height:11px;
-  border-radius:1px;
-  background:currentColor;
-}
-.ico-vibe::after{
-  left:9px;top:3px;
-  width:1.8px;height:11px;
-  border-radius:1px;
-  background:currentColor;
-  box-shadow:3.5px 0 0 currentColor;
 }
 
 /* 下载：箭头 + 底线 */

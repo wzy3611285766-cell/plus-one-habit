@@ -946,6 +946,28 @@ test('不强制登录：先能浏览功能，授权登录由用户自行选择�
   assert(loginWxml.indexOf('不登录也能记录') >= 0, '登录页应说明不登录也能使用');
 });
 
+test('音效与震动固定开启，但音效音量仍可调（启动不得重置音量）', () => {
+  const wxml = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
+  ['打卡音效', '打卡震动'].forEach((k) => {
+    assert(wxml.indexOf(k) < 0, '「我的」页不应再有「' + k + '」开关');
+  });
+  assert(wxml.indexOf('toggleSound') < 0 && wxml.indexOf('toggleHaptic') < 0, '不应再绑定音效/震动开关');
+
+  // 音量仍要留给用户：滑块 + 两个事件都要在
+  assert(wxml.indexOf('音效音量') >= 0, '缺少「音效音量」设置');
+  assert(wxml.indexOf('bindchanging="onVolumeChanging"') >= 0, '音量滑块缺少拖动试听');
+  assert(wxml.indexOf('bindchange="onVolumeChange"') >= 0, '音量滑块缺少落库回调');
+
+  const appJs = read(path.join(MP, 'app.js'));
+  assert(appJs.indexOf('enforceFeedbackDefaults') >= 0, '启动时应把音效开关/震动拉回默认');
+  assert(appJs.indexOf('volume: 60') < 0, '启动时不得把用户音量重置成 60');
+
+  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
+  assert(mineJs.indexOf('toggleSound') < 0 && mineJs.indexOf('toggleHaptic') < 0, 'Mine 页不应再有开关方法');
+  assert(mineJs.indexOf('onVolumeChange') >= 0 && mineJs.indexOf('updateSettings({ volume: v })') >= 0,
+    '音量变化必须写到 store.settings.volume');
+});
+
 test('分享卡：四个页签挂同一个离屏组件，分享时补图与数据标题', () => {
   const comp = path.join(MP, 'components', 'share-card');
   ['index.js', 'index.json', 'index.wxml', 'index.wxss'].forEach((f) => {

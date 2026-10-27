@@ -36,6 +36,7 @@ App({
     this.measureNav();
     this.initCloud();
     this.loadLocal();
+    this.enforceFeedbackDefaults();
     // 先把本机身份缓存同步载入内存：页面第一帧就要是登录态，不能等网络
     auth.hydrate();
     this.handleShareEntry(options);
@@ -47,6 +48,22 @@ App({
     setTimeout(() => {
       try { sfx.preload(); } catch (e) { /* 预热失败不影响任何功能 */ }
     }, 500);
+  },
+
+  /**
+   * 音效开关与震动固定开启（2026-10-27 用户决定移除两个开关）。
+   * 音量仍由「我的 → 音效音量」调节，这里绝不能重置 volume ——
+   * 否则用户每次冷启动都会被拉回 60%。
+   */
+  enforceFeedbackDefaults() {
+    try {
+      const st = store.get();
+      const s = st && st.settings;
+      if (!s || s.sound !== true) {
+        store.updateSettings({ sound: true });
+      }
+      if (prefs.haptic() !== true) prefs.setHaptic(true);
+    } catch (e) { /* 默认值修不回来也不能影响启动 */ }
   },
 
   /** 启动：先采纳微信缓存的预拉取快照，再恢复会话 */

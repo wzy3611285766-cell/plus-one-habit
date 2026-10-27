@@ -908,22 +908,22 @@ await test('清过示例的设备升级时不会重新塞入', () => {
 
 group('审查修复回归（2026-10-26）');
 
-await test('我的页：音效开关能来回拨（曾读 tap 的 e.detail.value 被钉死在关）', async () => {
+await test('我的页：音量滑块落库，重新载入不会被默认值重置', async () => {
   const U20 = freshUtils();
   await boot(U20);
 
   const page = mount('mine');
   page.onLoad();
   page.render();
+  eq(page.data.volume, 60, '默认音量 60');
 
-  page.setData({ soundOn: true });
-  page.toggleSound();
-  eq(page.data.soundOn, false, '开着时拨一下应关上');
-  eq(U20.store.get().settings.sound, false, '开关应落到 store 的设置里');
+  page.onVolumeChange({ detail: { value: 40 } });
+  eq(page.data.volume, 40, '界面应跟着滑块走');
+  eq(U20.store.get().settings.volume, 40, '音量应落到 store 设置里');
 
-  page.toggleSound();
-  eq(page.data.soundOn, true, '再拨一下应回到开（旧 bug 恒为关）');
-  eq(U20.store.get().settings.sound, true);
+  // 冷启动的默认值修正只该补 sound，不该把 volume 拉回 60
+  U20.store.load();
+  eq(U20.store.get().settings.volume, 40, '重新载入后用户的音量必须保留');
 });
 
 await test('目标编辑：日期下限不再钉死在当前值（新建=今天，编辑=创建日）', async () => {
