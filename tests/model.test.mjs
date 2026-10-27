@@ -187,6 +187,17 @@ await test('预计完成日：最近没打卡时返回 unknown 而不是编一�
   eq(M.eta(st, st.goals[0]).status, 'unknown');
 });
 
+await test('预计完成日文案：跨年补年份，拖后超过一年不再报天数', () => {
+  const L = require('../miniprogram/utils/eta-label.js');
+  const today = '2026-10-27';
+
+  eq(L.label({ status: 'ok', date: '2026-12-04', diff: 22 }, today), '12月4日 · 提前 22 天');
+  eq(L.label({ status: 'ok', date: '2027-02-06', diff: -10 }, today), '2027年2月6日 · 拖后 10 天');
+  eq(L.label({ status: 'ok', date: '2030-02-06', diff: -1131 }, today), '按目前速度，截止前完不成',
+    '三年后的日期没有参考价值，直接说结论');
+  eq(L.label({ status: 'done' }, today), '', '已达成由页面自己说');
+});
+
 await test('每日建议量：建档当天算定后不再随打卡缩水', () => {
   const today = U.todayStr();
   const st = stWith([{ id: 'g1', name: 'A', total: 120, deadline: U.addDays(today, 59), createdAt: today }], []);

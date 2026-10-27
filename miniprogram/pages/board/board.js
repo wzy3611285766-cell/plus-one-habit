@@ -13,6 +13,7 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const fork = require('../../utils/fork.js');
 const shareCard = require('../../utils/share-card.js');
+const etaLabel = require('../../utils/eta-label.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -142,8 +143,7 @@ Page({
       if (e.status === 'done') etaText = '已达成';
       else if (e.status === 'unknown') etaText = '近 7 天无记录，暂无推算';
       else if (e.status === 'overdue') etaText = '已过截止日，仍差 ' + U.trimNum(g.total - done) + ' ' + g.unit;
-      else if (e.diff >= 0) etaText = U.fmtShort(e.date) + ' · 提前 ' + e.diff + ' 天';
-      else etaText = U.fmtShort(e.date) + ' · 拖后 ' + (-e.diff) + ' 天';
+      else etaText = etaLabel.label(e);
 
       /* 记录按天聚合：一行 = 这一天在该目标上的合计（连点几次的 +1 不再逐条刷屏）。
          复盘要看的是「哪天加了多少」；删除也按天整删（ids 串，两段式确认不变）。 */
