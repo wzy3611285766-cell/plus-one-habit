@@ -760,11 +760,11 @@ test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键�
   assert(/\.btn-primary\{[\s\S]*?background:var\(--gb-tint-brand\)/.test(app), '主键应是品牌染色玻璃');
   assert(/\.btn-primary\{[\s\S]*?backdrop-filter:var\(--gb-blur-liq\)/.test(app), '主键应带液态档模糊（低模糊高饱和）');
   assert(app.indexOf('--gb-blur-liq:blur(8px) saturate(200%)') >= 0, '液态档模糊 token 应存在');
-  assert(app.indexOf('.btn-primary::after') >= 0 && app.indexOf('.tz-btn-red::after') >= 0,
+  assert(app.indexOf('.btn-primary::after') >= 0 && app.indexOf('.btn-danger::after') >= 0,
     '染色/清玻璃按键应统一挂镜面高光层（液态的湿感）');
   assert(app.indexOf('rgba(0,122,255,.54)') >= 0, '染色层应半透（.54，真玻璃不是实心塑料）');
   assert(app.indexOf('rgba(255,255,255,.55) 0%,rgba(255,255,255,.16) 30%') >= 0, '镜面高光应又亮又窄（.55 → 30% 收光）');
-  assert(app.indexOf('.fk-btn,') >= 0 && app.indexOf('text-shadow:0 1px 2px rgba(0,0,0,.18)') >= 0, '染色玻璃上的白字应有轻投影');
+  assert(app.indexOf('.fk-btn') >= 0 && app.indexOf('text-shadow:0 1px 2px rgba(0,0,0,.18)') >= 0, '染色玻璃上的白字应有轻投影');
   assert(/\.btn\{[\s\S]*?border-radius:var\(--r-pill\)/.test(app), '按键应是全圆边胶囊');
   assert(/\.btn\{[\s\S]*?height:calc\(50px\)/.test(app), '大键高度应对齐 iOS 的 50pt');
   assert(/\.btn\{[\s\S]*?letter-spacing:var\(--ls-snap\)/.test(app), '按键文字应用 iOS 的收紧字距');
@@ -772,8 +772,6 @@ test('按键统一为 iOS 毛玻璃（tint 染色玻璃 + 模糊），+1 主键�
   assert(/\.btn-ghost\{[\s\S]*?background:var\(--surface-sunken\)/.test(app), '次级键应是 iOS 灰底胶囊');
   assert(/\.add-goal:active\{[\s\S]*?rgba\(120,120,128,\.18\)/.test(today) && /\.more-btn:active\{[\s\S]*?rgba\(120,120,128,\.18\)/.test(today), '图标键按下应浮现 iOS 灰色高亮');
   assert(/\.btn-danger\{[\s\S]*?--gb-tint-red/.test(app), '危险键应是红染色玻璃');
-  assert(/\.tz-btn-red\{[\s\S]*?--gb-tint-red/.test(today), '立即打卡应是红染色玻璃');
-  assert(/\.tz-btn-ghost\{[\s\S]*?background:var\(--surface-sunken\)/.test(today), '调整计划应是 iOS 灰底次级键');
   assert(/\.btn-wx\{[\s\S]*?backdrop-filter:var\(--gb-blur-liq\)/.test(login), '微信登录键应是绿染色玻璃（液态档）');
 
   // +1 是全站唯一发光体：紫色实底渐变，明确不参与玻璃系统
@@ -834,10 +832,8 @@ test('.btn 家族：高度/圆边/字距/按压/灰底都在各自块内', () =>
   assert(ghost.indexOf('backdrop-filter') < 0, '.btn-ghost 不应是玻璃面');
 });
 
-test('today：灰底次级键、图标键灰高亮、横幅配色逐块成立', () => {
+test('today：图标键灰高亮、横幅配色逐块成立', () => {
   const today = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
-  const ghost = firstBody(today, '.tz-btn-ghost');
-  assert(ghost.indexOf('background:var(--surface-sunken)') >= 0, '调整计划应是灰底');
   assert(firstBody(today, '.add-goal:active').indexOf('rgba(120,120,128,.18)') >= 0, '+ 键按下应有灰高亮');
   assert(firstBody(today, '.more-btn:active').indexOf('rgba(120,120,128,.18)') >= 0, '⋯ 键按下应有灰高亮');
 
@@ -905,6 +901,18 @@ test('目标编辑页配色：8 个色点固定一行，窄屏横滑也不换行
   assert(dot.indexOf('max-width:40px') >= 0, '色点最大 40px，避免平板上一行铺得过开');
   assert(firstBody(css, '.swatch::before').indexOf('padding-top:100%') >= 0,
     '正方形应走 padding-top 方案，不依赖 aspect-ratio');
+});
+
+test('「今天要处理」只提醒，不放与 +1 重复的打卡按钮', () => {
+  const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
+  const start = wxml.indexOf('class="today-zone"');
+  const end = wxml.indexOf('class="today-grid"');
+  assert(start >= 0 && end > start, '找不到今日区');
+
+  const zone = wxml.slice(start, end);
+  assert(zone.indexOf('立即打卡') < 0, '今日区不该再有打卡按钮');
+  assert(zone.indexOf('bindtap="onPlus1"') < 0, '今日区不该直接绑定 +1（会与下方目标卡重复）');
+  assert(zone.indexOf('tz-btn') < 0, '今日区不该保留按钮样式类');
 });
 
 test('不强制登录：先能浏览功能，授权登录由用户自行选择（2026-10-26 提审驳回后撤销闸门）', () => {

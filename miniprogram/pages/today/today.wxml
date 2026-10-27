@@ -59,15 +59,14 @@
         <text>今天要处理</text>
       </view>
 
+      <!-- 今日区只做提醒，不放任何打卡按钮：
+           打卡唯一入口是下方目标卡里的 +1，避免「按哪个」的歧义。
+           逾期目标的「调整计划」也在目标卡的 ⋯ 菜单里。 -->
       <view wx:for="{{missedRows}}" wx:key="gid" class="missed-card">
         <view class="tz-icon tz-icon-alert"><view class="tz-bang"></view></view>
         <view class="tz-info">
           <text class="tz-name">{{item.name}}</text>
           <text class="tz-why tz-why-danger">{{item.overdue ? '已逾期 ' + item.overdueDays + ' 天，且昨天没学' : '昨天没学 · 已滚入今日'}}</text>
-        </view>
-        <view class="tz-actions">
-          <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="tz-btn tz-btn-red" aria-role="button" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
-          <view wx:if="{{item.overdue}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="tz-btn tz-btn-ghost" aria-role="button" data-gid="{{item.gid}}" bindtap="goEditGoal">调整计划</view>
         </view>
       </view>
 
@@ -77,7 +76,6 @@
           <text class="tz-name">{{item.name}}</text>
           <text class="tz-why tz-why-amber">昨天漏打卡 · 已用本周休息日（每周 1 天），连续天数保住了</text>
         </view>
-        <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="tz-btn tz-btn-amber" aria-role="button" data-gid="{{item.gid}}" bindtap="onPlus1">立即打卡</view>
       </view>
     </block>
 

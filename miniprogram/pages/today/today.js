@@ -173,8 +173,10 @@ Page({
 
     /* ---------- 今日区的三态：漏卡 / 休息日 / 全部完成 ----------
        判定口径照着设计基准来：
-         · 昨天没打卡，且昨天不是本周已用掉的休息日 → 真漏卡（红卡，带「立即打卡」）
+         · 昨天没打卡，且昨天不是本周已用掉的休息日 → 真漏卡（红卡，只提醒）
          · 昨天没打卡，但昨天能用休息日           → 已用休息日（黄卡，连续天数保住）
+         · 今日区不提供打卡动作：唯一入口是下方目标卡的 +1，
+           否则「按 +1 还是按立即打卡」会打架（2026-10-27 用户反馈）
          · 两者都没有、今天也没待打卡             → 今天全部打卡（绿条）
          · 所有目标都已完成                       → 全部达成（绿条）
        isRestDay 的语义是「本周首个漏打日」，所以拿昨天去试：
@@ -526,11 +528,6 @@ Page({
   goSync() { wx.switchTab({ url: '/pages/mine/mine' }); },
 
   goNewGoal() { wx.navigateTo({ url: '/pages/goal-edit/goal-edit' }); },
-
-  goEditGoal(e) {
-    const gid = e.currentTarget.dataset.gid;
-    wx.navigateTo({ url: '/pages/goal-edit/goal-edit?id=' + encodeURIComponent(gid) });
-  },
 
   /* ================= 「⋯」目标操作抽屉 =================
      对齐设计基准的 #goalMenu：遮罩模糊 + 底部磨砂玻璃抽屉 + 顶部拖拽条，

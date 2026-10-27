@@ -230,37 +230,6 @@
 .tz-why{ font-size:var(--fs-xs);font-weight:600;line-height:1.45; }
 .tz-why-danger{ color:var(--danger-ink); }
 .tz-why-amber{ color:var(--amber-ink); }
-.tz-actions{ display:flex;flex-direction:column;gap:8rpx;flex:none; }
-.tz-btn{
-  min-height:calc(36px);
-  padding:0 14px;
-  border-radius:999rpx;
-  font-size:var(--fs-sm);
-  font-weight:600;
-  display:flex;align-items:center;justify-content:center;
-  white-space:nowrap;
-}
-.tz-btn-red{
-  background:var(--gb-tint-red);color:#fff;
-  -webkit-backdrop-filter:var(--gb-blur-liq);
-  backdrop-filter:var(--gb-blur-liq);
-  box-shadow:var(--gb-tint-red-edge),var(--gb-drop);
- }
-.tz-btn-amber{
-  background:var(--gb-tint-amber);color:#fff;flex:none;
-  -webkit-backdrop-filter:var(--gb-blur-liq);
-  backdrop-filter:var(--gb-blur-liq);
-  box-shadow:var(--gb-tint-amber-edge),var(--gb-drop);
- }
-.tz-btn-ghost{
-  /* iOS 次级：灰底胶囊，与全局 .btn-ghost 同语言 */
-  background:var(--surface-sunken);
-  color:var(--text-1);
-  box-shadow:none;
- }
-.tz-btn-red:active,
-.tz-btn-amber:active,
-.tz-btn-ghost:active{ transform:scale(.97);opacity:.85; }
 
 .all-done{
   display:flex;align-items:center;justify-content:center;gap:10rpx;
@@ -916,4 +885,3 @@
 /* hover-class 按压态 */
 .add-goal.is-press{ background:rgba(120,120,128,.18); }
 .more-btn.is-press{ background:rgba(120,120,128,.18);color:var(--brand-600); }
-.tz-btn-ghost.is-press{ background:rgba(120,120,128,.16); }
