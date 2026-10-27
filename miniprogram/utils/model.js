@@ -284,12 +284,23 @@ function eta(st, g) {
   const done = doneAmount(st, g.id);
   const remain = g.total - done;
   if (remain <= 0) return { status: 'done' };
-  const speed = last7Sum(st, g.id) / 7;
-  if (speed <= 0) return { status: 'unknown' };
+
+  const today = U.todayStr();
+  const sum = last7Sum(st, g.id);
+  if (sum <= 0) return { status: 'unknown' };
+
+  /* 平均速度的窗口取「建档天数」与 7 的较小值。
+     固定除以 7 会把新目标的速度稀释：昨天刚建、今天打了 100，也按 14/天 算，
+     预计日期被推到很远，明明进度很快却显示「拖后」。
+     建档满 7 天后与原来的口径完全一致。 */
+  const elapsed = U.isDateString(g.createdAt) ? Math.max(1, U.diffDays(g.createdAt, today) + 1) : 7;
+  const windowDays = Math.min(7, elapsed);
+  const speed = sum / windowDays;
+
   const days = Math.ceil(remain / speed);
-  const etaDate = U.addDays(U.todayStr(), days);
+  const etaDate = U.addDays(today, days);
   const diff = U.diffDays(etaDate, g.deadline);
-  if (U.diffDays(U.todayStr(), g.deadline) < 0) return { status: 'overdue', date: etaDate, diff: diff };
+  if (U.diffDays(today, g.deadline) < 0) return { status: 'overdue', date: etaDate, diff: diff };
   return { status: 'ok', date: etaDate, diff: diff };
 }
 

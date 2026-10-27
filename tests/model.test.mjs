@@ -149,6 +149,39 @@ await test('预计完成日：按近 7 天平均速度外推', () => {
   assert(e.diff > 0, '应比截止日期提前');
 });
 
+await test('预计完成日：新建当天就打卡，不会因为固定除以 7 被算成「拖后」', () => {
+  const today = U.todayStr();
+  const st = stWith(
+    [{ id: 'g1', name: 'A', total: 1200, deadline: U.addDays(today, 30), createdAt: today }],
+    [{ id: 'l1', goalId: 'g1', date: today, amount: 100 }]
+  );
+  const e = M.eta(st, st.goals[0]);
+  eq(e.status, 'ok');
+  eq(e.date, U.addDays(today, 11), '按 100/天算：还剩 1100 → 11 天');
+  assert(e.diff > 0, '这个速度应该提前，而不是拖后');
+
+  // 旧口径（固定 /7）会把它算成 77 天、拖后 47 天 —— 明确拦住这个回归
+  assert(e.date !== U.addDays(today, 77), '不能被 7 天窗口稀释');
+});
+
+await test('预计完成日：建档 2 天只用 2 天做分母，满 7 天后恢复 7 天窗口', () => {
+  const today = U.todayStr();
+  const young = stWith(
+    [{ id: 'g1', name: 'A', total: 1200, deadline: U.addDays(today, 30), createdAt: U.addDays(today, -1) }],
+    [{ id: 'l1', goalId: 'g1', date: today, amount: 100 }]
+  );
+  const e1 = M.eta(young, young.goals[0]);
+  eq(e1.date, U.addDays(today, 22), '2 天窗口 → 50/天，剩 1100 → 22 天');
+  assert(e1.diff > 0, '仍是提前');
+
+  const old = stWith(
+    [{ id: 'g1', name: 'A', total: 1200, deadline: U.addDays(today, 100), createdAt: U.addDays(today, -9) }],
+    [{ id: 'l1', goalId: 'g1', date: today, amount: 100 }]
+  );
+  const e2 = M.eta(old, old.goals[0]);
+  eq(e2.date, U.addDays(today, 77), '建档超过 7 天回到 7 天窗口（与基准一致）');
+});
+
 await test('预计完成日：最近没打卡时返回 unknown 而不是编一个日期', () => {
   const st = stWith([{ id: 'g1', name: 'A', total: 200, deadline: '2026-12-31' }], []);
   eq(M.eta(st, st.goals[0]).status, 'unknown');
