@@ -31,15 +31,21 @@
         <view class="chev chev-right"></view>
       </view>
 
-      <!-- 分享：卡片里带一份目标模板，对方打开就有了同样的目标，进度各记各的 -->
-      <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn mine-btn-share" open-type="share">
-        <view class="mine-ico ico-share"></view>
-        <view class="mine-body">
-          <text class="mine-txt">分享</text>
-        </view>
-        <view class="chev chev-right"></view>
-      </button>
     </view>
+  </view>
+
+  <!-- 分享：卡片里带一份目标模板，对方打开就有了同样的目标，进度各记各的 -->
+  <view class="share-card">
+    <view class="share-head">
+      <view class="share-badge"><view class="mine-ico ico-share"></view></view>
+      <view class="share-copy">
+        <text class="share-title">分享今日打卡</text>
+        <text class="share-sub">把今天完成的目标和进度发给同学</text>
+      </view>
+    </view>
+    <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="share-btn" open-type="share">
+      <text>分享给同学</text>
+    </button>
   </view>
 
   <!-- ---------- 偏好设置 ---------- -->

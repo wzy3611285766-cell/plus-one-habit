@@ -741,7 +741,7 @@ test('四个页签都支持转发，路径由 fork.shareConfig 统一构造', ()
 
 test('「我的」页有分享入口与（分叉态的）重新载入入口', () => {
   const wxml = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
-  assert(wxml.indexOf('>分享</text>') >= 0, '缺少「分享」入口');
+  assert(wxml.indexOf('分享给同学') >= 0, '缺少「分享给同学」按钮');
   assert(wxml.indexOf('open-type="share"') >= 0, '分享入口必须是 open-type=share 的 button');
   assert(wxml.indexOf('重新载入分享的目标') >= 0, '缺少「重新载入分享的目标」');
   assert(wxml.indexOf('wx:if="{{forked}}"') >= 0, '重新载入入口只在分叉态渲染');
