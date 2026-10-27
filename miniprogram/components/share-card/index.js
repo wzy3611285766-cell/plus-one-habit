@@ -15,7 +15,9 @@ const store = require('../../utils/store.js');
 
 const DPR = 2;
 /** 画法版本：改了排版就 +1，让旧缓存图失效 */
-const DRAW_VERSION = 3;
+const DRAW_VERSION = 4;
+/** 应用图标：打包在 assets 里，128×128 PNG（7KB） */
+const ICON_SRC = '/assets/icon-app.png';
 
 Component({
   lifetimes: {
@@ -40,8 +42,25 @@ Component({
         if (!ctx) return;
         ctx.scale(DPR, DPR);
         this._ctx = ctx;
+        this.loadIcon(node);
         this.render();
       });
+    },
+
+    /** 预加载应用图标：加载完重画一次，失败就保持 +1 兜底 */
+    loadIcon(node) {
+      if (!node || typeof node.createImage !== 'function') return;
+      try {
+        const img = node.createImage();
+        img.onload = () => {
+          if (!this._alive) return;
+          this._logo = img;
+          this._sig = '';
+          this.render();
+        };
+        img.onerror = () => { /* 图标加载失败不阻塞分享 */ };
+        img.src = ICON_SRC;
+      } catch (e) { /* 旧基础库不支持 createImage */ }
     },
 
     /** 页面调用：数据可能变了，重画（同步画，导出异步） */
@@ -57,11 +76,11 @@ Component({
       if (!st) return;
 
       const s = SC.summarize(st);
-      const sig = DRAW_VERSION + '|' + JSON.stringify(s);
+      const sig = DRAW_VERSION + '|' + (this._logo ? 'logo' : 'no-logo') + '|' + JSON.stringify(s);
       if (sig === this._sig && this._path) return;
 
       try {
-        SC.draw(this._ctx, s);
+        SC.draw(this._ctx, s, this._logo);
       } catch (e) {
         return;
       }
@@ -95,7 +114,8 @@ Component({
       const st = store.get();
       if (!st) return '';
       try {
-        if (DRAW_VERSION + '|' + JSON.stringify(SC.summarize(st)) !== this._sig) return '';
+        const sig = DRAW_VERSION + '|' + (this._logo ? 'logo' : 'no-logo') + '|' + JSON.stringify(SC.summarize(st));
+        if (sig !== this._sig) return '';
       } catch (e) { return ''; }
       return this._path;
     },

@@ -108,7 +108,7 @@ function fitText(ctx, str, maxWidth) {
   return cut + '…';
 }
 
-function draw(ctx, s) {
+function draw(ctx, s, icon) {
   const state = s || summarize(null);
 
   ctx.clearRect(0, 0, W, H);
@@ -129,14 +129,23 @@ function draw(ctx, s) {
 
   ctx.textBaseline = 'middle';
 
-  // 顶栏：品牌 + 日期
-  roundRect(ctx, 32, 28, 38, 38, 12);
-  ctx.fillStyle = 'rgba(255,255,255,.14)';
-  ctx.fill();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('+1', 51, 48);
+  // 顶栏：应用图标 + 品牌 + 日期
+  if (icon) {
+    ctx.save();
+    roundRect(ctx, 32, 28, 38, 38, 12);
+    ctx.clip();
+    ctx.drawImage(icon, 32, 28, 38, 38);
+    ctx.restore();
+  } else {
+    /* 图标还没加载完时的兜底：保持旧版 +1，不让顶栏空着 */
+    roundRect(ctx, 32, 28, 38, 38, 12);
+    ctx.fillStyle = 'rgba(255,255,255,.14)';
+    ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('+1', 51, 48);
+  }
 
   ctx.textAlign = 'left';
   ctx.font = 'bold 17px sans-serif';

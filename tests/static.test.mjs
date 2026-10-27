@@ -956,6 +956,8 @@ test('分享卡：四个页签挂同一个离屏组件，分享时补图与数�
   ['summarize', 'draw', 'decorate', 'refresh'].forEach((k) => {
     assert(util.indexOf(k) >= 0, 'share-card.js 缺少 ' + k);
   });
+  assert(util.indexOf('drawImage(icon') >= 0, '分享卡应绘制应用图标');
+  assert(fs.existsSync(path.join(MP, 'assets', 'icon-app.png')), '缺少分享卡用的应用图标');
 
   ['today', 'board', 'weekly', 'mine'].forEach((p) => {
     const json = JSON.parse(read(path.join(MP, 'pages', p, p + '.json')));
