@@ -1,0 +1,8 @@
+# 测试输出重定向产生的临时文件（跑 node tests/run.mjs > tests/test-out.txt 会生成）
+tests/test-out.txt
+test-out.txt
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+desktop.ini
