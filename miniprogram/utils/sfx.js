@@ -329,20 +329,26 @@ function playWav(force, pct) {
  * ① +1 单击。连击越高音越高（五声音阶一轮）、越「实」（音量 +0.004/击），
  * 但不无限爬高：一轮走完回落重走，永远不会变尖。
  */
-function plus1(combo) {
-  if (!soundEnabled()) return false;
-  unlock();
+/** +1 那一击的合成本体：试听也走它，保证与按键音色完全一致 */
+function oneShot(combo) {
   const c = Math.max(1, Math.floor(combo || 1));
   const base = comboFreq(c);
   const v = comboVolume(c);
 
   /* 极短的低频「哒」，模拟机械键帽到底 */
   tone('sine', 220, 0.035, 0.042, 0, 180, null, null, 0.002);
-  tone('triangle', base, 0.09, v, 0, base, null, 2600, 0.7, 0.003, 0.05);
+  tone('triangle', base, 0.09, v, 0, base, null, 2600, 0.7, 0.003);
   tone('sine', base * 2, 0.05, 0.038, 0, base * 2, null, null, 0.002);
   if (c >= 4) tone('sine', base * 1.5, 0.10, 0.045, 0.02, base * 1.5, null, 2600, 0.7, 0.004);
   if (c >= 8) tone('sine', base * 2, 0.15, 0.028, 0.03, base * 2, null, null, 0.004);
   if (c % 8 === 0) tone('sine', base * 3, 0.18, 0.03, 0.05, base * 3, null, null, 0.006);
+  return !!ACTX;
+}
+
+function plus1(combo) {
+  if (!soundEnabled()) return false;
+  unlock();
+  const ok = oneShot(combo);
 
   /* 停手 2.4s 后一个轻轻的落音收束 */
   if (comboFallTimer) clearTimeout(comboFallTimer);
@@ -351,7 +357,7 @@ function plus1(combo) {
     tone('sine', 523.25, 0.12, 0.05, 0, null, null, null, 0.006);
   }, 2400);
 
-  return !!ACTX;
+  return ok;
 }
 
 /** ② 目标达成：C-E-G-C 上行琶音，90ms 间隔，尾部一记泛音化开 */
@@ -450,9 +456,7 @@ function preview(pct) {
   unlock();
   FORCE_PCT = v;
   try {
-    tone('sine', 220, 0.035, 0.042, 0, 180, null, null, 0.002);
-    tone('triangle', 659.25, 0.09, 0.105, 0, 659.25, null, 2600, 0.7, 0.003);
-    tone('sine', 1318.5, 0.05, 0.038, 0, 1318.5, null, null, 0.002);
+    oneShot(1);          // 与 +1 第一击完全同一个函数，音色不会漂
   } finally {
     FORCE_PCT = null;
   }

@@ -48,12 +48,16 @@ const pageFiles = {
 };
 
 /** util 层有模块级状态（当前会话、shards），每轮都重新加载一份干净的 */
+const STORE_FILE = path.join(HERE, '..', 'miniprogram', 'utils', 'store.js');
 const utilFiles = [
   path.join(HERE, '..', 'miniprogram', 'utils', 'config.js'),
   path.join(HERE, '..', 'miniprogram', 'utils', 'api.js'),
   path.join(HERE, '..', 'miniprogram', 'utils', 'auth.js'),
-  path.join(HERE, '..', 'miniprogram', 'utils', 'store.js'),
-  path.join(HERE, '..', 'miniprogram', 'utils', 'prefs.js')
+  STORE_FILE,
+  path.join(HERE, '..', 'miniprogram', 'utils', 'prefs.js'),
+  /* sfx 持有 store 引用，必须和 store 一起换实例；
+     否则页面里的 sfx 会读上一套 store 的音量（表现为刚存 40 又跳回 60）。 */
+  path.join(HERE, '..', 'miniprogram', 'utils', 'sfx.js')
 ];
 
 function freshUtils() {
@@ -61,7 +65,7 @@ function freshUtils() {
   // 否则它会在之后某个用例的 await 间隙开火，向共享的 env.callCount 写入，
   // 让「不应发起云调用」这类精确增量断言偶发假失败。
   try {
-    const prevStore = require.cache[require.resolve(utilFiles[4])];
+    const prevStore = require.cache[require.resolve(STORE_FILE)];
     if (prevStore && prevStore.exports && prevStore.exports.cancelScheduled) {
       prevStore.exports.cancelScheduled();
     }
@@ -71,6 +75,7 @@ function freshUtils() {
     auth: require(utilFiles[2]),
     store: require(utilFiles[3]),
     api: require(utilFiles[1]),
+    sfx: require(utilFiles[5]),
     M: require(path.join(HERE, '..', 'miniprogram', 'utils', 'model.js')),
     U: require(path.join(HERE, '..', 'miniprogram', 'utils', 'util.js'))
   };
@@ -917,8 +922,14 @@ await test('我的页：音量滑块落库，重新载入不会被默认值重�
   page.render();
   eq(page.data.volume, 60, '默认音量 60');
 
-  page.onVolumeChange({ detail: { value: 40 } });
-  eq(page.data.volume, 40, '界面应跟着滑块走');
+  // 自绘音量条：整条都能点，触点换算成 25~100
+  page._volRect = { left: 0, width: 200 };
+  page.applyTouchVolume(100);
+  eq(page.data.volume, 65, '触点在中间：25 + 50% × 75 = 62.5 → 取整到 65');
+  eq(U20.store.get().settings.volume, 60, '拖动中不落库');
+
+  page.commitVolume(40);
+  eq(page.data.volume, 40, '松手后界面停在所选值');
   eq(U20.store.get().settings.volume, 40, '音量应落到 store 设置里');
 
   // 冷启动的默认值修正只该补 sound，不该把 volume 拉回 60

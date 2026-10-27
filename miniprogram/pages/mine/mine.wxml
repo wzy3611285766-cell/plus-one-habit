@@ -62,18 +62,21 @@
           <text class="mine-txt">音效音量</text>
           <text class="mine-sub">{{volume}}%</text>
         </view>
-        <slider
-          class="vol-range"
-          min="25"
-          max="100"
-          step="5"
-          value="{{volume}}"
-          activeColor="#007AFF"
-          backgroundColor="rgba(120,120,128,.22)"
-          block-size="22"
-          bindchanging="onVolumeChanging"
-          bindchange="onVolumeChange"
-        />
+        <view
+          class="vol-bar-wrap"
+          id="volBar"
+          aria-role="slider"
+          aria-label="音效音量"
+          bindtouchstart="onVolumeTouchStart"
+          catchtouchmove="onVolumeTouchMove"
+          bindtouchend="onVolumeTouchEnd"
+          bindtouchcancel="onVolumeTouchEnd"
+        >
+          <view class="vol-bar">
+            <!-- 右段用底色盖住，留下左侧彩色渐变；没有圆点，整条都是可拖区域 -->
+            <view class="vol-dim" style="width:{{100 - volume}}%"></view>
+          </view>
+        </view>
       </view>
 
       <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="toggleTheme">

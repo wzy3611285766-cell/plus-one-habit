@@ -38,8 +38,6 @@ Page({
 
     /* 音效开关与震动已固定开启，只保留音量调节 */
     volume: 60,
-    minVol: sfx.MIN_PCT,
-    maxVol: sfx.MAX_PCT,
 
     // 弹层
     sheet: '',            // '' | 'nickname' | 'deleteAccount'
@@ -62,6 +60,11 @@ Page({
     });
     this.unsubAuth = auth.on(() => this.render());
     this.render();
+  },
+
+  onReady() {
+    // 自绘音量条需要知道自身在视口中的位置；布局稳定后量一次
+    this.measureVolumeBar();
   },
 
   onShow() {
@@ -335,28 +338,63 @@ Page({
 
   /* ---------- 音效音量（音效本身固定开启，只留音量） ---------- */
 
-  /**
-   * 拖动滑块时实时试听：只改界面、不写库（写库放在 change 里）。
-   * 拖动一次会触发几十次 changing，每次都落盘没必要；
-   * 因此把当前值直接作为 override 传给 preview，而不是读还没更新的设置。
-   */
-  onVolumeChanging(e) {
-    const v = e.detail.value;
-    if (this.data.volume !== v) this.setData({ volume: v });
+  /* ---------- 自绘彩色音量条（无圆点） ---------- */
+
+  measureVolumeBar() {
+    if (!this.createSelectorQuery) return;
+    const q = this.createSelectorQuery();
+    q.select('#volBar').boundingClientRect((r) => {
+      if (r && r.width) this._volRect = r;
+    }).exec();
+  },
+
+  onVolumeTouchStart(e) {
+    this._volDragging = true;
+    if (!this._volRect) this.measureVolumeBar();
+    const t = e.touches && e.touches[0];
+    if (t && this._volRect) this.applyTouchVolume(t.clientX);
+  },
+
+  onVolumeTouchMove(e) {
+    if (!this._volDragging) return;
+    const t = e.touches && e.touches[0];
+    if (t) this.applyTouchVolume(t.clientX);
+  },
+
+  onVolumeTouchEnd() {
+    if (!this._volDragging) return;
+    this._volDragging = false;
+    this.commitVolume(this.data.volume);
+  },
+
+  /** 触点 → 25~100（整条都可点，不是只有圆点能拖） */
+  applyTouchVolume(clientX) {
+    const r = this._volRect;
+    if (!r || !r.width) return;
+    const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    const v = Math.round((25 + ratio * 75) / 5) * 5;
+    this.setVolume(v, false);
+  },
+
+  /** 拖动中只改界面 + 节流试听；松手才落库 */
+  setVolume(v, commit) {
+    const n = Math.max(25, Math.min(100, Math.round(v / 5) * 5));
+    if (this.data.volume !== n) this.setData({ volume: n });
+
+    if (commit) {
+      store.updateSettings({ volume: n });
+      sfx.preview(n);
+      prefs.feedback();   // 松手轻震，补足滑块的段落感
+      return;
+    }
 
     const now = Date.now();
     if (now - (this._volPreviewAt || 0) < 110) return;
     this._volPreviewAt = now;
-    sfx.preview(v);
+    sfx.preview(n);
   },
 
-  onVolumeChange(e) {
-    const v = e.detail.value;
-    store.updateSettings({ volume: v });
-    if (this.data.volume !== v) this.setData({ volume: v });
-    sfx.preview(v);
-    prefs.feedback();   // 松手给一次轻震，补足滑块的「段落感」
-  },
+  commitVolume(v) { this.setVolume(v, true); },
 
   /* ================= 弹层通用 ================= */
 

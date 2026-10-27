@@ -953,10 +953,17 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
   });
   assert(wxml.indexOf('toggleSound') < 0 && wxml.indexOf('toggleHaptic') < 0, '不应再绑定音效/震动开关');
 
-  // 音量仍要留给用户：滑块 + 两个事件都要在
+  // 音量仍要留给用户：自绘彩色条 + 触控事件，不再用原生 slider
   assert(wxml.indexOf('音效音量') >= 0, '缺少「音效音量」设置');
-  assert(wxml.indexOf('bindchanging="onVolumeChanging"') >= 0, '音量滑块缺少拖动试听');
-  assert(wxml.indexOf('bindchange="onVolumeChange"') >= 0, '音量滑块缺少落库回调');
+  assert(wxml.indexOf('<slider') < 0, '音量应改为自绘条，不再用带圆点的原生 slider');
+  assert(wxml.indexOf('bindtouchstart="onVolumeTouchStart"') >= 0, '音量条缺少按下事件');
+  assert(wxml.indexOf('catchtouchmove="onVolumeTouchMove"') >= 0, '音量条缺少拖动事件');
+  assert(wxml.indexOf('bindtouchend="onVolumeTouchEnd"') >= 0, '音量条缺少松手落库事件');
+
+  const mineCss = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
+  const bar = firstBody(mineCss, '.vol-bar');
+  assert(bar.indexOf('linear-gradient') >= 0, '音量条应是彩色渐变');
+  assert(mineCss.indexOf('.vol-dim') >= 0, '未填充部分应用底色遮罩，而不是圆点');
 
   const appJs = read(path.join(MP, 'app.js'));
   assert(appJs.indexOf('enforceFeedbackDefaults') >= 0, '启动时应把音效开关/震动拉回默认');
@@ -964,7 +971,7 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
 
   const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
   assert(mineJs.indexOf('toggleSound') < 0 && mineJs.indexOf('toggleHaptic') < 0, 'Mine 页不应再有开关方法');
-  assert(mineJs.indexOf('onVolumeChange') >= 0 && mineJs.indexOf('updateSettings({ volume: v })') >= 0,
+  assert(mineJs.indexOf('onVolumeTouchEnd') >= 0 && mineJs.indexOf('updateSettings({ volume: n })') >= 0,
     '音量变化必须写到 store.settings.volume');
 });
 
