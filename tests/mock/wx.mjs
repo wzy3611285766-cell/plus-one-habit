@@ -154,6 +154,23 @@ export function installWxEnv(opts) {
               setTargetAtTime(v) { node.gain.value = v; },
               linearRampToValueAtTime(v) { node.gain.value = v; }
             },
+            _receive(src) { this.__in = src; },
+            connect(target) {
+              if (target && typeof target._receive === 'function') target._receive(node);
+              return node;
+            }
+          };
+          return node;
+        },
+        createDynamicsCompressor() {
+          const node = {
+            __type: 'compressor',
+            threshold: { value: 0 },
+            knee: { value: 0 },
+            ratio: { value: 1 },
+            attack: { value: 0 },
+            release: { value: 0 },
+            _receive(src) { this.__in = src; },
             connect(target) {
               if (target && typeof target._receive === 'function') target._receive(node);
               return node;

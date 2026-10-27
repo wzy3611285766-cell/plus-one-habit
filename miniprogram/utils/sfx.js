@@ -6,17 +6,12 @@
  * 两边 API 形状一致（createOscillator / createGain / createBiquadFilter），
  * 所以合成逻辑几乎是逐行移植，而不是「听起来差不多」的重写。
  *
- * 增益：主增益 = (volume/100)^0.5 × MASTER_BOOST（volume 是相对基准的百分比，默认 60）。
- *   音色里的 vol 是 H5 基准的绝对幅度（0.03~0.11），那个量级在手机扬声器上
- *   几乎听不见，所以在主增益上做整体补益。
- *   2026-10-26 用户反馈「音量有点小」后的两处调整：
- *     1. 映射从线性改幂曲线（指数 0.5）—— 响度感知近似幂律，线性滑块的
- *        下半段听不出差别；60% 档因此 +2.2 dB，25% 档 +6 dB，100% 档不变；
- *     2. MASTER_BOOST 3→4（再 +2 dB）—— 出口新增 DynamicsCompressor
- *        兜住拉满时的和弦叠峰（约 1.95，压掉后不再硬削波）。
- *   合计默认 60% 档比旧版响约 +4.7 dB。
- *   不要为了调小声去改音色里的 vol —— 那是基准的绝对幅度，改了以后
- *   所有用户的听感都会跟着漂移。
+ * 增益：输入先 ×MASTER_BOOST（补足音色绝对幅度），再过压缩器兜峰，
+ *   最后乘「音量」增益（volume/100，线性，25%~100% → 0.25~1）。
+ *   音量增益必须放在压缩器**后面**：放在前面会被压缩器把 25% 与 100%
+ *   压成几乎一样的响度（用户 2026-10-27 反馈「只有试听音会变」的真因）。
+ *   音色里的 vol 是 H5 基准的绝对幅度（0.03~0.11），不要为了调小声去改它 ——
+ *   改了以后所有用户的听感都会跟着漂移。
  *
  * 兜底：极少数机型拿不到 WebAudio（或拿到的是坏的），此时 tap() 会退回
  *   InnerAudioContext + assets/sounds/tap.wav（同一个 1174.66Hz 正弦短音）。
@@ -40,8 +35,6 @@ const MAX_PCT = 100;
  */
 const MASTER_BOOST = 4;
 
-/** 响度幂曲线指数：0.5 = 平方根映射，见文件头注释 */
-const LOUD_EXP = 0.5;
 
 /** 连击音阶：C 大调五声音阶向上走一轮（基准 COMBO_STEPS） */
 const COMBO_STEPS = [0, 2, 4, 7, 9, 12, 14, 16];
@@ -56,9 +49,9 @@ function gainFromVolume(pct) {
   return Math.max(0, Math.min(MAX_PCT, n)) / MAX_PCT;
 }
 
-/** 实际写进 WebAudio 主增益的值：幂曲线 × 补益（保持单调，100% 仍是满增益） */
+/** 压缩器之后的最终音量增益（线性 0.25~1；100% = 不过衰减） */
 function masterGain(pct) {
-  return Math.pow(gainFromVolume(pct), LOUD_EXP) * MASTER_BOOST;
+  return gainFromVolume(pct);
 }
 
 function clampVolume(pct) {
@@ -97,8 +90,12 @@ function volumePct() {
 /* ================= WebAudio 上下文 ================= */
 
 let ACTX = null;
+/** 输入增益：固定 ×MASTER_BOOST，所有音色先汇到这里 */
 let MASTER = null;
 let MASTER_CTX = null;
+/** 音量增益：挂在压缩器之后，真正随滑块变化的就是它 */
+let VOLUME = null;
+let VOLUME_CTX = null;
 let COMP = null;
 let COMP_CTX = null;
 let webBroken = false;
@@ -117,6 +114,8 @@ function audioCtx() {
     if (!ACTX) { webBroken = true; return null; }
     MASTER = null;
     MASTER_CTX = null;
+    VOLUME = null;
+    VOLUME_CTX = null;
     COMP = null;
     COMP_CTX = null;
   } catch (e) {
@@ -126,16 +125,25 @@ function audioCtx() {
   return ACTX;
 }
 
-/** 主增益节点：所有音色都汇到它，改音量只改这一处。
- *  出口挂 DynamicsCompressor 兜住拉满时的和弦叠峰（约 1.95）——
- *  硬削波很刺耳，压缩器把它柔化成「更响但不破」；实现里没有这个
- *  节点就退回直连，行为回到原来的轻削波，不影响出声。 */
+/** 音频链路：音色 → 输入增益(×4) → 压缩器 → 音量增益 → destination。
+ *  音量必须放在压缩器之后：放在前面会被压缩器把 25% 与 100% 压成同一响度，
+ *  用户拖滑块只会听到试听音变化，实际 +1 听不出区别（2026-10-27 反馈）。
+ *  没有压缩器时退回「输入增益 → 音量增益 → destination」，不影响出声。 */
 function masterOf(ctx) {
   if (MASTER && MASTER_CTX === ctx) return MASTER;
-  let tail = null;
   try {
-    tail = ctx.destination || null;
-    if (tail && typeof ctx.createDynamicsCompressor === 'function') {
+    const dest = ctx.destination || null;
+
+    // 1) 音量增益（最终输出，压缩器之后）
+    const vol = ctx.createGain();
+    if (vol && vol.gain) {
+      try { vol.gain.value = masterGain(volumePct()); } catch (e) { /* 只读实现 */ }
+    }
+    if (vol && dest) vol.connect(dest);
+
+    // 2) 压缩器：兜住拉满时的和弦叠峰，接在音量增益之前
+    let tail = vol;
+    if (typeof ctx.createDynamicsCompressor === 'function') {
       const comp = ctx.createDynamicsCompressor();
       if (comp) {
         try {
@@ -145,30 +153,35 @@ function masterOf(ctx) {
           if (comp.attack) comp.attack.value = 0.002;
           if (comp.release) comp.release.value = 0.12;
         } catch (e0) { /* 只读实现 */ }
-        comp.connect(tail);
+        if (comp.connect && vol) comp.connect(vol);
         tail = comp;
         COMP = comp;
         COMP_CTX = ctx;
       }
     }
-  } catch (e) { /* 压缩器挂不上就直连 */ tail = ctx.destination || null; }
-  try {
-    const g = ctx.createGain();
-    if (g && g.gain) {
-      try { g.gain.value = masterGain(volumePct()); } catch (e) { /* 只读实现 */ }
+
+    // 3) 输入增益：固定补益，所有音色汇入这里
+    const input = ctx.createGain();
+    if (input && input.gain) {
+      try { input.gain.value = MASTER_BOOST; } catch (e) { /* 只读实现 */ }
     }
-    if (g && tail) g.connect(tail);
-    MASTER = g;
+    if (input && tail) input.connect(tail);
+
+    MASTER = input;
     MASTER_CTX = ctx;
+    VOLUME = vol;
+    VOLUME_CTX = ctx;
   } catch (e) {
     MASTER = null;
+    VOLUME = null;
   }
   return MASTER || (ctx.destination || null);
 }
 
-/** 每次发声前把主增益对齐当前音量（用户可能刚拖过滑块） */
+/** 每次发声前把「压缩器之后的音量」对齐当前滑块（用户可能刚拖过） */
 function applyGain(ctx, pct) {
-  const g = masterOf(ctx);
+  if (!VOLUME || VOLUME_CTX !== ctx) masterOf(ctx);
+  const g = VOLUME;
   const target = masterGain(typeof pct === 'number' && isFinite(pct) ? pct : volumePct());
   if (!g || !g.gain) return;
   try {
@@ -284,7 +297,7 @@ function ensureWav() {
     wavCtx.src = FALLBACK_SRC;
     wavCtx.autoplay = false;
     wavCtx.loop = false;
-    wavCtx.volume = Math.pow(gainFromVolume(volumePct()), LOUD_EXP);
+    wavCtx.volume = gainFromVolume(volumePct());
     wavCtx.onError(function (e) {
       wavBroken = true;
       if (wavCtx) { try { wavCtx.destroy(); } catch (x) { } wavCtx = null; }
@@ -301,9 +314,8 @@ function playWav(force, pct) {
   if (!force && !soundEnabled()) return false;
   const c = ensureWav();
   if (!c) return false;
-  /* 兜底 wav 与合成链路共用同一条幂曲线：它吃不到补益，至少让「拖滑块变响」
-     的感知一致；上限仍是 1 */
-  c.volume = Math.pow(gainFromVolume(typeof pct === 'number' && isFinite(pct) ? pct : volumePct()), LOUD_EXP);
+  /* 兜底 wav 与合成链路共用同一条线性音量：两边拖滑块的变化量一致 */
+  c.volume = gainFromVolume(typeof pct === 'number' && isFinite(pct) ? pct : volumePct());
   try { c.stop(); } catch (e) { /* 首次播放前 stop 会抛错 */ }
   try { c.play(); return true; } catch (e) { return false; }
 }
@@ -435,7 +447,7 @@ function destroy() {
   }
   if (ACTX) {
     try { ACTX.close(); } catch (e) { /* 已关闭 */ }
-    ACTX = null; MASTER = null; MASTER_CTX = null; COMP = null; COMP_CTX = null;
+    ACTX = null; MASTER = null; MASTER_CTX = null; VOLUME = null; VOLUME_CTX = null; COMP = null; COMP_CTX = null;
   }
 }
 

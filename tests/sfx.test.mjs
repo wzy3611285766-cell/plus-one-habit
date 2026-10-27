@@ -2,7 +2,7 @@
  * 音效层测试。
  *
  * 三件事值得用测试钉住：
- *   1. **设置里的 60 必须真的变成 1.8 的主增益**（百分比 0.6 × 补益 3）。
+ *   1. **设置里的 60 必须真的变成最终输出增益 0.6**（压缩器之后再乘音量）。
  *   2. **连击音阶必须是基准那张表**（E5 起，五声音阶一轮后回落），
  *      不是「听起来差不多」的自由发挥。
  *   3. **开关关掉就绝不能发声**，而试听要无视开关。
@@ -130,20 +130,31 @@ await test('默认音量是 60（相对基准的百分比）', () => {
   eq(sfx.volumePct(), 60);
 });
 
-await test('音量真的落到主增益上：60% → √0.6 × 补益 4 ≈ 3.098（2026-10-26 幂曲线调响）', () => {
+await test('音量真的落到最终输出：60% → 0.6（压缩器之后的音量增益）', () => {
   sfx.plus1(1);
   const ctx = lastCtx();
   assert(ctx, '应已创建 WebAudio 上下文');
   const master = masterGain(ctx);
-  assert(master, '主增益应已连到 destination');
-  near(master.gain.value, Math.sqrt(0.6) * 4, 1e-6, '主增益');
+  assert(master, '音量增益应已连到 destination');
+  near(master.gain.value, 0.6, 1e-6, '最终输出增益');
 });
 
-await test('改音量后下一次发声就跟着变：40% → √0.4 × 4 ≈ 2.530；纯函数映射保持 0.4 不变', () => {
+await test('音量增益必须排在压缩器之后，否则滑块差会被压平（2026-10-27 用户反馈）', () => {
+  sfx.plus1(1);
+  const vol = masterGain(lastCtx());
+  assert(vol && vol.__type === 'gain', 'destination 前应是音量增益');
+  const comp = vol.__in;
+  assert(comp && comp.__type === 'compressor', '音量增益上游应是压缩器');
+  const input = comp.__in;
+  assert(input && input.__type === 'gain', '压缩器上游应是输入增益');
+  near(input.gain.value, 4, 1e-6, '输入补益固定 4，不随音量变化');
+});
+
+await test('改音量后下一次发声就跟着变：40% → 0.4；纯函数映射保持 0.4 不变', () => {
   store.updateSettings({ volume: 40 });
   sfx.plus1(1);
   const master = masterGain(lastCtx());
-  near(master.gain.value, Math.sqrt(0.4) * 4, 1e-6, '主增益');
+  near(master.gain.value, 0.4, 1e-6, '最终输出增益');
   eq(sfx.gainFromVolume(40), 0.4, 'gainFromVolume 仍是纯百分比映射');
 });
 
@@ -286,7 +297,7 @@ await test('拿不到 WebAudio 时 tap() 退回 assets/sounds/tap.wav', () => {
     const plays = audioLog(before);
     eq(plays.length, 1, '应播放一次 wav');
     eq(plays[0].src, '/assets/sounds/tap.wav');
-    near(plays[0].volume, Math.sqrt(0.5), 1e-6, '兜底播放也应遵守音量百分比（幂曲线）');
+    near(plays[0].volume, 0.5, 1e-6, '兜底播放也应遵守音量百分比（线性，与合成链路一致）');
   } finally {
     globalThis.wx.createWebAudioContext = real;
   }
