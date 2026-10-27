@@ -254,7 +254,22 @@ await test('音效关闭时试听仍然发声（否则用户没法判断要不�
   const ok = sfx.preview();
 
   eq(ok, true, 'preview 应无视开关');
-  eq(audioLog(before).length, 1, '试听走 wav，应有一次播放');
+  eq(audioLog(before).length, 0, '试听应走合成，不再播放另一套 wav');
+  assert(oscs(before).length >= 3, '试听应产生与 +1 相同的三层合成音');
+});
+
+await test('试听与 +1 同一链路、同一响度；试听的临时音量不落库', () => {
+  store.updateSettings({ sound: true, volume: 60 });
+
+  const before = env.log.length;
+  eq(sfx.preview(30), true);
+  near(masterGain(lastCtx()).gain.value, 0.3, 1e-6, '试听按临时音量 30% 输出');
+  assert(oscs(before).length >= 3, '试听与 +1 一样是三层音');
+  eq(store.get().settings.volume, 60, '拖动中的临时音量不能写进设置');
+
+  // 下一次实际发声必须回到设置里的 60%，不能被试听的临时值污染
+  sfx.plus1(1);
+  near(masterGain(lastCtx()).gain.value, 0.6, 1e-6, '实际 +1 回到设置音量');
 });
 
 await test('重新打开音效后 +1 恢复发声', () => {

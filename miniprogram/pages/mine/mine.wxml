@@ -70,7 +70,7 @@
           value="{{volume}}"
           activeColor="#007AFF"
           backgroundColor="rgba(120,120,128,.22)"
-          block-size="18"
+          block-size="22"
           bindchanging="onVolumeChanging"
           bindchange="onVolumeChange"
         />

@@ -227,7 +227,8 @@
 }
 .vol-range{
   flex:none;
-  width:106px;
+  /* 原来 106px 太窄，滑块拖起来一跳一跳；给到 40vw（上限 165px） */
+  width:clamp(110px, 40vw, 165px);
   margin:0;
 }
 

@@ -226,8 +226,9 @@ function tone(type, freq, dur, vol, delay, slideTo, filtHz, filtQ, atk, slideDur
   if (!ctx) return false;
   if (ctx.state === 'closed') return false;
 
-  /* 用户可能刚拖过音量滑块：每个音发声前都把主增益对齐一次 */
-  applyGain(ctx);
+  /* 试听可能传入临时音量（滑块还没落库）：优先用它；
+     平时每次发声前都把音量增益对齐当前设置。 */
+  applyGain(ctx, FORCE_PCT == null ? undefined : FORCE_PCT);
 
   const now = typeof ctx.currentTime === 'number' ? ctx.currentTime : 0;
   const t0 = now + (delay || 0);
@@ -284,6 +285,8 @@ function tone(type, freq, dur, vol, delay, slideTo, filtHz, filtQ, atk, slideDur
 
 let wavCtx = null;
 let wavBroken = false;
+/** 试听临时音量：只在 preview() 的同步调用期间有效，不写设置 */
+let FORCE_PCT = null;
 
 function ensureWav() {
   if (wavCtx) return wavCtx;
@@ -433,10 +436,28 @@ function todayDone() {
 /* ================= 试听 ================= */
 
 /**
- * 试听：忽略「音效开关」—— 用户可能先关掉再想听听是什么样。
- * 走 wav 而不是合成：拖滑块时会被连续调用，合成会叠出一片噪音。
+ * 试听：与 +1 第一击完全同一套合成音色和音量链路。
+ *
+ * 不再走 wav：wav 与合成音是两套响度基准，试听会明显比实际按键响
+ * （2026-10-27 用户反馈「展示音量比实际大」）。用合成音后，试听听到的
+ * 就是实际 +1 的响度；临时音量通过 FORCE_PCT 传入，不写设置。
  */
-function preview(pct) { return playWav(true, pct); }
+function preview(pct) {
+  const v = clampVolume(typeof pct === 'number' && isFinite(pct) ? pct : volumePct());
+  const ctx = audioCtx();
+  if (!ctx) return playWav(true, v);
+
+  unlock();
+  FORCE_PCT = v;
+  try {
+    tone('sine', 220, 0.035, 0.042, 0, 180, null, null, 0.002);
+    tone('triangle', 659.25, 0.09, 0.105, 0, 659.25, null, 2600, 0.7, 0.003);
+    tone('sine', 1318.5, 0.05, 0.038, 0, 1318.5, null, null, 0.002);
+  } finally {
+    FORCE_PCT = null;
+  }
+  return !!ACTX;
+}
 
 /** 释放资源 */
 function destroy() {

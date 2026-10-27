@@ -342,7 +342,7 @@ Page({
    */
   onVolumeChanging(e) {
     const v = e.detail.value;
-    this.setData({ volume: v });
+    if (this.data.volume !== v) this.setData({ volume: v });
 
     const now = Date.now();
     if (now - (this._volPreviewAt || 0) < 110) return;
@@ -353,8 +353,9 @@ Page({
   onVolumeChange(e) {
     const v = e.detail.value;
     store.updateSettings({ volume: v });
-    this.setData({ volume: v });
+    if (this.data.volume !== v) this.setData({ volume: v });
     sfx.preview(v);
+    prefs.feedback();   // 松手给一次轻震，补足滑块的「段落感」
   },
 
   /* ================= 弹层通用 ================= */
