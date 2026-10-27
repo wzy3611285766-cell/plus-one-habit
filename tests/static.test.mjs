@@ -959,6 +959,9 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
   assert(wxml.indexOf('bindtouchstart="onVolumeTouchStart"') >= 0, '音量条缺少按下事件');
   assert(wxml.indexOf('catchtouchmove="onVolumeTouchMove"') >= 0, '音量条缺少拖动事件');
   assert(wxml.indexOf('bindtouchend="onVolumeTouchEnd"') >= 0, '音量条缺少松手落库事件');
+  // 内联 style 必须以分号收尾，否则 WXML 编译直接报 css-semicolonexpected
+  assert(wxml.indexOf('style="width:{{100 - volume}}%;"') >= 0,
+    '音量条遮罩的内联样式必须以分号收尾');
 
   const mineCss = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
   const bar = firstBody(mineCss, '.vol-bar');

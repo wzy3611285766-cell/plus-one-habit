@@ -74,7 +74,7 @@
         >
           <view class="vol-bar">
             <!-- 右段用底色盖住，留下左侧彩色渐变；没有圆点，整条都是可拖区域 -->
-            <view class="vol-dim" style="width:{{100 - volume}}%"></view>
+            <view class="vol-dim" style="width:{{100 - volume}}%;"></view>
           </view>
         </view>
       </view>
