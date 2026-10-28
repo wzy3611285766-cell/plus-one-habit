@@ -1031,6 +1031,12 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
     '音量应 0~100、1% 一档，不能按 5% 跳');
   assert(mineJs.indexOf('Math.max(0, Math.min(100, Math.round(v)))') >= 0,
     '音量下限必须是 0，不能卡在 25');
+  // 快速拖动：setData 必须按帧合并，试听不能每个 touchmove 都建节点
+  assert(mineJs.indexOf('_volMoveTimer') >= 0 && mineJs.indexOf('}, 16)') >= 0,
+    'touchmove 应按约 16ms 合并，不能每次事件都 setData');
+  assert(mineJs.indexOf('< 180') >= 0, '拖动试听应节流到 180ms，避免堆 oscillator');
+  assert(mineCss.indexOf('.vol-bar-wrap.is-active .vol-flow{ animation-play-state:paused; }') >= 0,
+    '拖动期间应暂停流动渐变，把合成开销让给拖动');
   // 内联 style 必须以分号收尾，否则 WXML 编译直接报 css-semicolonexpected
   assert(wxml.indexOf('style="width:{{100 - volume}}%;"') >= 0,
     '音量条遮罩的内联样式必须以分号收尾');

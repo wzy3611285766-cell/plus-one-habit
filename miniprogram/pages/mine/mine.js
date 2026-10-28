@@ -82,6 +82,7 @@ Page({
     if (this.unsub) this.unsub();
     if (this.unsubAuth) this.unsubAuth();
     if (this.toastTimer) clearTimeout(this.toastTimer);
+    if (this._volMoveTimer) clearTimeout(this._volMoveTimer);
     this.setTabBarVisible(true);
   },
 
@@ -350,37 +351,54 @@ Page({
   },
 
   onVolumeTouchStart(e) {
+    if (this._volMoveTimer) { clearTimeout(this._volMoveTimer); this._volMoveTimer = null; }
     this._volDragging = true;
+    this._volPendingX = null;
     if (!this.data.volActive) this.setData({ volActive: true });
     if (!this._volRect) this.measureVolumeBar();
     const t = e.touches && e.touches[0];
     if (t && this._volRect) this.applyTouchVolume(t.clientX);
   },
 
+  /**
+   * 快速拖动时 touchmove 可能每秒几十上百次；每次都 setData 会掉帧。
+   * 这里只记最新坐标，最多每 16ms 落到界面一次（约 60fps），
+   * 松手时再补最后一帧，保证终点不丢。
+   */
   onVolumeTouchMove(e) {
     if (!this._volDragging) return;
     const t = e.touches && e.touches[0];
-    if (t) this.applyTouchVolume(t.clientX);
+    if (!t) return;
+    this._volPendingX = t.clientX;
+    if (this._volMoveTimer) return;
+    this._volMoveTimer = setTimeout(() => {
+      this._volMoveTimer = null;
+      if (!this._volDragging || this._volPendingX == null) return;
+      this.applyTouchVolume(this._volPendingX);
+    }, 16);
   },
 
   onVolumeTouchEnd() {
     if (!this._volDragging) return;
     this._volDragging = false;
+    if (this._volMoveTimer) { clearTimeout(this._volMoveTimer); this._volMoveTimer = null; }
+    if (this._volPendingX != null) this.applyTouchVolume(this._volPendingX, true);
+    this._volPendingX = null;
     if (this.data.volActive) this.setData({ volActive: false });
     this.commitVolume(this.data.volume);
   },
 
-  /** 触点 → 25~100（整条都可点，不是只有圆点能拖） */
-  applyTouchVolume(clientX) {
+  /** 触点 → 0~100（整条都可点，1% 一档） */
+  applyTouchVolume(clientX, silent) {
     const r = this._volRect;
     if (!r || !r.width) return;
     const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    const v = Math.round(ratio * 100);   // 0~100，1% 一档
-    this.setVolume(v, false);
+    const v = Math.round(ratio * 100);
+    this.setVolume(v, false, silent);
   },
 
-  /** 拖动中只改界面 + 节流试听；松手才落库 */
-  setVolume(v, commit) {
+  /** 拖动中只改界面 + 节流试听；松手才落库。silent 用于补最后一帧，避免重复发声 */
+  setVolume(v, commit, silent) {
     const n = Math.max(0, Math.min(100, Math.round(v)));
     if (this.data.volume !== n) this.setData({ volume: n });
 
@@ -391,8 +409,9 @@ Page({
       return;
     }
 
+    if (silent) return;
     const now = Date.now();
-    if (now - (this._volPreviewAt || 0) < 110) return;
+    if (now - (this._volPreviewAt || 0) < 180) return;
     this._volPreviewAt = now;
     sfx.preview(n);
   },

@@ -257,6 +257,10 @@
   height:15px;
   box-shadow:0 6px 24px rgba(99,102,241,.36);
 }
+/* 拖动期间停掉彩带流光、隐藏扫光/粒子：把合成开销让给手指 */
+.vol-bar-wrap.is-active .vol-flow{ animation-play-state:paused; }
+.vol-bar-wrap.is-active .vol-shine,
+.vol-bar-wrap.is-active .vol-particle{ display:none; }
 /* 流动的彩色渐变：比条宽 3 倍，来回平移，颜色一直在走 */
 .vol-flow{
   position:absolute;left:0;top:0;right:0;bottom:0;
