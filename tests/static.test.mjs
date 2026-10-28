@@ -984,6 +984,13 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
     '音量变化必须写到 store.settings.volume');
 });
 
+test('我的页：分享卡与偏好设置之间必须有卡片间距，不能贴在一起', () => {
+  const css = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
+  const share = firstBody(css, '.share-card');
+  assert(/margin\s*:\s*var\(--gap-card\)\s+0/.test(share) || /margin-bottom\s*:\s*var\(--gap-card\)/.test(share),
+    '分享卡需要底部间距；下面的偏好设置是 .card，不会命中 .card + .card');
+});
+
 test('分享卡：四个页签挂同一个离屏组件，分享时补图与数据标题', () => {
   const comp = path.join(MP, 'components', 'share-card');
   ['index.js', 'index.json', 'index.wxml', 'index.wxss'].forEach((f) => {

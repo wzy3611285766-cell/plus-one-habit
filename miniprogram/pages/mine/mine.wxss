@@ -398,7 +398,9 @@
    open-type="share" 只能用 button 触发，所以按钮本身仍是原生 button，
    这里只负责把它做成品牌色胶囊。 */
 .share-card{
-  margin-top:var(--gap-card);
+  /* 上下都要留卡片间距：下面的「偏好设置」是 .card，
+     但 .card + .card 的 margin-top 只对相邻两张 .card 生效 */
+  margin:var(--gap-card) 0;
   padding:16px var(--pad-card);
   background:var(--surface);
   border-radius:var(--r-lg);
