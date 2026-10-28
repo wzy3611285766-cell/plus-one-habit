@@ -99,10 +99,51 @@ function shard(key) {
  * 换成新版。只动 sample 目标 —— 用户自己的目标与打卡一根手指都不碰；
  * 清过示例的只对齐版本号，不会重新塞入。
  */
+/** 把指定目标的日志全部标为墓碑（示例目标重建/移除时用，避免旧记录复活） */
+function tombstoneLogsOf(goalIds) {
+  if (!goalIds || !goalIds.length) return 0;
+  const set = {};
+  goalIds.forEach((id) => { set[id] = 1; });
+  let n = 0;
+  state.logs.forEach((l) => {
+    if (l.deleted || !set[l.goalId]) return;
+    l.deleted = true;
+    M.touch(l);
+    n++;
+  });
+  return n;
+}
+
+/**
+ * 示例目标复用固定 seed id。重建后 createdAt 变新，但旧日志还挂在同一个 id 上，
+ * 会让「最近 7 天平均速度」混进这份示例生命周期之前的记录，预计完成日因此和
+ * 自建目标不一致。这里清掉两类无效日志：
+ *   - 目标是示例，且已删除；
+ *   - 日志日期早于该示例目标的 createdAt（不可能是这一份示例产生的）。
+ */
+function pruneSampleLogs() {
+  const sample = {};
+  state.goals.forEach((g) => { if (g.sample) sample[g.id] = g; });
+  let n = 0;
+  state.logs.forEach((l) => {
+    if (l.deleted) return;
+    const g = sample[l.goalId];
+    if (!g) return;
+    if (g.deleted || l.date < g.createdAt) {
+      l.deleted = true;
+      M.touch(l);
+      n++;
+    }
+  });
+  return n;
+}
+
 function refreshSeed() {
   if ((state.seedVersion || 0) >= M.SEED_VERSION) return;
   if (state.goals.some((g) => g.sample && !g.deleted)) {
+    const oldIds = state.goals.filter((g) => g.sample).map((g) => g.id);
     state.goals = state.goals.filter((g) => !g.sample);
+    tombstoneLogsOf(oldIds);
     const data = M.seedData();
     const base = state.goals.reduce((mx, g) => Math.max(mx, typeof g.order === 'number' ? g.order : 0), 0);
     data.goals.forEach((g, i) => {
@@ -129,6 +170,7 @@ function load() {
   if (rawState) {
     state = M.parseState(rawState).state;
     refreshSeed();
+    if (pruneSampleLogs()) save();
     return { migrated: false };
   }
 
@@ -143,6 +185,7 @@ function load() {
       shard(M.CORE_KEY).dirty = true;
       saveShards();
       refreshSeed();
+      if (pruneSampleLogs()) save();
       return { migrated: true, goals: state.goals.length, logs: state.logs.length };
     }
   }
@@ -588,6 +631,9 @@ function forkInfo() { return fork.info(); }
 
 function installSample() {
   if (state.goals.some((g) => g.sample && !g.deleted)) return { added: 0 };
+  /* 固定 seed id 会复用：重装前先把上一份示例留下的日志清掉，
+     否则新示例一出生就带着旧进度，预计完成日和新建目标对不上。 */
+  tombstoneLogsOf(M.SEED_IDS);
   const data = M.seedData();
   const base = M.activeGoals(state).reduce((mx, g) => Math.max(mx, typeof g.order === 'number' ? g.order : 0), 0);
 
@@ -607,13 +653,16 @@ function installSample() {
 
 function clearSample() {
   let removed = 0;
+  const ids = [];
   state.goals.forEach((g) => {
     if (!g.sample || g.deleted) return;
     g.deleted = true;
     M.touch(g);
+    ids.push(g.id);
     removed++;
   });
   if (removed) {
+    tombstoneLogsOf(ids);   // 目标都删了，日志不能留着被下一次重装复活
     state.sampleCleared = true;
     commit();   // 同样只写本机，不推云端
   }

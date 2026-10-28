@@ -893,6 +893,35 @@ await test('旧版本的示例目标在启动时自动换成新版，用户自�
   eq(UD.store.get().seedVersion, UD.M.SEED_VERSION, '版本号应对齐');
 });
 
+await test('示例目标重建/重装不继承旧日志，完成量与自建目标同一口径', () => {
+  const UD = freshUtils();
+  env.storage.clear();
+  const t = UD.U.todayStr();
+  const st = UD.M.blankState();
+  st.seedVersion = UD.M.SEED_VERSION;        // 不让 refreshSeed 换掉这份示例
+  st.goals.push({
+    id: 'seed-g1', name: '背英语四级单词', unit: '个', total: 1200,
+    deadline: UD.U.addDays(t, 68), createdAt: t,
+    color: '#6366f1', obstacle: '', plan: '', sample: true, updatedAt: 1
+  });
+  st.logs.push({ id: 'old-seed-log', goalId: 'seed-g1', date: UD.U.addDays(t, -1), amount: 100, minutes: null, makeup: false, ts: 1, updatedAt: 1, deleted: false });
+  st.logs.push({ id: 'new-seed-log', goalId: 'seed-g1', date: t, amount: 5, minutes: null, makeup: false, ts: 2, updatedAt: 1, deleted: false });
+  env.storage.set('lgt.state.v1', JSON.stringify(st));
+
+  UD.store.load();
+  const loaded = UD.store.get();
+  eq(loaded.logs.find((l) => l.id === 'old-seed-log').deleted, true, '创建日之前的旧日志应被清掉');
+  eq(UD.M.doneAmount(loaded, 'seed-g1'), 5, '示例完成量只能算这一份生命周期内的记录');
+  eq(UD.M.last7Sum(loaded, 'seed-g1'), 5, '最近 7 天速度也不该混入旧日志');
+
+  // 清除后重装同一批 seed id：旧日志不能复活
+  UD.store.clearSample();
+  eq(loaded.logs.filter((l) => l.goalId === 'seed-g1' && !l.deleted).length, 0, '清除示例应连带清日志');
+  UD.store.installSample();
+  const after = UD.store.get();
+  eq(UD.M.doneAmount(after, 'seed-g1'), 0, '新装示例应从 0 开始');
+});
+
 await test('清过示例的设备升级时不会重新塞入', () => {
   const UD = freshUtils();
   env.storage.clear();
