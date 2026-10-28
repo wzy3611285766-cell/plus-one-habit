@@ -39,12 +39,11 @@
     <view class="share-head">
       <view class="share-badge"><view class="mine-ico ico-share"></view></view>
       <view class="share-copy">
-        <text class="share-title">分享今日打卡</text>
-        <text class="share-sub">把今天完成的目标和进度发给同学</text>
+        <text class="share-title">打卡</text>
       </view>
     </view>
     <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="share-btn" open-type="share">
-      <text>分享给同学</text>
+      <text>分享</text>
     </button>
   </view>
 
@@ -52,7 +51,7 @@
   <view class="card">
     <view class="card-title">
       <view class="title-dot"></view>
-      <text>偏好设置</text>
+      <text>偏好</text>
     </view>
 
     <view class="mine-list">
@@ -111,7 +110,6 @@
         <view class="mine-ico ico-download"></view>
         <view class="mine-body">
           <text class="mine-txt">载入示例目标</text>
-          <text class="mine-sub">三个演示目标，随时可移除</text>
         </view>
       </view>
 
@@ -119,7 +117,6 @@
         <view class="mine-ico ico-trash"></view>
         <view class="mine-body">
           <text class="mine-txt">移除示例目标</text>
-          <text class="mine-sub">只删带「示例」标记的那几个</text>
         </view>
       </view>
 
