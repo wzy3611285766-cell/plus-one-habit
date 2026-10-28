@@ -519,7 +519,7 @@ app-hero{ display:block; margin-bottom:10px; }
 
 .page-title{
   font-size:var(--fs-h1);
-  font-weight:800;
+  font-weight:var(--fw-bold);
   letter-spacing:var(--ls-tight);
   line-height:1.2;
   color:var(--text-1);
@@ -550,7 +550,7 @@ app-hero{ display:block; margin-bottom:10px; }
   align-items:center;
   gap:8rpx;
   font-size:var(--fs-h3);
-  font-weight:800;
+  font-weight:var(--fw-bold);
   letter-spacing:var(--ls-snap);
   color:var(--text-1);
 }
@@ -742,7 +742,7 @@ app-hero{ display:block; margin-bottom:10px; }
   padding:clamp(28px,7vw,40px) 16px;
   text-align:center;
 }
-.empty-title{ font-size:var(--fs-h3); font-weight:700; color:var(--text-1); }
+.empty-title{ font-size:var(--fs-h3); font-weight:var(--fw-bold); color:var(--text-1); }
 .empty-desc{ margin-top:8px; font-size:var(--fs-sm); color:var(--text-3); line-height:1.65; }
 .empty-actions{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
 
@@ -814,7 +814,7 @@ app-hero{ display:block; margin-bottom:10px; }
   width:72rpx;height:8rpx;border-radius:var(--r-pill);
   background:var(--line-strong);margin:0 auto 16rpx;
 }
-.sheet-title{ font-size:var(--fs-h2);font-weight:700;letter-spacing:var(--ls-snap); }
+.sheet-title{ font-size:var(--fs-h2);font-weight:var(--fw-bold);letter-spacing:var(--ls-snap); }
 .sheet-actions{ margin-top:22px;display:flex;gap:12px; }
 .sheet-actions .btn{ flex:1; }
 

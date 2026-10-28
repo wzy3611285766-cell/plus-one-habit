@@ -43,7 +43,7 @@
 .stat-text{ display:flex;flex-direction:column;min-width:0; }
 .stat-num{
   font-size:var(--fs-num-lg);
-  font-weight:800;
+  font-weight:var(--fw-black);
   line-height:1.1;
   letter-spacing:var(--ls-tight);
   color:var(--text-1);
@@ -106,7 +106,7 @@
   padding:3px 8px;
   border-radius:999rpx;
   font-size:var(--fs-nano);
-  font-weight:700;
+  font-weight:var(--fw-semi);
 }
 .badge-sample{ background:var(--amber-100);color:var(--amber-ink); }
 
@@ -142,14 +142,14 @@
 }
 .ring-num{
   font-size:var(--fs-num-lg);
-  font-weight:800;
+  font-weight:var(--fw-black);
   line-height:1.1;
   letter-spacing:var(--ls-tight);
   color:var(--text-1);
 }
 .ring-sign{
   font-size:.62em;
-  font-weight:700;
+  font-weight:var(--fw-semi);
   color:var(--text-4);
   margin-left:1rpx;
 }
@@ -170,10 +170,10 @@
 }
 .stat-line:last-child{ margin-bottom:0; }
 .sl-k{ color:var(--text-3); }
-.sl-v{ color:var(--text-1);font-weight:700;font-variant-numeric:tabular-nums; }
+.sl-v{ color:var(--text-1);font-weight:var(--fw-semi);font-variant-numeric:tabular-nums; }
 .sl-eta{ color:var(--text-2); }
-.sl-eta.is-ahead{ color:var(--success-ink);font-weight:700; }
-.sl-eta.is-behind{ color:var(--danger-ink);font-weight:700; }
+.sl-eta.is-ahead{ color:var(--success-ink);font-weight:var(--fw-semi); }
+.sl-eta.is-behind{ color:var(--danger-ink);font-weight:var(--fw-semi); }
 
 /* ---------- 预案 ---------- */
 .plan-line{
@@ -187,7 +187,7 @@
   line-height:1.6;
   color:var(--text-2);
 }
-.plan-tag{ flex:none;font-weight:700;color:var(--brand-500); }
+.plan-tag{ flex:none;font-weight:var(--fw-semi);color:var(--brand-500); }
 .plan-txt{ flex:1;min-width:0; }
 
 /* ---------- 展开记录 ---------- */
@@ -211,7 +211,7 @@
   color:var(--text-2);
 }
 .log-date{ color:var(--text-3);font-variant-numeric:tabular-nums; }
-.log-amt{ color:var(--text-1);font-weight:700;font-variant-numeric:tabular-nums; }
+.log-amt{ color:var(--text-1);font-weight:var(--fw-semi);font-variant-numeric:tabular-nums; }
 .log-unit{ color:var(--text-2); }
 .log-min{ color:var(--text-3); }
 .log-makeup{
@@ -221,7 +221,7 @@
   background:var(--surface-sunken,var(--surface-2));
   color:var(--text-3);
   font-size:var(--fs-nano);
-  font-weight:700;
+  font-weight:var(--fw-semi);
 }
 /* 删除：一次点变红、再点确认（与基准的两段式一致，不是长按） */
 .log-del{
@@ -254,7 +254,7 @@
   padding-top:14px;
   border-top:1.5px dashed var(--line-soft);
   font-size:var(--fs-h3);
-  font-weight:700;
+  font-weight:var(--fw-bold);
   color:var(--text-2);
 }
 .sec-check{
@@ -271,7 +271,7 @@
   background:var(--success-50);
   color:var(--success-ink);
   font-size:var(--fs-xs);
-  font-weight:700;
+  font-weight:var(--fw-semi);
 }
 
 /* =====================================================================
@@ -328,7 +328,7 @@
   color:var(--text-4);
   font-variant-numeric:tabular-nums;
 }
-.col.is-today .col-label{ color:var(--brand-500);font-weight:700; }
+.col.is-today .col-label{ color:var(--brand-500);font-weight:var(--fw-semi); }
 
 /* 点击气泡：挂在柱子下方（上方是卡片标题，不该被盖住） */
 .col-tip{

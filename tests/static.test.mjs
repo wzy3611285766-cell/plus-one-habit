@@ -175,6 +175,30 @@ test('字体统一：页面、原生控件、自定义组件都走 --font-sans',
   assert(firstBody(tabbar, '.tabbar').indexOf('font-family:var(--font-sans)') >= 0, 'tabBar 组件要显式声明字体');
 });
 
+test('字号/字重层级统一：标题 700、控件 600、800 只给大数字', () => {
+  const app = stripCssComments(read(path.join(MP, 'app.wxss')));
+  assert(firstBody(app, '.page-title').indexOf('var(--fw-bold)') >= 0, '页面标题应为 700');
+  assert(firstBody(app, '.card-title').indexOf('var(--fw-bold)') >= 0, '卡片标题应为 700');
+
+  const hero = stripCssComments(read(path.join(MP, 'components', 'app-hero', 'index.wxss')));
+  assert(firstBody(hero, '.hero-title').indexOf('var(--fw-bold)') >= 0, 'hero 标题应为 700');
+  assert(firstBody(hero, '.chip-v').indexOf('var(--fw-semi)') >= 0, 'chip 数值应为 600');
+
+  const mine = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
+  assert(firstBody(mine, '.mine-txt').indexOf('var(--fw-semi)') >= 0, '设置行标题应为 600');
+  assert(firstBody(mine, '.share-title').indexOf('var(--fw-semi)') >= 0, '分享标题应为 600');
+  assert(firstBody(mine, '.share-btn').indexOf('var(--fw-semi)') >= 0, '按钮应为 600');
+
+  const today = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
+  assert(firstBody(today, '.stat-num').indexOf('var(--fw-black)') >= 0, '大数字才用 800');
+
+  // 不允许再出现散落的 700/800 字面量，否则层级会重新漂移
+  mp('.wxss').forEach((f) => {
+    const src = stripCssComments(read(f));
+    assert(!/font-weight:(700|800)/.test(src), rel(f) + ' 仍有字面量 700/800，应改用 --fw-*');
+  });
+});
+
 test('深色模式配置齐全', () => {
   eq(appJson.darkmode, true);
   eq(appJson.themeLocation, 'theme.json');

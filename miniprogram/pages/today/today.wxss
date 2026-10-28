@@ -151,7 +151,7 @@
 .stat-text{ display:flex;flex-direction:column;min-width:0; }
 .stat-num{
   font-size:var(--fs-num-lg);
-  font-weight:800;
+  font-weight:var(--fw-black);
   line-height:1.1;
   letter-spacing:var(--ls-tight);
   color:var(--text-1);
@@ -172,7 +172,7 @@
   display:flex;align-items:center;gap:8rpx;
   margin:2rpx 0 10rpx;
   font-size:var(--fs-h3);
-  font-weight:700;
+  font-weight:var(--fw-bold);
   color:var(--text-1);
 }
 .tz-dot{
@@ -226,7 +226,7 @@
   height:2px;background:var(--amber-ink);
 }
 .tz-info{ flex:1;min-width:0;display:flex;flex-direction:column;gap:3rpx; }
-.tz-name{ font-size:var(--fs-body);font-weight:700;color:var(--text-1); }
+.tz-name{ font-size:var(--fs-body);font-weight:var(--fw-semi);color:var(--text-1); }
 .tz-why{ font-size:var(--fs-xs);font-weight:600;line-height:1.45; }
 .tz-why-danger{ color:var(--danger-ink); }
 .tz-why-amber{ color:var(--amber-ink); }
@@ -303,7 +303,7 @@
   padding:3px 8px;
   border-radius:999rpx;
   font-size:var(--fs-nano);
-  font-weight:700;
+  font-weight:var(--fw-semi);
   letter-spacing:var(--ls-normal);
 }
 .badge-done{ background:var(--success-100);color:var(--success-ink); }
@@ -447,7 +447,7 @@
 .plus1-sign{
   position:relative;z-index:1;
   font-size:clamp(30px,9vw,38px);
-  font-weight:800;
+  font-weight:var(--fw-black);
   letter-spacing:var(--ls-tight);
   line-height:1;
   white-space:nowrap;
@@ -578,7 +578,7 @@
 }
 .p1-float{
   position:fixed;z-index:9001;transform:translate(-50%,-50%);pointer-events:none;
-  font-size:var(--fs-num-lg);font-weight:800;line-height:1;
+  font-size:var(--fs-num-lg);font-weight:var(--fw-black);line-height:1;
   letter-spacing:var(--ls-tight);text-shadow:0 3px 12px rgba(0,0,0,.22);
   font-variant-numeric:tabular-nums;
   animation:p1Float .9s cubic-bezier(.22,.9,.3,1) forwards;
@@ -624,7 +624,7 @@
   display:flex;align-items:center;gap:7px;
   margin-bottom:10px;
   font-size:var(--fs-xs);
-  font-weight:700;
+  font-weight:var(--fw-semi);
   color:var(--success-ink);
 }
 .done-check{
@@ -641,7 +641,7 @@
   background:var(--success-50);
   color:var(--success-ink);
   font-size:var(--fs-xs);
-  font-weight:700;
+  font-weight:var(--fw-semi);
   font-variant-numeric:tabular-nums;
 }
 
@@ -673,7 +673,7 @@
   display:flex;align-items:center;justify-content:center;
   height:22px;
   font-size:var(--fs-body);
-  font-weight:800;
+  font-weight:var(--fw-black);
   line-height:1.35;
   color:var(--text-3);
 }
@@ -865,7 +865,7 @@
 .fk-ico-dot{position:absolute;left:50%;top:3px;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:var(--brand-500)}
 .fk-ico-stem{position:absolute;left:50%;bottom:3px;width:2px;height:7px;margin-left:-1px;border-radius:1px;background:var(--brand-500)}
 .fk-body{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
-.fk-title{font-weight:700;color:var(--text-1);margin-bottom:3px}
+.fk-title{font-weight:var(--fw-semi);color:var(--text-1);margin-bottom:3px}
 .fk-text{color:var(--text-2)}
 .fk-act{display:flex;gap:8px;margin-top:10px}
 .fk-btn{

@@ -64,7 +64,7 @@
   align-items:center;
   gap:10rpx;
   font-size:var(--fs-h3);
-  font-weight:800;
+  font-weight:var(--fw-bold);
   color:var(--text-1);
 }
 .plan-opt{
