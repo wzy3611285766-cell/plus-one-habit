@@ -657,6 +657,13 @@ test('我的页保持 iOS 分组列表形态', () => {
   ['mine-btn', 'mine-ico', 'mine-sub', 'switch', 'knob', 'sync-row', 'sync-dot']
     .forEach((k) => { assert(css.indexOf('.' + k) >= 0, '样式缺少 .' + k); });
 
+  // B 方案图标：CSS mask + 内联 SVG，必须同时有 -webkit- 前缀
+  assert(css.indexOf('-webkit-mask-image:url("data:image/svg+xml') >= 0 &&
+    css.indexOf('mask-image:url("data:image/svg+xml') >= 0,
+    '设置图标应走 SVG mask（含 -webkit- 前缀），不能退回 CSS 画笔触');
+  assert(css.indexOf('.mine-ico::before') >= 0 && css.indexOf('content:none') >= 0,
+    '旧 CSS 图标的伪元素必须停用');
+
   assert(/\.mine-btn\{[\s\S]*?border-bottom:\.5px solid var\(--line\)/.test(css), '行分隔应是 .5px 发丝线');
   assert(/\.mine-btn:active\{[\s\S]*?rgba\(120,120,128,\.16\)/.test(css), '列表行按下应是 iOS 中性灰高亮');
   assert(css.indexOf('.mine-btn.danger') >= 0, '危险行有独立配色');
