@@ -997,6 +997,12 @@ test('分享卡：四个页签挂同一个离屏组件，分享时补图与数�
   assert(util.indexOf('drawImage(icon') >= 0, '分享卡应绘制应用图标');
   assert(fs.existsSync(path.join(MP, 'assets', 'icon-app.png')), '缺少分享卡用的应用图标');
 
+  // 隐藏画布不能覆盖页面：外层 1×1 裁剪，禁止再用 left:-9999 的 fixed 覆盖层
+  const compCss = stripCssComments(read(path.join(comp, 'index.wxss')));
+  assert(compCss.indexOf('left:-9999px') < 0, '分享卡画布不得再用负偏移的 fixed 定位');
+  assert(/\.sc-host\{[\s\S]*?width:1px;[\s\S]*?height:1px;[\s\S]*?overflow:hidden/.test(compCss),
+    '分享卡画布应放进 1×1 裁剪容器，避免挡住元素选择');
+
   ['today', 'board', 'weekly', 'mine'].forEach((p) => {
     const json = JSON.parse(read(path.join(MP, 'pages', p, p + '.json')));
     eq(json.usingComponents['share-card'], '/components/share-card/index',

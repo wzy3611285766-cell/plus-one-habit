@@ -1,8 +1,18 @@
-/* 画布必须真实存在（有尺寸），但放到视口外，用户看不到 */
-.sc-canvas{
-  position:fixed;
-  left:-9999px;
+/* 画布必须真实存在（有尺寸），但不能覆盖页面：
+   外层 1×1 裁剪 + 透明，画布仍按 500×400 绘制/导出。
+   以前用 position:fixed;left:-9999px，部分 WebView 会把原生 canvas
+   当成覆盖层，导致模拟器里选不中下面的元素。 */
+.sc-host{
+  position:absolute;
+  left:0;
   top:0;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  opacity:0;
+  pointer-events:none;
+}
+.sc-canvas{
   width:500px;
   height:400px;
   pointer-events:none;
