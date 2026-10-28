@@ -9,13 +9,13 @@
     <view
       wx:for="{{list}}"
       wx:key="key"
-      hover-class="none" class="tab {{active === item.key ? 'on' : ''}} {{pressKey === item.key ? 'is-press' : ''}}"
+      hover-class="none" class="tab {{active === item.key ? 'on' : ''}} {{holdKey === item.key ? 'is-hold' : ''}} {{popKey === item.key ? 'is-pop' : ''}}"
       aria-role="tab"
       data-key="{{item.key}}"
       data-path="{{item.path}}"
       bindtouchstart="onPressStart"
       bindtouchend="onPressEnd"
-      bindtouchcancel="onPressEnd"
+      bindtouchcancel="onPressCancel"
       bindtap="onTap"
     >
       <view class="ico ico-{{item.key}}">

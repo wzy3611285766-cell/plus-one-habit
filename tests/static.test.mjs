@@ -916,22 +916,29 @@ test('tabBar：液态参数逐块成立', () => {
   assert(on.indexOf('rgba(0,122,255,.34)') >= 0, '选中品牌染色应 .34');
 });
 
-test('tabBar：轻点就触发回弹，不再依赖长按 hover', () => {
+test('tabBar：按下只压住，松手才回弹（轻点/长按同规则）', () => {
   const wxml = read(path.join(MP, 'custom-tab-bar', 'index.wxml'));
   const js = read(path.join(MP, 'custom-tab-bar', 'index.js'));
   const css = stripCssComments(read(path.join(MP, 'custom-tab-bar', 'index.wxss')));
 
   assert(wxml.indexOf('bindtouchstart="onPressStart"') >= 0 &&
-    wxml.indexOf('bindtouchend="onPressEnd"') >= 0,
-    'tab 应在 touchstart/end 自己管理按压态');
-  assert(wxml.indexOf('pressKey === item.key') >= 0, '按下态应由 pressKey 驱动');
+    wxml.indexOf('bindtouchend="onPressEnd"') >= 0 &&
+    wxml.indexOf('bindtouchcancel="onPressCancel"') >= 0,
+    'tab 应在 touchstart/end/cancel 自己管理按压态');
+  assert(wxml.indexOf('holdKey === item.key') >= 0 && wxml.indexOf('popKey === item.key') >= 0,
+    '按住与回弹必须是两个独立状态');
   assert(wxml.indexOf('hover-class="is-press"') < 0, '不能再用会在 touchend 立刻消失的 hover-class');
 
   assert(js.indexOf('onPressStart') >= 0 && js.indexOf('onPressEnd') >= 0, '缺少按压生命周期');
-  assert(js.indexOf('300 - elapsed') >= 0, '轻点后也要把 0.3s 动画播完再摘类');
+  assert(js.indexOf('holdKey: key') >= 0 && js.indexOf('popKey: key') >= 0,
+    '按下只 hold，松手才 pop');
+  assert(js.indexOf('320') >= 0, '回弹类要保留到 0.3s 动画播完');
 
-  assert(css.indexOf('.tab.is-press') >= 0 && css.indexOf('@keyframes tabPop') >= 0,
-    '缺少 tabPop 回弹动画');
+  const hold = firstBody(css, '.tab.is-hold');
+  assert(hold.indexOf('transform:scale(.93)') >= 0 && hold.indexOf('animation') < 0,
+    '按住态只能压下去，不能播放回弹动画');
+  assert(firstBody(css, '.tab.is-pop').indexOf('animation:tabPop') >= 0,
+    '松手态才播放 tabPop');
   assert(css.indexOf('scale(1.045)') >= 0, '回弹应带一点过冲，而不是硬缩放');
 });
 

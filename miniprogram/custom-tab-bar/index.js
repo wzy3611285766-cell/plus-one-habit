@@ -20,8 +20,10 @@ Component({
     /** 弹层打开时由页面置真：自定义 tabBar 的显隐只能自己控制，
         wx.hideTabBar 对 custom:true 的 tabBar 无效（官方文档明示） */
     hidden: false,
-    /** 当前按下的页签：点一下就触发回弹，不再依赖 long press 的 hover */
-    pressKey: '',
+    /** 按住：只压下去，不弹 */
+    holdKey: '',
+    /** 松手：才播放回弹动画 */
+    popKey: '',
     themeClass: '',
     list: [
       { key: 'today', text: '今日打卡', path: '/pages/today/today' },
@@ -64,25 +66,35 @@ Component({
     },
 
     /**
-     * 按下立刻挂 is-press，动画自己播完再摘。
-     * 之前用 hover-class：轻点一下 touchend 立刻把类摘掉，0.24s 的回弹被截断，
-     * 只有长按才看得到。
+     * 按下只做「压住」（is-hold），不弹。
+     * 松手才挂 is-pop 播放回弹：轻点=按下→松手弹；长按=一直压着→松手才弹。
+     * 这样长按不会在按下的瞬间先弹一下。
      */
     onPressStart(e) {
       if (this._pressTimer) { clearTimeout(this._pressTimer); this._pressTimer = null; }
-      this._pressAt = Date.now();
       const key = e.currentTarget.dataset.key;
-      if (this.data.pressKey !== key) this.setData({ pressKey: key });
+      this._pressKey = key;
+      const patch = { holdKey: key };
+      if (this.data.popKey) patch.popKey = '';
+      this.setData(patch);
     },
 
     onPressEnd() {
-      const elapsed = Date.now() - (this._pressAt || 0);
-      const wait = Math.max(0, 300 - elapsed);   // 保证 0.3s 动画播完
+      if (!this._pressKey) return;
+      const key = this._pressKey;
+      this._pressKey = null;
+      this.setData({ holdKey: '', popKey: key });
       if (this._pressTimer) clearTimeout(this._pressTimer);
       this._pressTimer = setTimeout(() => {
         this._pressTimer = null;
-        if (this.data.pressKey) this.setData({ pressKey: '' });
-      }, wait);
+        if (this.data.popKey) this.setData({ popKey: '' });
+      }, 320);   // 比 0.3s 动画多 20ms，保证播完再摘类
+    },
+
+    onPressCancel() {
+      this._pressKey = null;
+      if (this._pressTimer) { clearTimeout(this._pressTimer); this._pressTimer = null; }
+      this.setData({ holdKey: '', popKey: '' });
     },
 
     onTap(e) {
