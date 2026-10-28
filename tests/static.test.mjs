@@ -162,6 +162,19 @@ test('使用自定义 tabBar 时不依赖任何位图图标', () => {
   assert(fs.existsSync(path.join(MP, 'custom-tab-bar', 'index.wxss')), '缺少 custom-tab-bar/index.wxss');
 });
 
+test('字体统一：页面、原生控件、自定义组件都走 --font-sans', () => {
+  const app = stripCssComments(read(path.join(MP, 'app.wxss')));
+  assert(firstBody(app, 'page').indexOf('font-family:var(--font-sans)') >= 0,
+    'page 应使用统一系统字体栈');
+  assert(/button,[\s\S]*?input,[\s\S]*?textarea,[\s\S]*?label,[\s\S]*?picker\{[\s\S]*?font-family:inherit/.test(app),
+    'button/input/textarea 等原生控件应继承页面字体');
+
+  const hero = stripCssComments(read(path.join(MP, 'components', 'app-hero', 'index.wxss')));
+  const tabbar = stripCssComments(read(path.join(MP, 'custom-tab-bar', 'index.wxss')));
+  assert(firstBody(hero, '.hero').indexOf('font-family:var(--font-sans)') >= 0, 'hero 组件要显式声明字体');
+  assert(firstBody(tabbar, '.tabbar').indexOf('font-family:var(--font-sans)') >= 0, 'tabBar 组件要显式声明字体');
+});
+
 test('深色模式配置齐全', () => {
   eq(appJson.darkmode, true);
   eq(appJson.themeLocation, 'theme.json');

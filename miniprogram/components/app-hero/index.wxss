@@ -28,6 +28,7 @@
 }
 
 .hero{
+  font-family:var(--font-sans);
   position:relative;
   overflow:hidden;
   margin:calc(var(--gap-block) * -.7) calc(var(--pad-page) * -1) 0;

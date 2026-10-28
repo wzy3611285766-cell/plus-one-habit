@@ -172,6 +172,16 @@ page{
 
 }
 
+/* 原生控件默认有自己的字体（button/input 尤甚），统一继承页面的系统字体栈。
+   自定义组件在各自 wxss 里声明一次，避免 styleIsolation 切断继承。 */
+button,
+input,
+textarea,
+label,
+picker{
+  font-family:inherit;
+}
+
 /* ---------- 深色模式（跟随系统，由 app.json darkmode 开关控制） ---------- */
 @media (prefers-color-scheme: dark){
   page{
