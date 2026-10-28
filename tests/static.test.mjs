@@ -1002,6 +1002,8 @@ test('分享卡：四个页签挂同一个离屏组件，分享时补图与数�
   assert(compCss.indexOf('left:-9999px') < 0, '分享卡画布不得再用负偏移的 fixed 定位');
   assert(/\.sc-host\{[\s\S]*?width:1px;[\s\S]*?height:1px;[\s\S]*?overflow:hidden/.test(compCss),
     '分享卡画布应放进 1×1 裁剪容器，避免挡住元素选择');
+  assert(/\.sc-canvas\{[\s\S]*?width:1px;[\s\S]*?height:1px;[\s\S]*?opacity:0/.test(compCss),
+    '原生 canvas 自身也必须缩到 1×1 且透明，不能只靠父级裁剪');
 
   ['today', 'board', 'weekly', 'mine'].forEach((p) => {
     const json = JSON.parse(read(path.join(MP, 'pages', p, p + '.json')));

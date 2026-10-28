@@ -13,7 +13,10 @@
   pointer-events:none;
 }
 .sc-canvas{
-  width:500px;
-  height:400px;
+  /* 原生 canvas 不受父级 overflow 裁剪，必须自己缩到 1×1；
+     内部 backing store 仍是 1000×800，导出分享图不受影响。 */
+  width:1px;
+  height:1px;
+  opacity:0;
   pointer-events:none;
 }
