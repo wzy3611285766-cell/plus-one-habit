@@ -63,7 +63,7 @@
           <text class="mine-sub">{{volume}}%</text>
         </view>
         <view
-          class="vol-bar-wrap"
+          class="vol-bar-wrap {{volActive ? 'is-active' : ''}}"
           id="volBar"
           aria-role="slider"
           aria-label="音效音量"

@@ -954,7 +954,7 @@ await test('我的页：音量滑块落库，重新载入不会被默认值重�
   // 自绘音量条：整条都能点，触点换算成 25~100
   page._volRect = { left: 0, width: 200 };
   page.applyTouchVolume(100);
-  eq(page.data.volume, 65, '触点在中间：25 + 50% × 75 = 62.5 → 取整到 65');
+  eq(page.data.volume, 50, '触点在中间：50% × 100 = 50');
   eq(U20.store.get().settings.volume, 60, '拖动中不落库');
 
   page.commitVolume(40);
@@ -964,6 +964,13 @@ await test('我的页：音量滑块落库，重新载入不会被默认值重�
   // 冷启动的默认值修正只该补 sound，不该把 volume 拉回 60
   U20.store.load();
   eq(U20.store.get().settings.volume, 40, '重新载入后用户的音量必须保留');
+
+  // 滑到最左可以是 0（静音），不能卡在 25
+  page.commitVolume(0);
+  eq(page.data.volume, 0, '0% 应能显示');
+  eq(U20.store.get().settings.volume, 0, '0% 应能落库');
+  U20.store.load();
+  eq(U20.store.get().settings.volume, 0, '重新载入后 0% 也要保留');
 });
 
 await test('目标编辑：日期下限不再钉死在当前值（新建=今天，编辑=创建日）', async () => {

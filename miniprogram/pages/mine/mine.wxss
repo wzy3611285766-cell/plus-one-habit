@@ -248,6 +248,14 @@
   overflow:hidden;
   background:rgba(120,120,128,.20);
   box-shadow:0 2px 12px rgba(99,102,241,.22);
+  transform-origin:center;
+  transition:height .18s cubic-bezier(.22,1,.36,1),
+             box-shadow .18s ease-out;
+}
+/* 按住时整条变高、发光；松手回到 9px */
+.vol-bar-wrap.is-active .vol-bar{
+  height:15px;
+  box-shadow:0 6px 24px rgba(99,102,241,.36);
 }
 /* 流动的彩色渐变：比条宽 3 倍，来回平移，颜色一直在走 */
 .vol-flow{

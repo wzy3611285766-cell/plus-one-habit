@@ -38,6 +38,7 @@ Page({
 
     /* 音效开关与震动已固定开启，只保留音量调节 */
     volume: 60,
+    volActive: false,
 
     // 弹层
     sheet: '',            // '' | 'nickname' | 'deleteAccount'
@@ -350,6 +351,7 @@ Page({
 
   onVolumeTouchStart(e) {
     this._volDragging = true;
+    if (!this.data.volActive) this.setData({ volActive: true });
     if (!this._volRect) this.measureVolumeBar();
     const t = e.touches && e.touches[0];
     if (t && this._volRect) this.applyTouchVolume(t.clientX);
@@ -364,6 +366,7 @@ Page({
   onVolumeTouchEnd() {
     if (!this._volDragging) return;
     this._volDragging = false;
+    if (this.data.volActive) this.setData({ volActive: false });
     this.commitVolume(this.data.volume);
   },
 
@@ -372,13 +375,13 @@ Page({
     const r = this._volRect;
     if (!r || !r.width) return;
     const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    const v = Math.round((25 + ratio * 75) / 5) * 5;
+    const v = Math.round(ratio * 100);   // 0~100，1% 一档
     this.setVolume(v, false);
   },
 
   /** 拖动中只改界面 + 节流试听；松手才落库 */
   setVolume(v, commit) {
-    const n = Math.max(25, Math.min(100, Math.round(v / 5) * 5));
+    const n = Math.max(0, Math.min(100, Math.round(v)));
     if (this.data.volume !== n) this.setData({ volume: n });
 
     if (commit) {

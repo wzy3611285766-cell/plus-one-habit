@@ -85,11 +85,12 @@ await test('越界与非法值被夹紧，不会产生 >1 或 NaN 的增益', ()
   eq(sfx.gainFromVolume(undefined), 1);
 });
 
-await test('档位夹紧：下限 25、上限 100，避免滑到 0 让人以为音效坏了', () => {
-  eq(sfx.clampVolume(0), 25);
-  eq(sfx.clampVolume(10), 25);
+await test('档位夹紧：下限 0、上限 100，滑到底就是静音', () => {
+  eq(sfx.clampVolume(0), 0);
+  eq(sfx.clampVolume(-10), 0);
   eq(sfx.clampVolume(200), 100);
   eq(sfx.clampVolume(60), 60);
+  eq(sfx.gainFromVolume(0), 0, '0% 必须对应 0 增益');
 });
 
 group('音效：连击音阶（参数取自基准 COMBO_STEPS）');

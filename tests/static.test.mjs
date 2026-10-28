@@ -955,6 +955,8 @@ test('不强制登录：先能浏览功能，授权登录由用户自行选择�
 
 test('音效与震动固定开启，但音效音量仍可调（启动不得重置音量）', () => {
   const wxml = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
+  const mineCss = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
+  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
   ['打卡音效', '打卡震动'].forEach((k) => {
     assert(wxml.indexOf(k) < 0, '「我的」页不应再有「' + k + '」开关');
   });
@@ -966,11 +968,17 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
   assert(wxml.indexOf('bindtouchstart="onVolumeTouchStart"') >= 0, '音量条缺少按下事件');
   assert(wxml.indexOf('catchtouchmove="onVolumeTouchMove"') >= 0, '音量条缺少拖动事件');
   assert(wxml.indexOf('bindtouchend="onVolumeTouchEnd"') >= 0, '音量条缺少松手落库事件');
+  assert(wxml.indexOf('volActive') >= 0, '音量条需要按住态（拖动时变大）');
+  assert(mineCss.indexOf('.vol-bar-wrap.is-active .vol-bar') >= 0,
+    '按下时应放大音量条，松手回落');
+  assert(mineJs.indexOf('Math.round(ratio * 100)') >= 0,
+    '音量应 0~100、1% 一档，不能按 5% 跳');
+  assert(mineJs.indexOf('Math.max(0, Math.min(100, Math.round(v)))') >= 0,
+    '音量下限必须是 0，不能卡在 25');
   // 内联 style 必须以分号收尾，否则 WXML 编译直接报 css-semicolonexpected
   assert(wxml.indexOf('style="width:{{100 - volume}}%;"') >= 0,
     '音量条遮罩的内联样式必须以分号收尾');
 
-  const mineCss = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
   const flow = firstBody(mineCss, '.vol-flow');
   assert(flow.indexOf('linear-gradient') >= 0, '音量条应有彩色渐变层');
   assert(mineCss.indexOf('.vol-dim') >= 0, '未填充部分应用底色遮罩，而不是圆点');
@@ -985,7 +993,6 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
   assert(appJs.indexOf('enforceFeedbackDefaults') >= 0, '启动时应把音效开关/震动拉回默认');
   assert(appJs.indexOf('volume: 60') < 0, '启动时不得把用户音量重置成 60');
 
-  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
   assert(mineJs.indexOf('toggleSound') < 0 && mineJs.indexOf('toggleHaptic') < 0, 'Mine 页不应再有开关方法');
   assert(mineJs.indexOf('onVolumeTouchEnd') >= 0 && mineJs.indexOf('updateSettings({ volume: n })') >= 0,
     '音量变化必须写到 store.settings.volume');
