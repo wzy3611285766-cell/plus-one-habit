@@ -964,9 +964,15 @@ test('音效与震动固定开启，但音效音量仍可调（启动不得重�
     '音量条遮罩的内联样式必须以分号收尾');
 
   const mineCss = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
-  const bar = firstBody(mineCss, '.vol-bar');
-  assert(bar.indexOf('linear-gradient') >= 0, '音量条应是彩色渐变');
+  const flow = firstBody(mineCss, '.vol-flow');
+  assert(flow.indexOf('linear-gradient') >= 0, '音量条应有彩色渐变层');
   assert(mineCss.indexOf('.vol-dim') >= 0, '未填充部分应用底色遮罩，而不是圆点');
+  assert(mineCss.indexOf('@keyframes volFlow') >= 0 && mineCss.indexOf('background-size:300% 100%') >= 0,
+    '彩色渐变应是流动的，不是固定背景');
+  assert(mineCss.indexOf('@keyframes volTwinkle') >= 0 && wxml.indexOf('vol-particle') >= 0,
+    '音量条应有悬浮粒子');
+  assert(wxml.indexOf('vol-shine') >= 0 && mineCss.indexOf('@keyframes volShine') >= 0,
+    '音量条应有扫光动效');
 
   const appJs = read(path.join(MP, 'app.js'));
   assert(appJs.indexOf('enforceFeedbackDefaults') >= 0, '启动时应把音效开关/震动拉回默认');

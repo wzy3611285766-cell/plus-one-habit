@@ -73,7 +73,16 @@
           bindtouchcancel="onVolumeTouchEnd"
         >
           <view class="vol-bar">
-            <!-- 右段用底色盖住，留下左侧彩色渐变；没有圆点，整条都是可拖区域 -->
+            <!-- 三层动效：流动渐变 → 扫光 → 上浮微粒；右段底色遮罩表示未填充 -->
+            <view class="vol-flow"></view>
+            <view class="vol-shine"></view>
+            <view class="vol-particle p1"></view>
+            <view class="vol-particle p2"></view>
+            <view class="vol-particle p3"></view>
+            <view class="vol-particle p4"></view>
+            <view class="vol-particle p5"></view>
+            <view class="vol-particle p6"></view>
+            <view class="vol-particle p7"></view>
             <view class="vol-dim" style="width:{{100 - volume}}%;"></view>
           </view>
         </view>
