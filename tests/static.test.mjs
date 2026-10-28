@@ -879,6 +879,25 @@ test('tabBar：液态参数逐块成立', () => {
   assert(on.indexOf('rgba(0,122,255,.34)') >= 0, '选中品牌染色应 .34');
 });
 
+test('tabBar：轻点就触发回弹，不再依赖长按 hover', () => {
+  const wxml = read(path.join(MP, 'custom-tab-bar', 'index.wxml'));
+  const js = read(path.join(MP, 'custom-tab-bar', 'index.js'));
+  const css = stripCssComments(read(path.join(MP, 'custom-tab-bar', 'index.wxss')));
+
+  assert(wxml.indexOf('bindtouchstart="onPressStart"') >= 0 &&
+    wxml.indexOf('bindtouchend="onPressEnd"') >= 0,
+    'tab 应在 touchstart/end 自己管理按压态');
+  assert(wxml.indexOf('pressKey === item.key') >= 0, '按下态应由 pressKey 驱动');
+  assert(wxml.indexOf('hover-class="is-press"') < 0, '不能再用会在 touchend 立刻消失的 hover-class');
+
+  assert(js.indexOf('onPressStart') >= 0 && js.indexOf('onPressEnd') >= 0, '缺少按压生命周期');
+  assert(js.indexOf('300 - elapsed') >= 0, '轻点后也要把 0.3s 动画播完再摘类');
+
+  assert(css.indexOf('.tab.is-press') >= 0 && css.indexOf('@keyframes tabPop') >= 0,
+    '缺少 tabPop 回弹动画');
+  assert(css.indexOf('scale(1.045)') >= 0, '回弹应带一点过冲，而不是硬缩放');
+});
+
 test('弹层与自定义 tabBar：组件级 hidden 收起（z-index 对自定义 tabBar 不可靠）', () => {
   const barJs = read(path.join(MP, 'custom-tab-bar', 'index.js'));
   const barWxml = read(path.join(MP, 'custom-tab-bar', 'index.wxml'));

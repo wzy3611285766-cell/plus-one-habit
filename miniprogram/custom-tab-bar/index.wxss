@@ -365,10 +365,15 @@
   .tab{ transition:none; }
 }
 
-/* hover-class 按压态（与 :active 同观感，但每次触摸必触发） */
-.tab.is-press{ transform:scale(.94);filter:brightness(1.06);animation:tabPop .24s ease-out; }
+/* 轻点就回弹：按下挂 is-press，动画完整播完后再由 JS 摘类。
+   曲线带一点过冲，手感更像被按下去的软胶囊，而不是硬缩放。 */
+.tab.is-press{
+  animation:tabPop .3s cubic-bezier(.22,1.2,.36,1) both;
+  filter:brightness(1.06);
+}
 @keyframes tabPop{
   0%{ transform:scale(1); }
-  40%{ transform:scale(.945); }
+  32%{ transform:scale(.93); }
+  66%{ transform:scale(1.045); }
   100%{ transform:scale(1); }
 }
