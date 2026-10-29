@@ -186,7 +186,7 @@
   <view wx:if="{{hasGoals}}" class="card rhythm-card">
     <view class="card-title">
       <text>本周打卡节奏</text>
-      <text class="rhythm-sum">已投入 <text class="num">{{rhythmTotal}}</text> 次</text>
+      <text class="rhythm-sum">PLus one <text class="num">{{rhythmTotal}}</text> 次</text>
     </view>
     <view class="rhythm">
       <view wx:for="{{rhythm}}" wx:key="d" class="rhythm-day {{item.cls}}">

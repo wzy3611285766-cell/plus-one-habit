@@ -252,8 +252,8 @@ Page({
     const bestStreak = activeRows.reduce((mx, r) => Math.max(mx, r.streakNum || 0), 0);
 
     const statCards = [
-      { k: 'hit', num: hitCount + '/' + activeRows.length, label: '今日已打卡', tone: 'is-brand' },
-      { k: 'flame', num: bestStreak + ' 天', label: '最长连续', tone: 'is-amber' }
+      { k: 'hit', num: hitCount + '/' + activeRows.length, label: '', tone: 'is-brand' },
+      { k: 'flame', num: bestStreak + ' 天', label: '', tone: 'is-amber' }
     ];
 
     /* ---------- 本周节奏（周一 → 周日，按当天记录次数） ---------- */

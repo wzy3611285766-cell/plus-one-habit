@@ -200,7 +200,7 @@ Page({
     const daySet = {};
     logs.forEach((l) => { daySet[l.date] = 1; });
     const statCards = [
-      { k: 'logs', num: logs.length, label: '累计打卡（次）', tone: 'is-amber' },
+      { k: 'logs', num: logs.length, label: 'PLus one（次）', tone: 'is-amber' },
       { k: 'days', num: Object.keys(daySet).length, label: '累计活跃（天）', tone: 'is-brand' }
     ];
 

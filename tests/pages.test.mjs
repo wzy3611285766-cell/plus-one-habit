@@ -646,7 +646,7 @@ await test('看板：统计条 / 热力图 / 最近动态 / 柱子点击', async
 
   /* ---- 统计条：两张竖排数字卡（对齐基准 #boardStats） ---- */
   eq(page.data.statCards.length, 2, '统计条应有两张卡');
-  eq(page.data.statCards[0].label, '累计打卡（次）');
+  eq(page.data.statCards[0].label, 'PLus one（次）');
   eq(page.data.statCards[1].label, '累计活跃（天）');
   assert(page.data.statCards[0].num >= 1, '累计打卡次数应至少为 1');
   assert(page.data.statCards[1].num >= 1, '累计活跃天数应至少为 1');
