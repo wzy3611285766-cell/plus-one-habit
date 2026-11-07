@@ -78,11 +78,27 @@ function repo(db) {
 
     removeAccount(id) { return remove(COL.ACCOUNTS, id); },
 
-    /** 删掉某账号的全部同步分片，返回删掉的条数 */
+    /**
+     * 删掉某账号的全部同步分片，返回删掉的条数。
+     *
+     * 分页 + 串行：写死一次取 200 条会在分片更多时静默留下孤儿数据
+     * （注销账号却删不干净，是最不该出现的隐私问题）；一次并发 200 个
+     * remove 也可能触发云开发限流，中途失败同样是残留。
+     */
     async deleteSyncDocs(userId) {
-      const rows = await find(COL.DOCS, { userId: userId }, 200);
-      await Promise.all(rows.map((r) => remove(COL.DOCS, r._id)));
-      return rows.length;
+      const BATCH = 50;
+      let removed = 0;
+      for (;;) {
+        const rows = await find(COL.DOCS, { userId: userId }, BATCH);
+        if (!rows.length) break;
+        let okInBatch = 0;
+        for (let i = 0; i < rows.length; i++) {
+          if (await remove(COL.DOCS, rows[i]._id)) { removed++; okInBatch++; }
+        }
+        // 整批都没删掉说明是持续性失败（不是分页问题），别在这里死循环
+        if (rows.length < BATCH || okInBatch === 0) break;
+      }
+      return removed;
     }
   };
 }

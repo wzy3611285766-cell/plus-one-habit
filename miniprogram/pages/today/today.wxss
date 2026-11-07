@@ -646,6 +646,71 @@
 }
 
 /* =====================================================================
+   已暂停目标区
+   ---------------------------------------------------------------------
+   灰显 + 虚线框：视觉上明确「这不是当前要做的事」，
+   但又比已完成区更「在场」（已完成是实的，暂停是虚的）。
+   ===================================================================== */
+.paused-sec{ margin-top:18px; }
+.paused-sec-title{
+  display:flex;align-items:center;gap:7px;
+  margin-bottom:10px;
+  font-size:var(--fs-xs);
+  font-weight:var(--fw-semi);
+  color:var(--text-3);
+}
+.paused-mark{
+  flex:none;
+  width:9px;height:11px;
+  border-left:2.4px solid var(--text-4);
+  border-right:2.4px solid var(--text-4);
+  box-sizing:border-box;
+}
+.paused-cnt{
+  padding:1px 9px;
+  border-radius:999rpx;
+  background:var(--surface-2);
+  color:var(--text-3);
+  font-size:var(--fs-xs);
+  font-weight:var(--fw-semi);
+  font-variant-numeric:tabular-nums;
+}
+
+.paused-row{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 12px;
+  border:1.5px dashed var(--line-strong);
+  border-radius:var(--r-lg);
+  background:var(--surface-sunken);
+}
+.paused-dot{
+  flex:none;
+  width:10px;height:10px;border-radius:3px;
+  background:var(--gc,var(--text-4));
+  opacity:.45;
+}
+.paused-main{ flex:1;min-width:0;display:flex;flex-direction:column;gap:2px; }
+.paused-name{
+  font-size:var(--fs-sm);font-weight:600;color:var(--text-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.paused-meta{ font-size:var(--fs-nano);color:var(--text-3); }
+
+.paused-btn{
+  flex:none;
+  min-height:34px;
+  padding:0 14px;
+  display:flex;align-items:center;
+  border-radius:999rpx;
+  background:var(--gb-face-2);
+  color:var(--brand-600);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.75),0 0 0 .5px rgba(15,23,42,.06);
+}
+.paused-btn.is-press{ background:rgba(0,122,255,.12); }
+
+/* =====================================================================
    本周打卡节奏（对应基准 .rhythm）
    ===================================================================== */
 .rhythm-card{ margin-top:var(--gap-card); }
@@ -807,6 +872,20 @@
 .mi-trash::after{
   content:"";position:absolute;left:-1px;right:-1px;top:0;
   height:2px;border-radius:1px;background:currentColor;
+}
+/* 暂停：两根竖条；恢复：一个播放三角。都用 currentColor，深浅色自动跟随 */
+.mi-pause{
+  width:12px;height:14px;
+  border-left:3px solid currentColor;
+  border-right:3px solid currentColor;
+  box-sizing:border-box;
+}
+.mi-play{
+  width:0;height:0;
+  margin-left:3px;
+  border-left:11px solid currentColor;
+  border-top:7px solid transparent;
+  border-bottom:7px solid transparent;
 }
 
 /* =====================================================================

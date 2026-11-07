@@ -296,13 +296,15 @@ await test('归属月份对不上的打卡记录会被丢弃', async () => {
   eq(doc.payload.items[0].id, 'ok7');
 });
 
-await test('单月记录条数超过上限时会被截断（而不是把账号的数据撑爆）', async () => {
+await test('单月记录条数超过上限时会被截断，并显式上报截断条数', async () => {
   const many = [];
   for (let i = 0; i < 2500; i++) many.push(log('cap' + i, 'g1', '2026-06-01', 1, 1));
-  await SYNC('push', { token: T_A1, docs: [{ key: 'logs:2026-06', baseRev: 0, payload: { items: many } }] });
+  const r = await SYNC('push', { token: T_A1, docs: [{ key: 'logs:2026-06', baseRev: 0, payload: { items: many } }] });
 
   const doc = (await SYNC('pull', { token: T_A1, known: {} })).docs.find((d) => d.key === 'logs:2026-06');
   eq(doc.payload.items.length, 2000, '应被截断到单月上限');
+  /* 静默成功是最坏的：本机看着有、云端没有，换设备才会发现少数据 */
+  eq(r.applied[0].truncated, 500, '必须把被丢掉的 500 条显式告诉客户端');
 });
 
 await test('单次推送总量超过上限时拒绝，并给出明确错误而不是让同步神秘失败', async () => {

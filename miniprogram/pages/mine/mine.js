@@ -121,7 +121,7 @@ Page({
       joinedDays = Math.max(1, Math.round((Date.now() - user.createdAt) / 86400000));
     }
 
-    this.setData({
+    const patch = {
       themeClass: prefs.themeClassOf(this.themePref()),
       theme: this.themePref(),
       themeText: this.themeText(this.themePref()),
@@ -141,7 +141,16 @@ Page({
       },
       themeOn: this.themePref() === 'dark',
       volume: sfx.volumePct()
-    });
+    };
+
+    /* 与今日页同一策略：一次动作 store 会连发 state / sync 两条事件，
+       内容完全相同；签名没变就跳过 setData。
+       注意 sync.time 是相对时间，跨分钟会变 —— 这里挡的是重复渲染，
+       不是把「刚刚」永久冻住。 */
+    const sig = JSON.stringify(patch);
+    if (sig === this._lastSig) return;
+    this._lastSig = sig;
+    this.setData(patch);
   },
 
   /* ================= 登录 / 登出 ================= */
@@ -324,8 +333,9 @@ Page({
 
   themeText(t) { return { auto: '跟随系统', dark: '深色', light: '浅色' }[t] || '跟随系统'; },
 
-  /** 三态循环：跟随系统 → 深色 → 浅色 */
-  /** 深色开关：开 = 始终深色，关 = 跟随系统（基准的 .switch 只有两态） */
+  /** 深色开关：开 = 始终深色，关 = 跟随系统（基准的 .switch 只有两态）。
+   *  历史注释里的「三态循环」已废弃：浅色不单独作为一档，
+   *  因为「关掉深色」在用户心里就是跟随系统，多一档只会让人多点一次。 */
   toggleTheme() {
     const next = this.themePref() === 'dark' ? 'auto' : 'dark';
     store.updateSettings({ theme: next });

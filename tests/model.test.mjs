@@ -312,8 +312,11 @@ await test('删除以墓碑形式传播：远端删除后本机也会消失', ()
 });
 
 await test('打卡记录按 id 并集，删除同样按墓碑生效', () => {
-  const local = [logOf('l1', 'g1', '2026-10-13', 10, 100), logOf('l2', 'g1', '2026-10-13', 20, 100)];
-  const remote = [logOf('l2', 'g1', '2026-10-13', 20, 100, true), logOf('l3', 'g1', '2026-10-13', 30, 100)];
+  /* updatedAt 必须是「现在」：墓碑寿命按删除时刻算，
+     写 100（1970 年删除）会被正确判为过期 —— 那条路径由下一个用例专门覆盖。 */
+  const now = Date.now();
+  const local = [logOf('l1', 'g1', '2026-10-13', 10, now), logOf('l2', 'g1', '2026-10-13', 20, now)];
+  const remote = [logOf('l2', 'g1', '2026-10-13', 20, now, true), logOf('l3', 'g1', '2026-10-13', 30, now)];
   const merged = M.mergeLogs(local, remote);
   const ids = merged.map((l) => l.id).sort();
   deepEq(ids, ['l1', 'l2', 'l3']);
@@ -413,6 +416,16 @@ await test('删除超过 90 天的墓碑会被清理，不会无限堆积', () =
   const merged = M.mergeGoals([goalOf('g-old-deleted', 'X', oldStamp, true), goalOf('g1', '活的', 100)], []);
   eq(merged.length, 1);
   eq(merged[0].id, 'g1');
+});
+
+await test('删除一条很久以前的记录：墓碑按删除时刻计算，不会被提前清掉', () => {
+  /* 回归：墓碑寿命一度按打卡日期算，删掉三个月前的误记会让墓碑当场失效，
+     别的设备下一次推送就把这条记录复活了。 */
+  const oldDate = U.addDays(U.todayStr(), -150);
+  const tomb = logOf('l-old', 'g1', oldDate, 5, Date.now(), true);
+  const merged = M.mergeLogs([], [tomb]);
+  eq(merged.length, 1, '打卡日期在 90 天前，但删除发生在刚刚，墓碑必须保留');
+  eq(merged[0].deleted, true);
 });
 
 await test('完整一轮同步的载荷能通过服务端的清洗（前后端契约一致）', () => {

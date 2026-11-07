@@ -45,6 +45,8 @@ Page({
     greeting: '',
     rows: [],
     doneRows: [],
+    /** 暂停中的目标：不催打卡，但要留一个恢复入口 */
+    pausedRows: [],
     hasGoals: false,
     statCards: [],
     rhythm: [],
@@ -57,6 +59,8 @@ Page({
     menuGid: '',
     menuName: '',
     menuOverdue: false,
+    menuPaused: false,
+    menuDone: false,
 
     /* ---------- +1 打卡反馈（对齐基准的 plus1Burst） ----------
        fxList：每次点击一组爆发，最多同时 3 组（第 4 组进来时挤掉最旧的）。
@@ -188,12 +192,15 @@ Page({
 
     const missedRows = [];
     const restRows = [];
-    const activeList = M.activeGoals(st);
+    /* 暂停的目标不参与漏卡与休息日判定：那段时间用户明确说过「先放下」 */
+    const activeList = M.runningGoals(st);
 
     activeList.forEach((g) => {
       const dates = M.dateSetOf(st, g.id);
       if (dates[yesterday]) return;             // 昨天打过卡
       if (yesterday < g.createdAt) return;      // 昨天这个目标还不存在
+      /* 昨天还在暂停期（今天刚恢复）：不能一恢复就把暂停日当成漏卡提醒 */
+      if (M.isPausedOn(g, yesterday)) return;
 
       const left = U.diffDays(todayStr, g.deadline);   // 负数表示已过期
       const item = {
@@ -217,8 +224,13 @@ Page({
     });
 
     let allDoneText = '';
+    /* 全部目标要么已完成、要么已暂停时，activeList（运行中、未暂停）会空。
+       这时不能一律喊「所有目标都已达成」：暂停只是先放下，任务并没有结束。 */
+    const allDone = st.goals.length > 0 && st.goals.every((g) => g.deleted || M.isComplete(st, g));
     if (activeList.length === 0 && st.goals.length > 0) {
-      allDoneText = '所有目标都已达成';
+      allDoneText = allDone
+        ? '所有目标都已达成'
+        : '今天没有要打卡的目标，暂停中的任务恢复后会回到这里。';
     } else if (st.goals.length > 0 && !missedRows.length && !restRows.length && pendingCount === 0) {
       allDoneText = '今天全部目标都已打卡，保持住这个节奏。';
     }
@@ -244,6 +256,26 @@ Page({
         badgeClass: g.sample ? 'badge-sample' : 'badge-done',
         sample: !!g.sample
       }));
+
+    /* ---------- 暂停区 ----------
+       暂停不是删除：进度、连续、记录都还在，只是「今天不用做」。
+       所以它仍然出现在页面上，只是换成一行灰卡 + 一个恢复入口 ——
+       用户需要一个能一眼找到的地方把任务接回来。 */
+    const pausedRows = M.activeGoals(st)
+      .filter((g) => M.isPaused(g) && !M.isComplete(st, g))
+      .map((g) => {
+        const since = M.pausedSince(g);
+        return {
+          gid: g.id,
+          name: g.name,
+          color: U.gcolor(g.color),
+          unit: g.unit,
+          done: U.trimNum(M.doneAmount(st, g.id)),
+          total: U.trimNum(g.total),
+          since: U.fmtShort(since),
+          days: since ? Math.max(1, U.diffDays(since, todayStr) + 1) : 0
+        };
+      });
 
     /* ---------- 统计条：两张卡 ----------
        「今日记录（次）」与「进行中目标」已按用户要求移除（2026-10-25）；
@@ -291,10 +323,11 @@ Page({
       greeting: greeting,
       rows: activeRows,
       doneRows: doneRows,
-      /* hasGoals 含已完成目标：全部达成时页面不再是「还没有目标」的空态，
-         右上角 + 也保留住「新建目标继续」的入口（绿条文案里承诺过它）。
-         统计条只看进行中的目标 —— 全部达成后 0/0 没有信息量。 */
-      hasGoals: rows.length > 0 || doneRows.length > 0,
+      pausedRows: pausedRows,
+      /* hasGoals 含已完成与已暂停目标：这两种状态下页面都不该显示
+         「还没有目标」的空态（那会让用户以为数据丢了）。
+         统计条只看今天真的要做的目标 —— 暂停项不该拉低今日达成率。 */
+      hasGoals: rows.length > 0 || doneRows.length > 0 || pausedRows.length > 0,
       hasActive: rows.length > 0,
       statCards: statCards,
       rhythm: rhythm,
@@ -328,10 +361,11 @@ Page({
     const goal = M.goalById(st, gid);
     if (!goal) return;
     if (M.isComplete(st, goal)) { this.toast('这个目标已经完成了'); return; }
+    if (M.isPaused(goal)) { this.toast('这个目标已暂停，先恢复再打卡'); return; }
 
-    /* 达成判定必须发生在写入之前：写完之后再看，就分不清
-       「本来就已经达成」和「这一下刚刚跨过终点」了。 */
-    const wasComplete = M.isComplete(st, goal);
+    /* 今日是否达标要在写入之前取：写完之后再看，分不清
+       「本来就已经达标」和「这一下刚刚达标」了。
+       整体达成不需要这个基准 —— 已完成的目标在上面就被拦掉了。 */
     const wasTodayMet = M.isTodayMet(st, goal);
 
     const log = store.addLog(gid, U.todayStr(), 1, null, false);
@@ -344,7 +378,7 @@ Page({
     this.strike(e, goal);
 
     const after = store.get();
-    const justComplete = !wasComplete && M.isComplete(after, goal);
+    const justComplete = M.isComplete(after, goal);
     const justMet = !wasTodayMet && M.isTodayMet(after, goal);
 
     /* 彩带一次点击只放一次，两种达成互斥 —— 与基准的判定顺序一致：
@@ -541,13 +575,16 @@ Page({
 
   openMenu(e) {
     const gid = e.currentTarget.dataset.gid;
-    const g = M.goalById(store.get(), gid);
+    const st = store.get();
+    const g = M.goalById(st, gid);
     if (!g) return;
     sfx.tap();
     this.setData({
       menuOn: true,
       menuGid: gid,
       menuName: g.name,
+      menuPaused: M.isPaused(g),
+      menuDone: M.isComplete(st, g),
       menuOverdue: U.diffDays(U.todayStr(), g.deadline) < 0
     });
   },
@@ -563,6 +600,37 @@ Page({
     const gid = this.data.menuGid;
     this.setData({ menuOn: false });
     wx.navigateTo({ url: '/pages/goal-edit/goal-edit?id=' + encodeURIComponent(gid) });
+  },
+
+  /** 暂停：从今天起不再出现在今日清单，连续与建议量都不再要求它 */
+  menuPause() {
+    const gid = this.data.menuGid;
+    if (!gid) return;
+    this.setData({ menuOn: false, menuPaused: false });
+    const g = store.pauseGoal(gid);
+    this.render();
+    try { sfx.tap(); } catch (e) { /* 静默 */ }
+    this.toast(g ? '已暂停，进度和记录都还在' : '这个目标已经完成了');
+  },
+
+  menuResume() {
+    const gid = this.data.menuGid;
+    if (!gid) return;
+    this.setData({ menuOn: false, menuPaused: false });
+    store.resumeGoal(gid);
+    this.render();
+    try { sfx.tap(); } catch (e) { /* 静默 */ }
+    this.toast('已恢复');
+  },
+
+  /** 暂停区里的一键恢复：不用再进菜单绕一圈 */
+  resumeFromList(e) {
+    const gid = e.currentTarget.dataset.gid;
+    if (!gid) return;
+    store.resumeGoal(gid);
+    this.render();
+    prefs.feedback();
+    this.toast('已恢复，今天算正常打卡日');
   },
 
   menuDelete() {

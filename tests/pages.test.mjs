@@ -646,7 +646,7 @@ await test('看板：统计条 / 热力图 / 最近动态 / 柱子点击', async
 
   /* ---- 统计条：两张竖排数字卡（对齐基准 #boardStats） ---- */
   eq(page.data.statCards.length, 2, '统计条应有两张卡');
-  eq(page.data.statCards[0].label, 'PLus one（次）');
+  eq(page.data.statCards[0].label, 'Plus one（次）');
   eq(page.data.statCards[1].label, '累计活跃（天）');
   assert(page.data.statCards[0].num >= 1, '累计打卡次数应至少为 1');
   assert(page.data.statCards[1].num >= 1, '累计活跃天数应至少为 1');
@@ -1109,6 +1109,177 @@ await test('账号被停用：恢复会话与同步都会清掉本机身份，�
   } finally {
     await db.collection('accounts').doc(acc._id).update({ data: { status: 'active' } });
   }
+});
+
+/* ================================================================= */
+
+group('审查修复回归（2026-11-03）');
+
+await test('推送在途时的新改动不会被丢掉（弱网下不能漏掉一次操作）', async () => {
+  env.storage.clear();
+  const U28 = freshUtils();
+  await boot(U28);
+  await U28.auth.login();
+  const t = U28.U.todayStr();
+
+  /* 扣住第一次 push 的回包：模拟「请求已发出、响应还没回来」的弱网窗口。
+     替换 api.callSync 而不是改 mock —— 要验证的正是 store 自己的时序。 */
+  const origCallSync = U28.api.callSync;
+  let release = null;
+  let pushes = 0;
+  U28.api.callSync = function (action, payload) {
+    if (action !== 'push') return origCallSync(action, payload);
+    pushes++;
+    const real = origCallSync(action, payload);
+    if (pushes === 1) {
+      /* release 必须同步可用：real 是已经发出的请求，
+         回包只是被这个外层 Promise 扣住，不由 .then 的调用时机决定。 */
+      return new Promise((resolve, reject) => { release = () => real.then(resolve, reject); });
+    }
+    return real;
+  };
+
+  function goal(id, name) {
+    return { id: id, name: name, unit: '个', total: 10, deadline: U28.U.addDays(t, 30), createdAt: t, color: '#6366f1', sample: false };
+  }
+
+  U28.store.addGoal(goal('race-1', '第一个'));
+  U28.store.cancelScheduled();
+
+  const first = U28.store.push();
+  U28.store.addGoal(goal('race-2', '第二个'));   // 请求在途时又加一个
+  U28.store.cancelScheduled();
+
+  assert(release, '第一次推送应已发出');
+  release();
+  await first;
+
+  const second = await U28.store.push();
+  U28.api.callSync = origCallSync;
+
+  eq(second.applied, 1, '第二轮必须真的发出推送，不能被当成「没有脏分片」跳过');
+
+  const acc = db.dump('accounts').find((a) => a.openid === PAGE_OPENID);
+  const core = db.dump('sync_docs').find((d) => d.userId === acc._id && d.key === 'core');
+  assert(core && core.payload.goals.some((g) => g.id === 'race-2'),
+    '在途期间新增的目标必须出现在云端，否则会与另一台设备分叉');
+  eq(U28.store.get().goals.length, 2);
+});
+
+await test('服务端按上限截断时，同步状态要记下条数（不能静默假装成功）', async () => {
+  env.storage.clear();
+  const U29 = freshUtils();
+  await boot(U29);
+  await U29.auth.login();
+  const t = U29.U.todayStr();
+
+  U29.store.addGoal({ id: 'cap-1', name: '超限', unit: '个', total: 5, deadline: U29.U.addDays(t, 10), createdAt: t, color: '#6366f1', sample: false });
+  U29.store.cancelScheduled();
+
+  const origCallSync = U29.api.callSync;
+  U29.api.callSync = (action, payload) => {
+    if (action !== 'push') return origCallSync(action, payload);
+    return Promise.resolve({
+      applied: (payload.docs || []).map((d) => ({ key: d.key, rev: 1, truncated: 7 })),
+      conflicts: [],
+      serverTime: Date.now()
+    });
+  };
+
+  const r = await U29.store.push();
+  U29.api.callSync = origCallSync;
+
+  eq(r.truncated, 7, 'push 的返回值里要带上截断条数');
+  eq(U29.store.syncState().truncated, 7, '同步状态要留下痕迹，而不是显示一切正常');
+});
+
+await test('我的页：同一次状态变化的重复渲染被签名挡掉', async () => {
+  env.storage.clear();
+  const U30 = freshUtils();
+  await boot(U30);
+  await U30.auth.login();
+
+  const page = mount('mine');
+  page.onLoad();
+
+  let calls = 0;
+  const rawSetData = page.setData;
+  page.setData = function (patch, cb) { calls++; return rawSetData(patch, cb); };
+
+  page._lastSig = undefined;   // onLoad 已经画过一帧，从这里重新计数
+  page.render();
+  page.render();               // 内容完全一致：不应再走一次渲染层
+  eq(calls, 1, '重复渲染应被签名去重挡掉');
+
+  U30.store.updateSettings({ theme: 'dark' });
+  page.render();
+  eq(calls, 2, '状态真的变了就必须重绘');
+});
+
+group('任务暂停 · 页面渲染路径');
+
+await test('今日页：暂停目标从待办移到暂停区，恢复后回到待办', async () => {
+  env.storage.clear();
+  const U31 = freshUtils();
+  await boot(U31);
+  const t = U31.U.todayStr();
+
+  U31.store.addGoal({
+    id: 'p-1', name: '阅读', unit: '页', total: 300,
+    deadline: U31.U.addDays(t, 30), createdAt: U31.U.addDays(t, -10),
+    color: '#6366f1', sample: false
+  });
+  U31.store.pauseGoal('p-1', t);
+
+  const page = mount('today');
+  page.onLoad();
+  page.render();
+
+  eq(page.data.rows.length, 0, '暂停目标不应留在待办列表');
+  eq(page.data.pausedRows.length, 1, '应出现在暂停区');
+  eq(page.data.pausedRows[0].gid, 'p-1');
+  eq(page.data.pausedRows[0].days, 1, '暂停第 1 天');
+  eq(page.data.hasGoals, true, '暂停不等于「还没有目标」');
+  eq(page.data.hasActive, false, '暂停项不计入今日统计条');
+
+  page.resumeFromList({ currentTarget: { dataset: { gid: 'p-1' } } });
+  eq(page.data.pausedRows.length, 0);
+  eq(page.data.rows.length, 1, '恢复当天就回到待办');
+  eq(page.data.hasActive, true);
+});
+
+await test('看板页：暂停目标单独成区，预计时间说「暂停中」', async () => {
+  const U32 = freshUtils();
+  await boot(U32);
+  const t = U32.U.todayStr();
+  U32.store.pauseGoal('p-1', t);
+
+  const page = mount('board');
+  page.onLoad();
+  page.render();
+
+  const paused = page.data.sections.filter((s) => s.key === 'paused')[0];
+  assert(paused, '看板应有「已暂停」分区');
+  eq(paused.cards.length, 1);
+  eq(paused.cards[0].paused, true);
+  includes(paused.cards[0].etaText, '暂停中');
+
+  const active = page.data.sections.filter((s) => s.key === 'active')[0];
+  eq(active, undefined, '暂停目标不能同时出现在进行中');
+});
+
+await test('周报页：暂停目标不占汇总行，也不生成卡片错误', async () => {
+  const U33 = freshUtils();
+  await boot(U33);
+  const t = U33.U.todayStr();
+
+  const page = mount('weekly');
+  page.onLoad();
+  page.render();
+
+  eq(page.data.summary.length, 0, '暂停且本周没投入的目标不占汇总行');
+  assert(page.data.report && page.data.report.headline, '自动小结必须有结论');
+  eq(page.data.formOpen, false, '手写复盘默认收起');
 });
 
 export const suite = '页面集成';

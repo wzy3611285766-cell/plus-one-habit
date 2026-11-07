@@ -71,6 +71,35 @@ function normalizeGoal(raw) {
     updatedAt: U.finiteNumber(raw.updatedAt, 0, 1e15) ? raw.updatedAt : 0
   };
   if (U.finiteNumber(raw.order, 0, 1e9)) g.order = raw.order;
+
+  /* 暂停区间：[{ f: 开始日, t: 结束日 | '' }]，最后一段 t 为空表示仍在暂停。
+     用「区间数组」而不是一个 paused 布尔：恢复之后仍然要知道当时停过多久，
+     否则历史暂停期会被当成漏卡，连续天数一恢复就断（用户最不能接受的那种）。
+     只留最近 20 段，够回溯且不会让目标无限膨胀。 */
+  if (Array.isArray(raw.pauses)) {
+    const pauses = [];
+    raw.pauses.forEach((p) => {
+      if (!p || typeof p !== 'object') return;
+      if (!U.isDateString(p.f)) return;
+      const t = U.isDateString(p.t) ? p.t : '';
+      if (t && t < p.f) return;          // 结束早于开始：坏区间直接丢
+      pauses.push({ f: p.f, t: t });
+    });
+    pauses.sort((a, b) => (a.f < b.f ? -1 : (a.f > b.f ? 1 : 0)));
+    /* 合并重叠/相接的区间：两台设备各自点过暂停就可能叠出两段，
+       重叠会让 pausedDaysBetween 重复计数，恢复后的建议量被算少。 */
+    const merged = [];
+    pauses.forEach((p) => {
+      const last = merged[merged.length - 1];
+      if (!last) { merged.push(p); return; }
+      const lastEnd = last.t || '9999-12-31';   // 开区间吃掉后面所有区间
+      if (p.f > lastEnd) { merged.push(p); return; }
+      last.t = (last.t && p.t) ? (p.t > last.t ? p.t : last.t) : '';
+    });
+    if (merged.length > 20) merged.splice(0, merged.length - 20);
+    if (merged.length) g.pauses = merged;
+  }
+
   if (raw.deleted === true) {
     g.deleted = true;
     // 墓碑只保留定位信息，避免把历史数据反复上传
@@ -166,7 +195,9 @@ function parseState(raw) {
   if (raw.settings && typeof raw.settings === 'object') {
     const s = raw.settings;
     st.settings.sound = typeof s.sound === 'boolean' ? s.sound : true;
-    st.settings.volume = U.finiteNumber(s.volume, 0, 100) ? Math.round(s.volume) : 100;
+    /* 缺省值与 blankState 保持一致（60），不要写 100：
+       旧数据若只有 sound/theme 而没有 volume，会突然变满音量。 */
+    st.settings.volume = U.finiteNumber(s.volume, 0, 100) ? Math.round(s.volume) : 60;
     st.settings.theme = ['auto', 'dark', 'light'].indexOf(s.theme) >= 0 ? s.theme : 'auto';
     if (U.finiteNumber(s.updatedAt, 0, 1e15)) st.settings.updatedAt = s.updatedAt;
   }
@@ -200,6 +231,56 @@ function activeGoals(st) {
 }
 
 function activeLogs(st) { return st.logs.filter((l) => !l.deleted); }
+
+/* ================= 暂停 =================
+ * 语义只有一条：暂停期间「不要求打卡」，而不是「不许打卡」。
+ * 所以暂停日既不进今日清单，也不算漏打、不打断连续、不排每日建议量；
+ * 用户临时想打一记 +1 也仍然允许（记录照常入库）。
+ */
+
+/** 某个日期是否处在暂停区间内（含开始日与结束日） */
+function isPausedOn(g, date) {
+  if (!g || !g.pauses || !g.pauses.length || !date) return false;
+  for (let i = 0; i < g.pauses.length; i++) {
+    const p = g.pauses[i];
+    if (!p || !U.isDateString(p.f)) continue;
+    if (date < p.f) continue;
+    if (!p.t || date <= p.t) return true;
+  }
+  return false;
+}
+
+/** 当前是否处于暂停中：最后一段没有结束日 */
+function isPaused(g) {
+  if (!g || !g.pauses || !g.pauses.length) return false;
+  const last = g.pauses[g.pauses.length - 1];
+  return !!(last && last.f && !last.t);
+}
+
+/** 本次暂停从哪天开始；未暂停返回空串 */
+function pausedSince(g) {
+  if (!isPaused(g)) return '';
+  return g.pauses[g.pauses.length - 1].f;
+}
+
+/** 生效中的目标：未删除、未暂停（已完成与否由调用方再判） */
+function runningGoals(st) {
+  return activeGoals(st).filter((g) => !isPaused(g));
+}
+
+/** 一个日期区间内被暂停掉的天数（含两端，按区间求交而不是逐日遍历） */
+function pausedDaysBetween(g, start, end) {
+  if (!g || !g.pauses || !g.pauses.length || !start || !end || end < start) return 0;
+  let n = 0;
+  for (let i = 0; i < g.pauses.length; i++) {
+    const p = g.pauses[i];
+    if (!p || !U.isDateString(p.f)) continue;
+    const from = p.f > start ? p.f : start;
+    const to = p.t ? (p.t < end ? p.t : end) : end;
+    if (from <= to) n += U.diffDays(from, to) + 1;
+  }
+  return n;
+}
 
 /* ================= 统计（逐行对齐 H5） ================= */
 
@@ -247,7 +328,8 @@ function isRestDay(st, gid, d, dates) {
   const start = mon < g.createdAt ? g.createdAt : mon;
   let cur = start;
   while (cur < d) {
-    if (!dates[cur]) return false;
+    /* 暂停日不算漏打：否则恢复后的第一周，休息日会被暂停期「用掉」 */
+    if (!dates[cur] && !isPausedOn(g, cur)) return false;
     cur = U.addDays(cur, 1);
   }
   return true;
@@ -262,6 +344,8 @@ function streak(st, gid) {
   let s = 0;
   while (d >= g.createdAt) {
     if (dates[d]) { s++; d = U.addDays(d, -1); continue; }
+    /* 暂停期不计数，也不打断：恢复后连续天数接着上次往下数 */
+    if (isPausedOn(g, d)) { d = U.addDays(d, -1); continue; }
     if (isRestDay(st, gid, d, dates)) { d = U.addDays(d, -1); continue; }
     break;
   }
@@ -279,11 +363,14 @@ function last7Sum(st, gid) {
   return s;
 }
 
-/** 预计完成日：done / unknown / ok(+date,diff 正数=比截止早) / overdue */
+/** 预计完成日：done / paused / unknown / ok(+date,diff 正数=比截止早) / overdue */
 function eta(st, g) {
   const done = doneAmount(st, g.id);
   const remain = g.total - done;
   if (remain <= 0) return { status: 'done' };
+
+  /* 暂停中不推算：速度窗口里全是 0，硬算出来的「拖后 N 天」只会制造焦虑 */
+  if (isPaused(g)) return { status: 'paused' };
 
   const today = U.todayStr();
   const sum = last7Sum(st, g.id);
@@ -318,6 +405,12 @@ function dailyQuota(st, g, opts) {
   const remain = g.total - doneAmount(st, g.id);
   if (remain <= 0) return { status: 'done', quota: 0, remain: 0, wrote: false };
 
+  /* 暂停期间不排今日工作量，也不写快照：给一个「今天该做 3 个」等于在催，
+     而用户刚刚明确说过要先放下这件事。恢复当天重新按剩余天数算。 */
+  if (isPausedOn(g, t)) {
+    return { status: 'paused', quota: 0, remain: remain, daysLeft: Math.max(0, U.diffDays(t, g.deadline)), wrote: false };
+  }
+
   const daysLeft = U.diffDays(t, g.deadline);
   if (daysLeft < 0) return { status: 'overdue', quota: remain, remain: remain, daysLeft: 0, wrote: false };
 
@@ -329,7 +422,10 @@ function dailyQuota(st, g, opts) {
 
   const totalDays = Math.max(1, U.diffDays(g.createdAt, g.deadline) + 1);
   const base = Math.ceil(g.total / totalDays);
-  const elapsed = Math.max(1, Math.min(totalDays, U.diffDays(g.createdAt, t) + 1));
+  /* 暂停期不产生「欠账」：恢复当天不该一次性补上暂停那几天该做的量。
+     截止日不因暂停而延后（那是用户自己定下的），所以剩余天数照常算。 */
+  const elapsed = Math.max(1, Math.min(totalDays,
+    U.diffDays(g.createdAt, t) + 1 - pausedDaysBetween(g, g.createdAt, t)));
   const shouldDone = base * elapsed;
   const debt = shouldDone - doneAmount(st, g.id);
 
@@ -362,6 +458,7 @@ function isComplete(st, g) { return doneAmount(st, g.id) >= g.total; }
 
 function isTodayMet(st, g) {
   if (isComplete(st, g)) return false;
+  if (isPausedOn(g, U.todayStr())) return false;
   const q = dailyQuota(st, g, null);
   if (q.status !== 'ok') return false;
   return logsOn(st, g.id, U.todayStr()) >= q.quota;
@@ -408,7 +505,8 @@ function globalStreak(st) {
 /** 今日总览：用于今日页首屏。snapshotsWritten 告诉调用方是否需要落盘 */
 function todayOverview(st) {
   const t = U.todayStr();
-  const goals = activeGoals(st).filter((g) => !isComplete(st, g));
+  /* 暂停的目标不进今日清单：今日页只回答「今天要做什么」 */
+  const goals = activeGoals(st).filter((g) => !isComplete(st, g) && !isPaused(g));
   let met = 0;
   let amount = 0;
   let quota = 0;
@@ -491,6 +589,27 @@ function buildLogShards(st) {
 
 /* ---- 合并：全部是纯函数，同输入必得同输出（收敛性依赖这一点） ---- */
 
+/** 墓碑寿命（天）：超过这个时间的删除标记不再随数据传播 */
+const TOMBSTONE_DAYS = 90;
+
+/**
+ * 墓碑是否已经可以丢弃。
+ *
+ * 关键：按「删除时刻」算，绝不能按业务日期算。
+ * 删掉一条三个月前的误记时，它的 date 天生就在 90 天前 ——
+ * 按 date 判断会让墓碑当场失效，别的设备下次推送就会把这条记录复活。
+ * updatedAt 由 deleteLog / deleteGoal 的 touch() 写成删除时刻。
+ *
+ * 没有删除时刻的墓碑（极老的迁移数据）一律保留：无法判断它是否过期时，
+ * 多留几个字节远比让一条记录复活安全。
+ */
+function isExpiredTombstone(obj, deletedAt) {
+  if (!obj || !obj.deleted) return false;
+  if (!U.finiteNumber(deletedAt, 1, 1e15)) return false;
+  const cutTs = U.parseDate(U.addDays(U.todayStr(), -TOMBSTONE_DAYS)).getTime();
+  return deletedAt < cutTs;
+}
+
 function pickNewer(a, b) {
   const ua = U.finiteNumber(a && a.updatedAt, 0, 1e15) ? a.updatedAt : 0;
   const ub = U.finiteNumber(b && b.updatedAt, 0, 1e15) ? b.updatedAt : 0;
@@ -507,13 +626,7 @@ function mergeGoals(localGoals, remoteGoals) {
     map[g.id] = map[g.id] ? pickNewer(map[g.id], g) : g;
   });
   const out = Object.keys(map).map((k) => map[k]);
-  // 墓碑清理：删除超过 90 天的目标不再保留
-  const cut = U.addDays(U.todayStr(), -90);
-  return out.filter((g) => {
-    if (!g.deleted) return true;
-    const t = g.updatedAt ? new Date(g.updatedAt).toISOString().slice(0, 10) : g.createdAt;
-    return t >= cut;
-  });
+  return out.filter((g) => !isExpiredTombstone(g, g.updatedAt));
 }
 
 function mergeNotes(localNotes, remoteNotes) {
@@ -533,11 +646,9 @@ function mergeLogs(localLogs, remoteLogs) {
     map[l.id] = map[l.id] ? pickNewer(map[l.id], l) : l;
   });
   const out = Object.keys(map).map((k) => map[k]);
-  const cut = U.addDays(U.todayStr(), -90);
-  return out.filter((l) => {
-    if (!l.deleted) return true;
-    return l.date >= cut;
-  });
+  /* 与目标一样按「删除时刻」判定：一条 100 天前的记录今天才被删，
+     墓碑必须继续传播，否则别的设备会把这条记录复活。 */
+  return out.filter((l) => !isExpiredTombstone(l, l.updatedAt));
 }
 
 function mergeSettings(localS, remoteS) {
@@ -597,6 +708,7 @@ module.exports = {
   COLORS, SEED_IDS, SEED_VERSION, STATE_VERSION, CORE_KEY, LOGS_PREFIX,
   blankState, parseState, normalizeGoal, normalizeLog, normalizeNote,
   goalById, activeGoals, activeLogs,
+  isPausedOn, isPaused, pausedSince, runningGoals, pausedDaysBetween,
   doneAmount, logsOn, minutesOn, dateSetOf, isRestDay, streak, last7Sum, eta,
   dayQuotaKey, dailyQuota, pruneSnapshots, isComplete, isTodayMet,
   weekStats, globalStreak, todayOverview,

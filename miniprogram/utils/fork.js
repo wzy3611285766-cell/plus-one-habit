@@ -140,9 +140,10 @@ function goalRow(g) {
   return row;
 }
 
-/** 从当前状态提炼分享模板：活跃、非示例的目标，按卡片顺序最多 8 个 */
+/** 从当前状态提炼分享模板：进行中、非示例的目标，按卡片顺序最多 8 个。
+ *  暂停中的不带走：那是「我暂时先放下」的目标，复制给别人没有意义。 */
 function tplFromState(st) {
-  const goals = M.activeGoals(st).filter((g) => !g.sample).slice(0, MAX_GOALS);
+  const goals = M.runningGoals(st).filter((g) => !g.sample).slice(0, MAX_GOALS);
   return { v: 1, g: goals.map(goalRow) };
 }
 

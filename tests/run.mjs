@@ -13,12 +13,16 @@ const SUITES = [
   ['打卡数据同步（分片/增量/冲突收敛/隔离）', './sync.test.mjs'],
   ['数据预拉取（冷启动缓存/身份隔离/体积裁剪/采纳闸门）', './prefetch.test.mjs'],
   ['客户端数据模型（统计口径/合并算法）', './model.test.mjs'],
+  ['周报自动生成（结论/同期对比/建议）', './weekly.test.mjs'],
   ['分享分叉（模板编解码/入站闸门/重载）', './fork.test.mjs'],
   ['分享卡（今日总结/文案/页面胶水）', './share.test.mjs'],
   ['页面纵向集成（页面→云函数→数据库）', './pages.test.mjs'],
   ['音效层（百分比增益/开关边界/实例复用）', './sfx.test.mjs'],
   ['共享内核一致性（auth 与 sync 的副本比对）', './shared-kernel.test.mjs'],
-  ['小程序静态检查（WXML/WXSS/JSON/JS 语法）', './static.test.mjs']
+  ['小程序静态检查（WXML/WXSS/JSON/JS 语法）', './static.test.mjs'],
+  /* 放在最后：这个套件会替换 store 的单例状态（pauseGoal 需要真实 state），
+     跑在前面会把页面集成测试的数据冲掉。 */
+  ['任务暂停（漏卡/连续/建议量/恢复边界）', './pause.test.mjs']
 ];
 
 console.log('PLus one habit · 小程序测试');

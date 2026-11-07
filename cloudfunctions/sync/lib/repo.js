@@ -67,10 +67,17 @@ function repo(db) {
         .catch(() => null);
     },
 
+    /**
+     * 新建分片文档。
+     *
+     * 必须用 add 而不是 doc().set()：set 是「有则覆盖」，两台设备同时首推
+     * 同一个分片（例如刚在两边登录）时，后写的那份会静默盖掉先写的，
+     * 双方都收到成功，谁也发现不了 —— pull 按 rev 比较，rev 都是 1，不会回传。
+     * add 在 _id 已存在时会失败，调用方据此回读权威数据并走冲突分支。
+     */
     createDoc(id, doc) {
-      const payload = Object.assign({}, doc);
-      delete payload._id;
-      return col().doc(id).set({ data: payload }).then(() => id);
+      const payload = Object.assign({}, doc, { _id: id });
+      return col().add({ data: payload }).then((r) => (r && (r._id || r.id)) || id);
     },
 
     /**
@@ -90,10 +97,27 @@ function repo(db) {
         .catch(() => []);
     },
 
+    /**
+     * 删除某账号的全部分片（清空云端数据用）。
+     * 分页 + 串行，理由同 auth 的 deleteSyncDocs：一次只取 200 条会留残留，
+     * 200 个并发 remove 可能被云开发限流。
+     */
     async deleteDocs(userId) {
-      const rows = await this.listDocs(userId, 200);
-      await Promise.all(rows.map((d) => col().doc(d._id).remove().catch(() => null)));
-      return rows.length;
+      const BATCH = 50;
+      let removed = 0;
+      for (;;) {
+        const rows = await col().where({ userId: userId }).limit(BATCH).get()
+          .then((r) => (r && r.data) || [])
+          .catch(() => []);
+        if (!rows.length) break;
+        let okInBatch = 0;
+        for (let i = 0; i < rows.length; i++) {
+          const ok = await col().doc(rows[i]._id).remove().then(() => true).catch(() => false);
+          if (ok) { removed++; okInBatch++; }
+        }
+        if (rows.length < BATCH || okInBatch === 0) break;
+      }
+      return removed;
     }
   };
 }

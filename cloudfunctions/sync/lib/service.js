@@ -72,6 +72,17 @@ async function pull(ctx, payload) {
 }
 
 /**
+ * 推送成功回执。
+ * truncated 只在真的发生截断时出现 —— 老客户端不认识这个字段也没关系，
+ * 它只是多了一个可选字段，不会改变 applied 的含义。
+ */
+function appliedEntry(item, rev) {
+  const out = { key: item.key, rev: rev, bytes: item.bytes };
+  if (item.truncated) out.truncated = item.truncated;
+  return out;
+}
+
+/**
  * 推送。逐分片 CAS，返回成功与冲突两组。
  * 客户端把 conflicts 合并进本机后重推，通常一次就能收敛。
  */
@@ -91,17 +102,17 @@ async function push(ctx, payload) {
   const prepared = [];
   docs.forEach((d) => {
     const key = str(d && d.key, 40);
-    const cleaned = SH.sanitizeShard(key, d && d.payload);
-    const bytes = SH.sizeOf(cleaned);
-    totalBytes += bytes;
+    const info = SH.sanitizeShardInfo(key, d && d.payload);
+    totalBytes += info.bytes;
     if (totalBytes > SH.LIMITS.MAX_PUSH_BYTES) {
       throw AppError(CODES.PAYLOAD_TOO_LARGE, '本次同步的数据量过大，请分批重试');
     }
     prepared.push({
       key: key,
       baseRev: typeof d.baseRev === 'number' && d.baseRev >= 0 ? Math.floor(d.baseRev) : 0,
-      payload: cleaned,
-      bytes: bytes
+      payload: info.payload,
+      bytes: info.bytes,
+      truncated: info.truncated
     });
   });
 
@@ -121,16 +132,24 @@ async function push(ctx, payload) {
     if (!existing) {
       // 客户端以为云端已有（baseRev > 0）但实际没有：典型的「云端被清空」场景，
       // 直接以本次推送为准重建，不必让客户端空跑一轮冲突
-      await ctx.repo.createDoc(id, {
-        userId: userId,
-        key: item.key,
-        rev: 1,
-        payload: item.payload,
-        deviceId: deviceId,
-        createdAt: ctx.now,
-        updatedAt: ctx.now
-      });
-      applied.push({ key: item.key, rev: 1, bytes: item.bytes });
+      try {
+        await ctx.repo.createDoc(id, {
+          userId: userId,
+          key: item.key,
+          rev: 1,
+          payload: item.payload,
+          deviceId: deviceId,
+          createdAt: ctx.now,
+          updatedAt: ctx.now
+        });
+        applied.push(appliedEntry(item, 1));
+      } catch (e) {
+        /* 竞态：在我们 getDoc 与 create 之间，另一台设备抢先建好了这条分片。
+           create 失败说明文档已存在 —— 回读它的权威数据，交给客户端合并后重推，
+           绝不能把失败当成成功（那会让先写入的数据无声消失）。 */
+        const again = await ctx.repo.getDoc(id);
+        conflicts.push({ key: item.key, rev: again ? again.rev : 0, payload: again ? again.payload : null });
+      }
       continue;
     }
 
@@ -148,7 +167,7 @@ async function push(ctx, payload) {
     });
 
     if (updated) {
-      applied.push({ key: item.key, rev: nextRev, bytes: item.bytes });
+      applied.push(appliedEntry(item, nextRev));
     } else {
       // CAS 落空：在我们读取与写入之间，另一台设备抢先写入了
       const again = await ctx.repo.getDoc(id);

@@ -118,7 +118,13 @@ actions.me = async function (ctx) {
 actions.updateProfile = async function (ctx, payload) {
   const account = await requireAccount(ctx);
   const patch = {};
-  if (payload && payload.nickname !== undefined) patch.nickname = normalizeNickname(payload.nickname);
+  if (payload && payload.nickname !== undefined) {
+    /* 前端拦了空昵称，服务端也必须拦：客户端可改，
+       否则会出现「头像/昵称区域一片空白」的账号。 */
+    const nickname = normalizeNickname(payload.nickname);
+    if (!nickname) throw AppError(CODES.INVALID_INPUT, '昵称不能为空');
+    patch.nickname = nickname;
+  }
   if (!Object.keys(patch).length) throw AppError(CODES.INVALID_INPUT, '没有需要更新的内容');
   await ctx.repo.updateAccount(account._id, patch);
   Object.assign(account, patch);

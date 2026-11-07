@@ -182,6 +182,30 @@
     </view>
   </view>
 
+  <!--
+    已暂停区。
+    暂停和「已完成」是两回事：任务还在，只是这段时间不要求。
+    所以这里灰显虚线框 + 写明从哪天开始、暂停了几天，右侧给一键恢复。
+  -->
+  <view wx:if="{{pausedRows.length}}" class="paused-sec">
+    <view class="paused-sec-title">
+      <view class="paused-mark"></view>
+      <text>已暂停</text>
+      <text class="paused-cnt">{{pausedRows.length}}</text>
+    </view>
+
+    <view class="today-grid">
+      <view wx:for="{{pausedRows}}" wx:key="gid" class="paused-row" style="--gc:{{item.color}}">
+        <view class="paused-dot"></view>
+        <view class="paused-main">
+          <text class="paused-name">{{item.name}}</text>
+          <text class="paused-meta">{{item.since}} 起暂停 · 已 {{item.days}} 天 · {{item.done}}/{{item.total}} {{item.unit}}</text>
+        </view>
+        <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="paused-btn" aria-role="button" aria-label="恢复任务" data-gid="{{item.gid}}" bindtap="resumeFromList">恢复</view>
+      </view>
+    </view>
+  </view>
+
   <!-- ---------- 本周打卡节奏（对齐基准 #weekRhythm） ---------- -->
   <view wx:if="{{hasGoals}}" class="card rhythm-card">
     <view class="card-title">
@@ -220,6 +244,17 @@
       <view class="menu-item" aria-role="button" bindtap="menuEdit">
         <view class="mi-ico mi-pencil"></view>
         <text>编辑目标</text>
+      </view>
+
+      <!-- 暂停 / 恢复：同一个位置，按当前状态二选一 -->
+      <view wx:if="{{menuPaused}}" class="menu-item" aria-role="button" bindtap="menuResume">
+        <view class="mi-ico mi-play"></view>
+        <text>恢复任务</text>
+      </view>
+      <!-- 已完成的目标不再提供暂停：它已经不在待办里，暂停没有意义 -->
+      <view wx:elif="{{!menuDone}}" class="menu-item" aria-role="button" bindtap="menuPause">
+        <view class="mi-ico mi-pause"></view>
+        <text>暂停任务</text>
       </view>
 
       <view wx:if="{{menuOverdue}}" class="menu-item" bindtap="menuEdit">

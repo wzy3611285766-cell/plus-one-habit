@@ -109,6 +109,21 @@
   font-weight:var(--fw-semi);
 }
 .badge-sample{ background:var(--amber-100);color:var(--amber-ink); }
+.badge-paused{ background:var(--surface-2);color:var(--text-3); }
+
+/* 暂停卡整体压一档：不抢进行中目标的注意力，但仍能读清数字 */
+.goal-card.is-paused{ opacity:.78; }
+.resume-link{
+  flex:none;
+  padding:3px 10px;
+  border-radius:999rpx;
+  background:var(--gb-face-2);
+  color:var(--brand-600);
+  font-size:var(--fs-nano);
+  font-weight:600;
+  box-shadow:0 0 0 .5px rgba(15,23,42,.06);
+}
+.resume-link.is-press{ background:rgba(0,122,255,.12); }
 
 /* ---------- 圆环 + 三行统计 ---------- */
 .ring-wrap{

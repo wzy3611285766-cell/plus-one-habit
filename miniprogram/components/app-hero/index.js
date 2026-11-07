@@ -71,7 +71,9 @@ Component({
       if (!st) return;
 
       const today = U.todayStr();
-      const goals = M.activeGoals(st);
+      /* 分母只算「今天真要做的」：暂停的、已完成的都不该进分母，
+         否则全部暂停时会显示「0/3」，像是漏了三件事没做。 */
+      const goals = M.runningGoals(st).filter((g) => !M.isComplete(st, g));
       const logs = M.activeLogs(st);
 
       let hit = 0;
@@ -81,7 +83,7 @@ Component({
       logs.forEach((l) => { if (l.date === today) todayCount++; });
 
       const chips = [
-        { k: 'hit', label: '今日', value: hit + '/' + goals.length },
+        { k: 'hit', label: '今日', value: goals.length ? hit + '/' + goals.length : '—' },
         { k: 'logs', label: '记录', value: todayCount + ' 次' },
         { k: 'streak', label: '连续', value: M.globalStreak(st) + ' 天' },
         { k: 'goals', label: '进行中', value: goals.length + ' 个' }

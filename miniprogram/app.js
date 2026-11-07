@@ -78,7 +78,9 @@ App({
             userId: payload.userId,
             at: r.at || payload.at || 0,
             partial: !!payload.partial,
-            shards: r.applied
+            /* 采纳的分片数量（不是分片本身）。字段名与实际内容一致，
+               避免后来的人把它当成 shards 映射去取值。 */
+            shardCount: r.applied
           };
         }
         return r;

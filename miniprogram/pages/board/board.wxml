@@ -35,13 +35,25 @@
         wx:for="{{sec.cards}}"
         wx:for-item="card"
         wx:key="gid"
-        class="goal-card {{card.isDone ? 'is-done' : ''}}"
+        class="goal-card {{card.isDone ? 'is-done' : ''}} {{card.paused ? 'is-paused' : ''}}"
         style="--gc:{{card.color}}"
       >
         <view class="goal-head">
           <view class="goal-color-dot"></view>
           <text class="goal-name">{{card.name}}</text>
           <text wx:if="{{card.sample}}" class="badge badge-sample">示例</text>
+          <text wx:if="{{card.paused}}" class="badge badge-paused">已暂停</text>
+          <view
+            wx:if="{{card.paused}}"
+            hover-class="is-press"
+            hover-start-time="0"
+            hover-stay-time="300"
+            class="resume-link"
+            aria-role="button"
+            aria-label="恢复任务"
+            data-gid="{{card.gid}}"
+            bindtap="resumeGoal"
+          >恢复</view>
         </view>
 
         <view class="ring-wrap">

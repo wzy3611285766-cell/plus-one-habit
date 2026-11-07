@@ -95,11 +95,13 @@ Page({
       this.pctTimer = setInterval(() => {
         i++;
         const eased = 1 - Math.pow(1 - i / steps, 3);
-        const targets = this._fxTargets;
+        const targets = this._fxTargets || [];
         this.setData({
           sections: this.data.sections.map((sec, si) => Object.assign({}, sec, {
             cards: sec.cards.map((c, ci) => Object.assign({}, c, {
-              pct: Math.round((targets[si][ci] || 0) * eased)
+              /* 动画窗口内可能同步进来新目标，卡片数比开场时多 ——
+                 targets[si] 可能不存在，直接下标会抛 TypeError 并中断整段动效。 */
+              pct: Math.round(((targets[si] || [])[ci] || 0) * eased)
             }))
           }))
         });
@@ -141,6 +143,7 @@ Page({
 
       let etaText = '';
       if (e.status === 'done') etaText = '已达成';
+      else if (e.status === 'paused') etaText = '暂停中，恢复后重新推算';
       else if (e.status === 'unknown') etaText = '近 7 天无记录，暂无推算';
       else if (e.status === 'overdue') etaText = '已过截止日，仍差 ' + U.trimNum(g.total - done) + ' ' + g.unit;
       else etaText = etaLabel.label(e);
@@ -177,6 +180,7 @@ Page({
         name: g.name,
         color: U.gcolor(g.color),
         sample: !!g.sample,
+        paused: M.isPaused(g),
         isDone: M.isComplete(st, g),
         unit: g.unit,
         done: U.trimNum(done),
@@ -193,14 +197,17 @@ Page({
       };
     };
 
-    const activeCards = goals.filter((g) => !M.isComplete(st, g)).map(buildCard);
+    /* 暂停的目标单独成区：它既不是「进行中」（今天不用做），
+       也不是「已完成」（任务还没结束）。混在一起会误导进度判断。 */
+    const activeCards = goals.filter((g) => !M.isComplete(st, g) && !M.isPaused(g)).map(buildCard);
+    const pausedCards = goals.filter((g) => !M.isComplete(st, g) && M.isPaused(g)).map(buildCard);
     const doneCards = goals.filter((g) => M.isComplete(st, g)).map(buildCard);
 
     /* ---------- 统计条：累计打卡 / 累计活跃 ---------- */
     const daySet = {};
     logs.forEach((l) => { daySet[l.date] = 1; });
     const statCards = [
-      { k: 'logs', num: logs.length, label: 'PLus one（次）', tone: 'is-amber' },
+      { k: 'logs', num: logs.length, label: 'Plus one（次）', tone: 'is-amber' },
       { k: 'days', num: Object.keys(daySet).length, label: '累计活跃（天）', tone: 'is-brand' }
     ];
 
@@ -279,6 +286,7 @@ Page({
     /* 分区：进行中在前，已完成单独一段；没有卡片的分区不渲染 */
     const sections = [];
     if (activeCards.length) sections.push({ key: 'active', title: '', count: 0, cards: activeCards });
+    if (pausedCards.length) sections.push({ key: 'paused', title: '已暂停', count: pausedCards.length, cards: pausedCards });
     if (doneCards.length) sections.push({ key: 'done', title: '已完成', count: doneCards.length, cards: doneCards });
 
     this.setData({
@@ -326,14 +334,23 @@ Page({
     }
 
     if (this.confirmTimer) clearTimeout(this.confirmTimer);
-    // 行是「天」，id 是当天的记录 id 串：按天整删
-    let ok = false;
-    raw.split(',').forEach((id) => { if (store.deleteLog(id)) ok = true; });
+    /* 行是「天」，id 是当天的记录 id 串：一次批量删完 ——
+       逐条 deleteLog 会让每一条都整份落盘并触发一次全页重算，删十几条就卡。 */
+    const removed = store.deleteLogs(raw.split(','));
     this.setData({ confirmDel: '' });
-    if (ok) {
+    if (removed) {
       this.render();
       wx.showToast({ title: '已删除', icon: 'none' });
     }
+  },
+
+  /** 在看板上直接恢复：卡片上写着「暂停中」，恢复入口就应该在同一张卡上 */
+  resumeGoal(e) {
+    const gid = e.currentTarget.dataset.gid;
+    if (!gid) return;
+    store.resumeGoal(gid);
+    this.render();
+    wx.showToast({ title: '已恢复', icon: 'none' });
   },
 
   goToday() { wx.switchTab({ url: '/pages/today/today' }); }

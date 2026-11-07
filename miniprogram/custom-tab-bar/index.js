@@ -14,9 +14,45 @@ const store = require('../utils/store.js');
 const prefs = require('../utils/prefs.js');
 const sfx = require('../utils/sfx.js');
 
+/**
+ * 路由 → 页签名。
+ * tabBar 是「每个 tab 页各一份实例」，切页时新页面这份会重新 attached。
+ * 如果 active 写死成 'today'，那么每次切到 board / weekly / mine 都会先
+ * 把「今日打卡」点亮一帧，再被页面的 onShow 改成正确项 —— 肉眼就是底栏闪一下。
+ * 所以初值必须按所在页面算出来。
+ */
+const KEY_BY_ROUTE = {
+  'pages/today/today': 'today',
+  'pages/board/board': 'board',
+  'pages/weekly/weekly': 'weekly',
+  'pages/mine/mine': 'mine'
+};
+
+function currentKey() {
+  try {
+    const pages = getCurrentPages();
+    const cur = pages[pages.length - 1];
+    const route = cur && cur.route ? String(cur.route).replace(/^\//, '') : '';
+    return KEY_BY_ROUTE[route] || '';
+  } catch (e) {
+    /* 启动早期页面栈还取不到，交给 attached 再校正 */
+    return '';
+  }
+}
+
+/** 首帧就要是对的主题：深色下晚一帧上色，底栏会先白一瞬 */
+function currentThemeClass() {
+  try {
+    const st = store.get();
+    return prefs.themeClassOf(st && st.settings && st.settings.theme);
+  } catch (e) {
+    return '';
+  }
+}
+
 Component({
   data: {
-    active: 'today',
+    active: currentKey() || 'today',
     /** 弹层打开时由页面置真：自定义 tabBar 的显隐只能自己控制，
         wx.hideTabBar 对 custom:true 的 tabBar 无效（官方文档明示） */
     hidden: false,
@@ -24,7 +60,7 @@ Component({
     holdKey: '',
     /** 松手：才播放回弹动画 */
     popKey: '',
-    themeClass: '',
+    themeClass: currentThemeClass(),
     list: [
       { key: 'today', text: '今日打卡', path: '/pages/today/today' },
       { key: 'board', text: '进度看板', path: '/pages/board/board' },
@@ -34,6 +70,9 @@ Component({
   },
 
   attached() {
+    /* 模块求值时页面栈可能还是空的，这里补一次校正（在首帧之前，不会再闪） */
+    const key = currentKey();
+    if (key && key !== this.data.active) this.setData({ active: key });
     this.refreshTheme();
   },
 
@@ -101,10 +140,12 @@ Component({
       const key = e.currentTarget.dataset.key;
       const path = e.currentTarget.dataset.path;
       if (key === this.data.active) return;
-      // 先发声再切页：switchTab 之后可能有好几帧的白，声音先到才跟手
-      sfx.tap();
       this.setData({ active: key });
       wx.switchTab({ url: path });
+      /* 发声放在 switchTab 之后、且另起一拍：WebAudio 首次建链（createWebAudioContext
+         + 节点连图）是同步的，压在点击事件里会顶住跳转 ——
+         用户看到的就是「按下去先卡一下，页面才切过去」。 */
+      setTimeout(() => { try { sfx.tap(); } catch (e) { /* 音效失败不影响切页 */ } }, 0);
     }
   }
 });

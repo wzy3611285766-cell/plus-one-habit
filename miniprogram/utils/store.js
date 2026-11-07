@@ -47,7 +47,10 @@ let syncInfo = {
   phase: 'idle',                 // idle | syncing | synced | error | offline | needlogin
   message: '',
   lastSyncAt: 0,
-  lastError: null
+  lastError: null,
+  /* 上一次推送被服务端按单月上限截断的条数（0 = 没有）。
+     本机看着有、云端其实没有，这种「静默成功」必须留下痕迹。 */
+  truncated: 0
 };
 
 /* ================= 事件 ================= */
@@ -84,8 +87,22 @@ function saveShards() {
 }
 
 function shard(key) {
-  if (!shards[key]) shards[key] = { rev: 0, dirty: false };
+  if (!shards[key]) shards[key] = { rev: 0, dirty: false, epoch: 0 };
   return shards[key];
+}
+
+/**
+ * 标脏并推进分片代次。
+ *
+ * 代次回答的是「这次改动属于第几轮」：推送发出之后才发生的改动会把代次推高，
+ * 那一轮的响应回来时就不能清 dirty。不这么做的话，弱网下（请求在途时
+ * 用户又打了一次卡）新改动会被静默跳过上传，本机与云端从此分叉。
+ */
+function markDirty(key) {
+  const s = shard(key);
+  s.dirty = true;
+  s.epoch = (s.epoch || 0) + 1;
+  return s;
 }
 
 /**
@@ -162,7 +179,11 @@ function load() {
     Object.keys(rawShards).forEach((k) => {
       if (!M.isKnownShardKey(k)) return;
       const s = rawShards[k];
-      shards[k] = { rev: U.finiteNumber(s && s.rev, 0, 1e15) ? s.rev : 0, dirty: !!(s && s.dirty) };
+      shards[k] = {
+        rev: U.finiteNumber(s && s.rev, 0, 1e15) ? s.rev : 0,
+        dirty: !!(s && s.dirty),
+        epoch: U.finiteNumber(s && s.epoch, 0, 1e15) ? Math.floor(s.epoch) : 0
+      };
     });
   }
 
@@ -181,8 +202,8 @@ function load() {
       const parsed = M.parseState(legacy);
       state = parsed.state;
       save();
-      Object.keys(shards).forEach((k) => { shards[k].dirty = true; });
-      shard(M.CORE_KEY).dirty = true;
+      Object.keys(shards).forEach(markDirty);
+      markDirty(M.CORE_KEY);
       saveShards();
       refreshSeed();
       if (pruneSampleLogs()) save();
@@ -205,8 +226,8 @@ function commit(opts) {
 
 /* ================= 变更入口（业务层只走这几个函数） ================= */
 
-function markCore() { shard(M.CORE_KEY).dirty = true; saveShards(); schedulePush(); }
-function markLogs(month) { shard(M.logsShardKey(month)).dirty = true; saveShards(); schedulePush(); }
+function markCore() { markDirty(M.CORE_KEY); saveShards(); schedulePush(); }
+function markLogs(month) { markDirty(M.logsShardKey(month)); saveShards(); schedulePush(); }
 
 function addGoal(goal) {
   M.touch(goal);
@@ -222,6 +243,48 @@ function updateGoal(id, patch) {
   const g = M.goalById(state, id);
   if (!g) return null;
   Object.assign(g, patch);
+  M.touch(g);
+  markCore();
+  commit();
+  return g;
+}
+
+/**
+ * 暂停目标：今天起不再要求打卡。
+ * 只是往 pauses 里加一段开区间，进度、记录、备注全部保留 ——
+ * 恢复时把结束日补上，历史暂停期仍然可查（连续天数靠它才能接上）。
+ * 幂等：重复调用不会产生多段重叠区间。
+ */
+function pauseGoal(id, date) {
+  const g = M.goalById(state, id);
+  if (!g || g.deleted) return null;
+  /* 已完成的目标没有「暂停」可言：它已经不在待办里了。
+     允许写入只会留下一条永远用不上的 pauses，还会让以后的状态判断变脏。 */
+  if (M.isComplete(state, g)) return null;
+  if (M.isPaused(g)) return g;
+  const from = date || U.todayStr();
+  if (!g.pauses) g.pauses = [];
+  g.pauses.push({ f: from, t: '' });
+  M.touch(g);
+  markCore();
+  commit();
+  return g;
+}
+
+/**
+ * 恢复目标：把最后一段的结束日补成「昨天」，今天就算正常打卡日。
+ * 当天暂停又当天恢复会产生空区间（t < f），直接删掉，不留在数据里。
+ */
+function resumeGoal(id, date) {
+  const g = M.goalById(state, id);
+  if (!g || g.deleted) return null;
+  if (!M.isPaused(g)) return g;
+  const today = date || U.todayStr();
+  const end = U.addDays(today, -1);
+  const last = g.pauses[g.pauses.length - 1];
+  if (end < last.f) g.pauses.pop();
+  else last.t = end;
+  if (!g.pauses.length) delete g.pauses;
   M.touch(g);
   markCore();
   commit();
@@ -275,6 +338,30 @@ function deleteLog(id) {
   return true;
 }
 
+/**
+ * 批量删记录（看板按天整删用）。
+ * 逐条走 deleteLog 会让每次删除都触发一次整份落盘 + 一次全页重算，
+ * 删十几条就明显卡顿；这里合并成一次 commit、按月各标一次脏。
+ * @returns {number} 实际删掉的条数
+ */
+function deleteLogs(ids) {
+  const set = {};
+  (ids || []).forEach((id) => { set[id] = 1; });
+  const months = {};
+  let n = 0;
+  state.logs.forEach((l) => {
+    if (l.deleted || !set[l.id]) return;
+    l.deleted = true;
+    M.touch(l);
+    months[M.monthOf(l.date)] = 1;
+    n++;
+  });
+  if (!n) return 0;
+  Object.keys(months).forEach(markLogs);
+  commit();
+  return n;
+}
+
 /** 撤销：把该目标当天最新一条记录打墓碑 */
 function undoLastLog(goalId, date) {
   const d = date || U.todayStr();
@@ -309,8 +396,9 @@ function updateSettings(patch) {
 
 function replaceAll(nextState) {
   state = nextState;
-  shard(M.CORE_KEY).dirty = true;
+  markDirty(M.CORE_KEY);
   Object.keys(M.buildLogShards(state)).forEach((m) => markLogs(m));
+  saveShards();
   commit();
 }
 
@@ -364,14 +452,23 @@ function push(retried) {
   pushing = true;
   setPhase('syncing', '正在保存…');
 
+  /* 记下发出时的代次：响应回来时只有「代次没变」的分片才能清 dirty。
+     请求在途期间用户又改了同一分片，代次会 +1 —— 那一轮的成功只代表
+     旧内容已落库，新内容还得再推一次。 */
+  const sentEpoch = {};
+  keys.forEach((k) => { sentEpoch[k] = shard(k).epoch || 0; });
+
   const docs = keys.map((k) => ({ key: k, baseRev: shard(k).rev, payload: shardPayload(k) }));
 
   /* 不带任何凭据：云函数从调用上下文里取 openid 来认定身份 */
   return api.callSync('push', { docs: docs, deviceId: auth.deviceId() })
     .then((data) => {
       (data.applied || []).forEach((a) => {
-        shard(a.key).rev = a.rev;
-        shard(a.key).dirty = false;
+        const s = shard(a.key);
+        s.rev = a.rev;
+        /* 只清「没有被后续改动覆盖」的分片：代次变了说明本机还有更新的内容，
+           必须保持 dirty，等下一轮推送把它带上去。 */
+        if ((s.epoch || 0) === sentEpoch[a.key]) s.dirty = false;
       });
       saveShards();
 
@@ -380,7 +477,7 @@ function push(retried) {
         M.mergeRemoteShards(state, conflicts);
         conflicts.forEach((c) => {
           shard(c.key).rev = c.rev;
-          shard(c.key).dirty = true;
+          markDirty(c.key);
         });
         save();
         saveShards();
@@ -391,10 +488,19 @@ function push(retried) {
 
       if (conflicts.length && !retried) return push(true);
 
+      /* 服务端单月上限会截断超出的记录：applied 里带着被丢掉的条数。
+         不在这里记一笔，用户只有换设备时才会发现「少了一部分数据」。 */
+      let truncated = 0;
+      (data.applied || []).forEach((a) => { truncated += a.truncated || 0; });
+      syncInfo.truncated = truncated;
+      if (truncated) {
+        console.warn('[sync] ' + truncated + ' 条记录超出单月同步上限，未能上传');
+      }
+
       syncInfo.lastSyncAt = Date.now();
       setPhase('synced', conflicts.length ? '已合并其它设备的改动' : '已同步');
       emit({ type: 'state' });
-      return { applied: (data.applied || []).length, conflicts: conflicts.length };
+      return { applied: (data.applied || []).length, conflicts: conflicts.length, truncated: truncated };
     })
     .catch((e) => {
       pushing = false;
@@ -433,8 +539,10 @@ function pull(opts) {
       const docs = data.docs || [];
       docs.forEach((d) => {
         if (!M.isKnownShardKey(d.key)) return;
-        // 本机还有未推的改动时保留 dirty，不能让拉取把待推送标记抹掉
-        shard(d.key).rev = d.rev;
+        /* 只前进、不回退：pull 请求发出后 push 可能已经把 rev 推高，
+           无条件赋值会让基线倒退，下一轮白白多一次冲突。
+           本机未推送的 dirty 不在这一行处理，拉取不会动它。 */
+        if (d.rev > shard(d.key).rev) shard(d.key).rev = d.rev;
       });
       const r = M.mergeRemoteShards(state, docs);
       save();
@@ -521,13 +629,15 @@ function onLoggedIn(opts) {
     .then(() => {
       if (skipPull) {
         /* 预拉取快照刚把本机基线对齐到云端（见 app.prefetchFresh），不必再全量拉一次：
-           只推真正脏的分片；别的设备若刚改过，CAS 会回传权威数据，合并后自动重推。 */
+           只推真正脏的分片，没有脏分片就一个请求都不发。
+           其它需要上云的本机数据（分享分叉的目标）由各自的写入路径标脏，
+           不靠这里兜底 —— 否则「跳过 pull」就退化成「无脑全量推」。 */
         return push();
       }
-      // 本机全部标脏，确保合并后的结果完整回传
-      Object.keys(shards).forEach((k) => { if (M.isKnownShardKey(k)) shards[k].dirty = true; });
-      shard(M.CORE_KEY).dirty = true;
-      Object.keys(M.buildLogShards(state)).forEach((m) => { shard(M.logsShardKey(m)).dirty = true; });
+      // 常规路径：本机全部标脏，确保合并后的结果完整回传
+      Object.keys(shards).forEach((k) => { if (M.isKnownShardKey(k)) markDirty(k); });
+      markDirty(M.CORE_KEY);
+      Object.keys(M.buildLogShards(state)).forEach((m) => markDirty(M.logsShardKey(m)));
       saveShards();
       return push();
     })
@@ -541,6 +651,7 @@ function onLoggedOut() {
   saveShards();
   syncInfo.lastSyncAt = 0;
   syncInfo.lastError = null;
+  syncInfo.truncated = 0;
   setPhase('needlogin', '未登录');
   emit({ type: 'state' });
 }
@@ -552,11 +663,26 @@ function setOffline(message) {
 
 function resetToRemote() {
   if (!auth.isLogged()) return Promise.resolve(false);
+
+  /* 先清空再拉取是「以云端为准」的必要前提（merge 只增不减）。
+     但网络失败时必须原样回滚：否则界面上一句「稍后再试」是假的 ——
+     本机数据在请求发出前就已经被抹掉了。 */
+  const before = { state: state, shards: shards };
   shards = {};
   saveShards();
   state = M.blankState();
   save();
-  return pull({ force: true }).then(() => { emit({ type: 'state' }); return true; });
+
+  return pull({ force: true })
+    .then(() => { emit({ type: 'state' }); return true; })
+    .catch((e) => {
+      state = before.state;
+      shards = before.shards;
+      save();
+      saveShards();
+      emit({ type: 'state' });
+      throw e;
+    });
 }
 
 function clearLocalOnly() {
@@ -571,14 +697,24 @@ function clearLocalOnly() {
 
 /* ================= 分享分叉（模仿 H5 第 17 轮） ================= */
 
-/** 把模板种成这位同学自己的目标。只写本机（同 installSample 的取向）：
- *  游客期不标记脏分片，登录时 onLoggedIn 会统一补推。 */
+/**
+ * 把模板种成这位同学自己的目标。
+ *
+ * 必须标脏：这是用户自己的真实目标，不是示例数据。游客期标脏只会写在本机
+ * （push 发现没登录就退出），登录后 onLoggedIn 会把它带上云。
+ * 早先的注释说「登录时 onLoggedIn 会统一补推」，但跳过全量 pull 的分支
+ * 只推脏分片 —— 不在这里标脏，分叉来的目标就永远上不了云。
+ */
 function seedForkGoals(goals) {
   goals.forEach((g, i) => {
     g.order = i + 1;
     M.touch(g);
     state.goals.push(g);
   });
+  /* 只标脏、不排推送：游客态没有必要为一次分叉排一个 600ms 的定时器，
+     登录后 onLoggedIn 的首次 push 会读到这个 dirty。 */
+  markDirty(M.CORE_KEY);
+  saveShards();
   commit();
 }
 
@@ -705,8 +841,11 @@ module.exports = {
   addGoal: addGoal,
   updateGoal: updateGoal,
   deleteGoal: deleteGoal,
+  pauseGoal: pauseGoal,
+  resumeGoal: resumeGoal,
   addLog: addLog,
   deleteLog: deleteLog,
+  deleteLogs: deleteLogs,
   undoLastLog: undoLastLog,
   setNote: setNote,
   updateSettings: updateSettings,

@@ -20,10 +20,33 @@ const DRAW_VERSION = 4;
 const ICON_SRC = '/assets/icon-app.png';
 
 Component({
+  data: {
+    /** 画布延迟挂载：见 ready 里的说明 */
+    mount: false
+  },
+
   lifetimes: {
-    ready() { this.initCanvas(); },
+    /**
+     * 首次绘制不跟页面首帧抢线程。
+     *
+     * 切到某个 tab 页时，页面要先完成「创建 + 首帧绘制」，而原生 2D canvas 的
+     * 初始化（节点查询 → 建 backing store → 画 1000×800 → 导出临时文件）是一笔
+     * 很重的同步开销。它挂在 ready 里，正好压在新页面首帧上 ——
+     * 低端机上就是「切过去顿一下」。分享图没有任何实时性，等首帧和入场动画
+     * 结束再画完全够用（用户看完内容才会点转发）。
+     */
+    ready() {
+      this._alive = true;
+      if (this._mountTimer) clearTimeout(this._mountTimer);
+      this._mountTimer = setTimeout(() => {
+        this._mountTimer = null;
+        if (!this._alive) return;
+        this.setData({ mount: true }, () => { if (this._alive) this.initCanvas(); });
+      }, 600);
+    },
     detached() {
       if (this._timer) clearTimeout(this._timer);
+      if (this._mountTimer) { clearTimeout(this._mountTimer); this._mountTimer = null; }
       this._alive = false;
     }
   },
@@ -33,6 +56,8 @@ Component({
       this._alive = true;
       const q = this.createSelectorQuery();
       q.select('#sc').fields({ node: true, size: true }).exec((res) => {
+        /* 查询是异步的：页面可能在这之间被切走（tab 切换会 detach 组件） */
+        if (!this._alive) return;
         const node = res && res[0] && res[0].node;
         if (!node || typeof node.getContext !== 'function') return;
         this._canvas = node;

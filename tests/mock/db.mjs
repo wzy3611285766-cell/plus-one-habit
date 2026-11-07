@@ -195,8 +195,16 @@ class Collection {
 
   async add({ data }) {
     const id = (data && data._id) || this.store.nextId();
+    const col = this.store.collection(this.name);
+    /* 与云开发一致：_id 已存在时 add 失败（主键冲突），而不是覆盖。
+       这是「并发首推同一分片」能走冲突分支的前提，set 会静默覆盖。 */
+    if (col.has(id)) {
+      const e = new Error('collection.add:fail duplicate _id');
+      e.errCode = -502001;
+      throw e;
+    }
     const payload = Object.assign({}, clone(data), { _id: id });
-    this.store.collection(this.name).set(id, payload);
+    col.set(id, payload);
     return { _id: id, errMsg: 'collection.add:ok' };
   }
 

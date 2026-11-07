@@ -57,6 +57,15 @@ await test('一个目标都没建：不出现 0/0，给下一步动作', () => {
   assert(s.sub.indexOf('0/0') < 0, '不能出现 0/0 这种无意义数字');
 });
 
+await test('全部暂停：不能写成「所有目标都已达成」', () => {
+  const st = stWith([{ id: 'g1', pauses: [{ f: today, t: '' }] }], []);
+  const s = SC.summarize(st);
+  eq(s.goals, 0, '暂停目标不算进行中');
+  eq(s.headline, '目标都在暂停中');
+  assert(s.title.indexOf('达成') < 0, '暂停不是完成，标题不能这么说');
+  includes(s.sub, '暂停 1 个');
+});
+
 await test('部分完成：标题和主文案都要有「今天完成了多少」', () => {
   const st = stWith(
     [{ id: 'g1', total: 100 }, { id: 'g2', total: 50 }],

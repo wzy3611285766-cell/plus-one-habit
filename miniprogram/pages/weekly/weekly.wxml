@@ -39,68 +39,99 @@
     </block>
   </view>
 
-  <!-- ---------- 卡片二：KPT 纸感复盘 ---------- -->
-  <view class="card" id="kpt-card">
+  <!-- ---------- 卡片二：本周小结（自动生成，不用用户写） ---------- -->
+  <view class="card rep-card tone-{{report.tone}}">
     <view class="card-title">
+      <view class="title-dot rep-dot"></view>
+      <text>本周小结</text>
+      <view class="rep-meta">
+        <text wx:if="{{report.remaining > 0}}" class="rep-left">还剩 {{report.remaining}} 天</text>
+        <text class="rep-auto">自动生成</text>
+      </view>
+    </view>
+
+    <text class="rep-headline">{{report.headline}}</text>
+
+    <view wx:if="{{report.lines.length}}" class="rep-lines">
+      <view wx:for="{{report.lines}}" wx:key="k" class="rep-line">
+        <text class="rep-tag rep-tag-{{item.kind}}">{{item.label}}</text>
+        <text class="rep-text">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 卡片三：补充你的想法（KPT，默认收起） ----------
+       自动结论已经给了，这张纸是可选的：想记下自己的判断再展开。
+       收起时不渲染输入框，切换周也不会因为四个空 input 拉长页面。 -->
+  <view class="card" id="kpt-card">
+    <view class="card-title kpt-head" aria-role="button" aria-label="补充你的想法，点按展开" bindtap="toggleForm">
       <view class="title-dot"></view>
-      <text>本周复盘</text>
+      <text>补充你的想法</text>
+      <view class="kpt-meta">
+        <text class="kpt-opt">{{hasNote ? '已写过' : '可选'}}</text>
+        <view class="arc-toggle {{formOpen ? 'is-open' : ''}}"></view>
+      </view>
     </view>
 
-    <view class="kpt-row">
-      <text class="kpt-label">保持 Keep<text class="kpt-hint"> · 做得好的，下周继续</text></text>
-      <input
-        class="kpt-input"
-        value="{{form.keep}}"
-        data-field="keep"
-        bindinput="onField"
-        maxlength="100"
-        placeholder="例：单词连续 6 天没断"
-        placeholder-class="ph"
-      />
-    </view>
+    <block wx:if="{{formOpen}}">
+      <view class="kpt-row">
+        <text class="kpt-label">保持 Keep<text class="kpt-hint"> · 做得好的，下周继续</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.keep}}"
+          data-field="keep"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：单词连续 6 天没断"
+          placeholder-class="ph"
+        />
+      </view>
 
-    <view class="kpt-row">
-      <text class="kpt-label">问题 Problem<text class="kpt-hint"> · 卡在哪了</text></text>
-      <input
-        class="kpt-input"
-        value="{{form.problem}}"
-        data-field="problem"
-        bindinput="onField"
-        maxlength="100"
-        placeholder="例：阅读总拖到睡前，一躺下就刷手机"
-        placeholder-class="ph"
-      />
-    </view>
+      <view class="kpt-row">
+        <text class="kpt-label">问题 Problem<text class="kpt-hint"> · 卡在哪了</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.problem}}"
+          data-field="problem"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：阅读总拖到睡前，一躺下就刷手机"
+          placeholder-class="ph"
+        />
+      </view>
 
-    <view class="kpt-row">
-      <text class="kpt-label">尝试 Try<text class="kpt-hint"> · 下周试试这样改</text></text>
-      <input
-        class="kpt-input"
-        value="{{form.try}}"
-        data-field="try"
-        bindinput="onField"
-        maxlength="100"
-        placeholder="例：阅读改到午饭后 20 分钟"
-        placeholder-class="ph"
-      />
-    </view>
+      <view class="kpt-row">
+        <text class="kpt-label">尝试 Try<text class="kpt-hint"> · 下周试试这样改</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.try}}"
+          data-field="try"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：阅读改到午饭后 20 分钟"
+          placeholder-class="ph"
+        />
+      </view>
 
-    <view class="kpt-row">
-      <text class="kpt-label">下周预案<text class="kpt-hint"> · 如果…我就…</text></text>
-      <input
-        class="kpt-input"
-        value="{{form.next}}"
-        data-field="next"
-        bindinput="onField"
-        maxlength="100"
-        placeholder="例：如果睡前想刷手机，我就先把书读 2 页"
-        placeholder-class="ph"
-      />
-    </view>
+      <view class="kpt-row">
+        <text class="kpt-label">下周预案<text class="kpt-hint"> · 如果…我就…</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.next}}"
+          data-field="next"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：如果睡前想刷手机，我就先把书读 2 页"
+          placeholder-class="ph"
+        />
+      </view>
 
-    <view class="kpt-actions">
-      <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="save">保存复盘</button>
-    </view>
+      <view class="kpt-actions">
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="save">保存复盘</button>
+      </view>
+    </block>
+
+    <text wx:else class="kpt-teaser">上面的结论是系统按这周记录算出来的。想记下自己的判断，展开写两句。</text>
   </view>
 
   <!-- ---------- 卡片三：往期复盘（写过才出现，默认收起） ---------- -->

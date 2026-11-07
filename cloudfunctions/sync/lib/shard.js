@@ -59,6 +59,20 @@ function cleanGoal(raw) {
   };
   const order = num(raw.order, 0, 1e9, null);
   if (order !== null) g.order = order;
+
+  /* 暂停区间必须跟着目标一起上云：漏掉它，换一台设备登录就看不到「已暂停」，
+     那台设备会立刻把暂停目标重新算成漏卡。片数上限与客户端一致（最近 20 段）。 */
+  if (Array.isArray(raw.pauses)) {
+    const pauses = [];
+    raw.pauses.slice(-20).forEach((p) => {
+      if (!p || typeof p !== 'object' || !isDate(p.f)) return;
+      const t = isDate(p.t) ? p.t : '';
+      if (t && t < p.f) return;
+      pauses.push({ f: p.f, t: t });
+    });
+    if (pauses.length) g.pauses = pauses;
+  }
+
   if (raw.deleted === true) g.deleted = true;
   return g;
 }
@@ -125,33 +139,62 @@ function cleanCore(raw) {
   return { goals: goals, notes: notes, settings: cleanSettings(p.settings) };
 }
 
+/**
+ * 清洗一个月的打卡记录。
+ * @returns {{items:Array, truncated:number}}
+ *   truncated 是「因超过单月上限被丢掉」的条数。
+ *   注意不要把它混进 items 的丢弃口径：日期不属于本月的记录是脏数据，
+ *   属于该丢弃，不算截断。
+ */
 function cleanLogs(raw, month) {
   const p = raw && typeof raw === 'object' ? raw : {};
   const items = [];
+  let truncated = 0;
   if (Array.isArray(p.items)) {
-    p.items.slice(0, LIMITS.MAX_LOGS_PER_MONTH).forEach((l) => {
-      const c = cleanLog(l);
+    for (let i = 0; i < p.items.length; i++) {
+      const c = cleanLog(p.items[i]);
       // 归属月份对不上的记录一律丢弃，否则一条错日期就能污染整个分片
-      if (c && c.date.slice(0, 7) === month) items.push(c);
-    });
+      if (!c || c.date.slice(0, 7) !== month) continue;
+      if (items.length >= LIMITS.MAX_LOGS_PER_MONTH) { truncated++; continue; }
+      items.push(c);
+    }
   }
-  return { items: items };
+  return { items: items, truncated: truncated };
 }
 
 /**
- * 清洗一个分片。返回可直接入库的载荷。
+ * 清洗一个分片，并回报被截断的条数。
+ *
+ * 为什么要回报：单月超过上限时服务端只存得下前 N 条，客户端却会收到 applied。
+ * 不把这件事说出去，就变成「本机看着有、云端其实没有」的静默分叉。
+ *
+ * @returns {{payload:object, bytes:number, truncated:number}}
  * @throws AppError PAYLOAD_TOO_LARGE / INVALID_INPUT
  */
-function sanitizeShard(key, rawPayload) {
+function sanitizeShardInfo(key, rawPayload) {
   if (!isKey(key)) throw AppError(CODES.INVALID_INPUT, '未知的数据分片：' + String(key).slice(0, 40));
-  const cleaned = key === CORE ? cleanCore(rawPayload) : cleanLogs(rawPayload, key.slice(LOGS_PREFIX.length));
+
+  let cleaned;
+  let truncated = 0;
+  if (key === CORE) {
+    cleaned = cleanCore(rawPayload);
+  } else {
+    const r = cleanLogs(rawPayload, key.slice(LOGS_PREFIX.length));
+    cleaned = { items: r.items };
+    truncated = r.truncated;
+  }
 
   let bytes = 0;
   try { bytes = Buffer.byteLength(JSON.stringify(cleaned), 'utf8'); } catch (e) { bytes = 0; }
   if (bytes > LIMITS.MAX_DOC_BYTES) {
     throw AppError(CODES.PAYLOAD_TOO_LARGE, '数据分片过大（' + Math.round(bytes / 1024) + 'KB），请先清理历史记录');
   }
-  return cleaned;
+  return { payload: cleaned, bytes: bytes, truncated: truncated };
+}
+
+/** 只要载荷的旧入口（保留给只需要清洗结果的调用方） */
+function sanitizeShard(key, rawPayload) {
+  return sanitizeShardInfo(key, rawPayload).payload;
 }
 
 /** 估算一个分片的字节数（用于统计页展示） */
@@ -165,5 +208,6 @@ module.exports = {
   LIMITS: LIMITS,
   isKey: isKey,
   sanitizeShard: sanitizeShard,
+  sanitizeShardInfo: sanitizeShardInfo,
   sizeOf: sizeOf
 };

@@ -1,7 +1,13 @@
 /**
  * 周报复盘。
  *
- * 复盘用 KPT 四栏（保持 / 问题 / 尝试 / 下一步），存进 notes[周一日期]。
+ * 三段式：
+ *   ① 客观数据（汇总卡）—— 每个目标这周投了多少；
+ *   ② 本周小结（自动生成）—— 系统直接从本机数据算出「发生了什么 + 下一步」，
+ *      用户打开就有结论，不需要先付出劳动（见 utils/weekly-report.js）；
+ *   ③ 补充你的想法（默认收起）—— KPT 四栏，存进 notes[周一日期]，
+ *      想记下自己的判断再展开。自动生成的结论永远不覆盖用户写的东西。
+ *
  * 复盘内容和其他打卡数据走同一套同步：在手机上写完，回到电脑上就能看到。
  * 复盘只保存在小程序里（随账号同步），不做导出文本。
  */
@@ -10,6 +16,7 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const fork = require('../../utils/fork.js');
 const shareCard = require('../../utils/share-card.js');
+const WR = require('../../utils/weekly-report.js');
 const M = require('../../utils/model.js');
 const U = require('../../utils/util.js');
 const prefs = require('../../utils/prefs.js');
@@ -27,7 +34,11 @@ Page({
     isCurrent: true,
     summary: [],
     totals: { sum: 0, days: 0, count: 0, prevCount: 0 },
+    /** 自动生成的本周小结；首帧给一句占位，避免卡片从无到有地跳出来 */
+    report: { tone: 'flat', headline: '正在整理这周的记录…', lines: [], remaining: -1 },
     form: { keep: '', problem: '', try: '', next: '' },
+    /** 手写复盘默认收起：自动结论先看，想补充再展开 */
+    formOpen: false,
     hasNote: false,
     dirty: false,
     savedTip: '',
@@ -79,6 +90,8 @@ Page({
       const p = prev.per[g.id] || { sum: 0, days: 0, mins: 0 };
       // 已完成且本周没投入的目标不再占行，避免周报随历史完成数越滚越长
       if (M.isComplete(st, g) && c.days === 0) return;
+      // 暂停中且本周没投入的目标也不占行：周报不该催一件已经被放下的任务
+      if (M.isPaused(g) && c.days === 0) return;
       /* 文案对齐基准的 week-compare：不含「上周」前缀，由模板补 */
       const cmpParts = [];
       if (p.sum > 0 || p.days > 0) {
@@ -153,6 +166,8 @@ Page({
         count: weekCount,
         prevCount: prevCount
       },
+      /* 自动小结每次渲染都重算：改一条记录、切一周，结论要跟着变 */
+      report: WR.build(st, r.start, r.end, U.todayStr()),
       hasNote: !!note,
       archive: archive
     };
@@ -195,14 +210,21 @@ Page({
     try { sfx.tap(); } catch (e) { /* 静默 */ }
   },
 
+  /** 手写复盘的开合。默认收起是产品决定：先给结论，再谈补充 */
+  toggleForm() {
+    this.setData({ formOpen: !this.data.formOpen });
+    try { sfx.tap(); } catch (e) { /* 静默 */ }
+  },
+
   /** 存档直达：按周一日期换算回 offset，跳到那一周 */
   goArchive(e) {
     const off = Number(e.currentTarget.dataset.off);
     if (isNaN(off)) return;
     this.guardDirty(() => {
       /* 即使就是当前周也执行：表单已清空，点存档行必须把内容装回 KPT 纸，
-         并滚到纸面 —— 否则点按毫无可见反馈（「展开不了」的主因） */
-      this.setData({ offset: off, savedTip: '' });
+         并滚到纸面 —— 否则点按毫无可见反馈（「展开不了」的主因）。
+         纸面默认是收起的，这里必须一并展开，否则滚过去只有一个标题。 */
+      this.setData({ offset: off, savedTip: '', formOpen: true });
       this.render();
       try { wx.pageScrollTo({ selector: '#kpt-card', duration: 200 }); } catch (e) { /* 旧基础库静默 */ }
       try { sfx.tap(); } catch (e) { /* 静默 */ }
@@ -247,6 +269,8 @@ Page({
       dirty: false,
       hasNote: true,
       savedTip: '已保存',
+      /* 存完收回卡片：回到「看结论」的视图，和写日记合上的动作一致 */
+      formOpen: false,
       form: { keep: '', problem: '', try: '', next: '' }
     });
     this.savedTipTimer = setTimeout(() => this.setData({ savedTip: '' }), 1600);

@@ -1,4 +1,5 @@
-<!-- 离屏画布：只用于生成分享图，不参与布局、不覆盖页面 -->
+<!-- 离屏画布：只用于生成分享图，不参与布局、不覆盖页面。
+     延迟挂载（mount）：切 tab 时页面首帧不必为一个离屏 canvas 付初始化成本。 -->
 <view class="sc-host">
-  <canvas type="2d" id="sc" class="sc-canvas"></canvas>
+  <canvas wx:if="{{mount}}" type="2d" id="sc" class="sc-canvas"></canvas>
 </view>

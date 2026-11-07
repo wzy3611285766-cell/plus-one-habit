@@ -21,12 +21,16 @@ const H = 400;
 function summarize(st, today) {
   const state = st || { goals: [], logs: [] };
   const t = today || U.todayStr();
-  // 只把「还在进行中」的目标放进分享卡；已完成的用 totalGoals 单独统计
-  const goals = M.activeGoals(state).filter((g) => !M.isComplete(state, g));
+  // 只把「还在进行中」的目标放进分享卡；已完成 / 暂停的用 totalGoals 单独统计
+  const goals = M.runningGoals(state).filter((g) => !M.isComplete(state, g));
   const todayLogs = M.activeLogs(state).filter((l) => l.date === t);
   const hit = goals.filter((g) => M.logsOn(state, g.id, t) > 0).length;
   const streak = M.globalStreak(state);
   const totalGoals = (state.goals || []).filter((g) => !g.deleted).length;
+  /* 暂停中的目标：不参与今日进度，但要在「没有进行中目标」时说明原因 ——
+     否则全部暂停会被写成「所有目标都已达成」，那是两件完全不同的事。 */
+  const pausedGoals = M.activeGoals(state)
+    .filter((g) => M.isPaused(g) && !M.isComplete(state, g));
 
   const top = goals.slice(0, 3).map((g) => {
     const done = M.doneAmount(state, g.id);
@@ -43,21 +47,29 @@ function summarize(st, today) {
 
   const allDone = goals.length > 0 && hit === goals.length;
   let headline;
-  if (!goals.length) headline = totalGoals > 0 ? '所有目标都已达成' : '从第一个目标开始';
-  else if (allDone) headline = '今天全部目标都打卡了';
+  if (!goals.length) {
+    if (totalGoals === 0) headline = '从第一个目标开始';
+    else if (pausedGoals.length >= totalGoals) headline = '目标都在暂停中';
+    else headline = '所有目标都已达成';
+  } else if (allDone) headline = '今天全部目标都打卡了';
   else if (hit > 0) headline = '今天完成 ' + hit + ' / ' + goals.length + ' 个目标';
   else headline = '今天还有 ' + goals.length + ' 个目标待打卡';
 
   const subParts = [];
-  if (!goals.length && totalGoals > 0) subParts.push('共 ' + totalGoals + ' 个目标');
+  if (!goals.length && totalGoals > 0) {
+    subParts.push(pausedGoals.length ? '暂停 ' + pausedGoals.length + ' 个' : '共 ' + totalGoals + ' 个目标');
+  }
   else if (todayLogs.length) subParts.push('记录 ' + todayLogs.length + ' 次');
   else subParts.push('今天还没记录');
   if (streak > 0) subParts.push('连续 ' + streak + ' 天');
   if (goals.length) subParts.push('进行中 ' + goals.length + ' 个');
 
   let title;
-  if (!goals.length) title = totalGoals > 0 ? '所有目标都达成了，来看看我的打卡' : '开始第一个目标，每天 +1';
-  else if (allDone) title = '今天 ' + goals.length + ' 个目标全打卡了，连续 ' + streak + ' 天';
+  if (!goals.length) {
+    if (totalGoals === 0) title = '开始第一个目标，每天 +1';
+    else if (pausedGoals.length >= totalGoals) title = '目标暂时都暂停了，回来继续 +1';
+    else title = '所有目标都达成了，来看看我的打卡';
+  } else if (allDone) title = '今天 ' + goals.length + ' 个目标全打卡了，连续 ' + streak + ' 天';
   else if (hit > 0) title = '今天完成 ' + hit + '/' + goals.length + ' 个目标，连续 ' + streak + ' 天';
   else title = '目标打卡中：' + goals.length + ' 个目标，今天从 1 开始';
 
