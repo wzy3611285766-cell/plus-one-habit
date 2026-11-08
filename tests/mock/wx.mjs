@@ -271,6 +271,12 @@ export function installWxEnv(opts) {
  */
 export function loadPage(absPath) {
   delete require.cache[require.resolve(absPath)];
+  /* 页面逻辑抽到 *-logic.js 之后，它内部 require 的 store/auth 也会被模块缓存锁住：
+     只删页面入口的缓存，logic 仍然握着上一份 store 实例，页面就会读到别的用例的数据。
+     这里把 logic 的缓存一起清掉，保证每个用例拿到的是当前这套 utils。 */
+  Object.keys(require.cache).forEach((k) => {
+    if (k.indexOf('-logic.js') >= 0) delete require.cache[k];
+  });
   let captured = null;
   const prev = globalThis.Page;
   globalThis.Page = (options) => { captured = options; return options; };

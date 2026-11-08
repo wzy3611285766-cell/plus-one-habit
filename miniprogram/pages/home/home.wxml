@@ -1,0 +1,31 @@
+<!--
+  单页容器。
+  四个页签是这里的四个视图：首次切到时才挂载（mounted），之后只做 hidden 切换。
+  所以第二次以后的切换是「setData + 显隐」，没有 WebView 创建、没有页面 JS 重跑。
+-->
+<view class="page home {{themeClass}}">
+
+  <app-hero />
+
+  <!-- 离屏分享卡：整个容器共用一张，四个视图的 onShareAppMessage 都指向它 -->
+  <share-card id="shareCard"></share-card>
+
+  <view hidden="{{tab !== 'today'}}">
+    <tab-today wx:if="{{mounted.today}}" id="v-today" bind:switchtab="onSwitch" />
+  </view>
+
+  <view hidden="{{tab !== 'board'}}">
+    <tab-board wx:if="{{mounted.board}}" id="v-board" bind:switchtab="onSwitch" />
+  </view>
+
+  <view hidden="{{tab !== 'weekly'}}">
+    <tab-weekly wx:if="{{mounted.weekly}}" id="v-weekly" bind:switchtab="onSwitch" />
+  </view>
+
+  <view hidden="{{tab !== 'mine'}}">
+    <tab-mine wx:if="{{mounted.mine}}" id="v-mine" bind:switchtab="onSwitch" bind:tabbar="onTabBarVisible" bind:tabbartheme="onTabBarTheme" />
+  </view>
+
+</view>
+
+<app-tabbar id="tabbar" active="{{tab}}" bind:switch="onSwitch" />

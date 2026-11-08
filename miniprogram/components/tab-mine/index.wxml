@@ -1,0 +1,174 @@
+<!-- 单页容器里的「我的」视图：hero 与分享卡由 pages/home 统一提供 -->
+<view class="mine {{themeClass}}">
+
+  <!-- ---------- 账号（基准没有这一行，但没有它就没有登录入口） ---------- -->
+  <view wx:if="{{!cloudReady}}" class="card setup-card">
+    <view class="card-title">账号功能尚未启用</view>
+    <view class="card-sub">{{cloudError}}。请参照 README 完成云开发环境配置后重新编译。</view>
+  </view>
+
+  <view class="card id-card">
+    <view class="mine-list">
+      <view wx:if="{{logged}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="openNickname">
+        <view class="mine-ico ico-user"></view>
+        <view class="mine-body">
+          <text class="mine-txt">{{user.nickname || '未设置昵称'}}</text>
+          <text class="mine-sub">已加入 {{joinedDays}} 天</text>
+        </view>
+        <view class="chev chev-right"></view>
+      </view>
+
+      <view wx:else hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="goLogin">
+        <view class="mine-ico ico-user"></view>
+        <view class="mine-body">
+          <text class="mine-txt">未登录</text>
+          <text class="mine-sub">微信一键登录</text>
+        </view>
+        <view class="chev chev-right"></view>
+      </view>
+
+    </view>
+  </view>
+
+  <!-- 分享：卡片里带一份目标模板，对方打开就有了同样的目标，进度各记各的 -->
+  <view class="share-card">
+    <view class="share-head">
+      <view class="share-badge"><view class="mine-ico ico-share"></view></view>
+      <view class="share-copy">
+        <text class="share-title">打卡</text>
+      </view>
+    </view>
+    <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="share-btn" open-type="share">
+      <text>分享</text>
+    </button>
+  </view>
+
+  <!-- ---------- 偏好设置 ---------- -->
+  <view class="card">
+    <view class="card-title">
+      <view class="title-dot"></view>
+      <text>偏好</text>
+    </view>
+
+    <view class="mine-list">
+      <view class="mine-vol">
+        <view class="mine-ico ico-vol"></view>
+        <view class="mine-body">
+          <text class="mine-txt">音效音量</text>
+          <text class="mine-sub">{{volume}}%</text>
+        </view>
+        <view
+          class="vol-bar-wrap {{volActive ? 'is-active' : ''}}"
+          id="volBar"
+          aria-role="slider"
+          aria-label="音效音量"
+          bindtouchstart="onVolumeTouchStart"
+          catchtouchmove="onVolumeTouchMove"
+          bindtouchend="onVolumeTouchEnd"
+          bindtouchcancel="onVolumeTouchEnd"
+        >
+          <view class="vol-bar">
+            <!-- 三层动效：流动渐变 → 扫光 → 上浮微粒；右段底色遮罩表示未填充 -->
+            <view class="vol-flow"></view>
+            <view class="vol-shine"></view>
+            <view class="vol-particle p1"></view>
+            <view class="vol-particle p2"></view>
+            <view class="vol-particle p3"></view>
+            <view class="vol-particle p4"></view>
+            <view class="vol-particle p5"></view>
+            <view class="vol-particle p6"></view>
+            <view class="vol-particle p7"></view>
+            <view class="vol-dim" style="width:{{100 - volume}}%;"></view>
+          </view>
+        </view>
+      </view>
+
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="toggleTheme">
+        <view class="mine-ico ico-theme"></view>
+        <view class="mine-body">
+          <text class="mine-txt">深色模式</text>
+          <text class="mine-sub">{{themeOn ? '始终深色' : '跟随系统'}}</text>
+        </view>
+        <view class="switch {{themeOn ? 'on' : 'off'}}"><view class="knob"></view></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 其他 ---------- -->
+  <view class="card">
+    <view class="card-title">
+      <view class="title-dot"></view>
+      <text>其他</text>
+    </view>
+
+    <view class="mine-list">
+      <view wx:if="{{!hasSample}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="loadSample">
+        <view class="mine-ico ico-download"></view>
+        <view class="mine-body">
+          <text class="mine-txt">载入示例目标</text>
+        </view>
+      </view>
+
+      <view wx:if="{{hasSample}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="clearSample">
+        <view class="mine-ico ico-trash"></view>
+        <view class="mine-body">
+          <text class="mine-txt">移除示例目标</text>
+        </view>
+      </view>
+
+      <view wx:if="{{forked}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn" aria-role="button" bindtap="refork">
+        <view class="mine-ico ico-refresh"></view>
+        <view class="mine-body">
+          <text class="mine-txt">重新载入分享的目标</text>
+          <text class="mine-sub">放弃这台手机上的改动，重新复制一份</text>
+        </view>
+      </view>
+
+      <view wx:if="{{logged}}" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="mine-btn danger" aria-role="button" bindtap="openDeleteAccount">
+        <view class="mine-ico ico-out"></view>
+        <view class="mine-body">
+          <text class="mine-txt">注销账号</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 弹层 ================= -->
+
+  <!-- 修改昵称 -->
+  <view wx:if="{{sheet === 'nickname'}}" class="mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title">修改昵称</view>
+      <view class="field">
+        <text class="field-label">昵称</text>
+        <input class="input" value="{{form.nickname}}" data-field="nickname" bindinput="onInput" maxlength="20" placeholder="最多 20 字" placeholder-class="ph" />
+      </view>
+      <view wx:if="{{formError}}" class="field-hint is-error">{{formError}}</view>
+      <view class="sheet-actions">
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-ghost" bindtap="closeSheet">取消</button>
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" disabled="{{busy}}" bindtap="submitNickname">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 注销账号 -->
+  <view wx:if="{{sheet === 'deleteAccount'}}" class="mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-grab"></view>
+      <view class="sheet-title danger-text">注销账号</view>
+      <view class="card-sub">账号下的全部目标、打卡记录与复盘会被永久删除，无法恢复。</view>
+      <view class="field">
+        <text class="field-label">输入「注销」两个字以确认</text>
+        <input class="input" value="{{form.confirmDelete}}" data-field="confirmDelete" bindinput="onInput" placeholder="注销" placeholder-class="ph" />
+      </view>
+      <view wx:if="{{formError}}" class="field-hint is-error">{{formError}}</view>
+      <view class="sheet-actions">
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-ghost" bindtap="closeSheet">取消</button>
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-danger" disabled="{{busy}}" bindtap="submitDeleteAccount">确认注销</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="toast {{toastOn ? 'is-on' : ''}}">{{toast}}</view>
+</view>
