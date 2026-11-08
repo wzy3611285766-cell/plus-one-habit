@@ -36,6 +36,19 @@ function stripCssComments(src) { return src.replace(/\/\*[\s\S]*?\*\//g, ''); }
 
 function rel(p) { return path.relative(ROOT, p).replace(/\\/g, '/'); }
 
+/**
+ * 页面业务代码的读取入口。
+ *
+ * 单页版把逻辑抽到了 pages/<p>/<p>-logic.js（页面入口只剩一行 Page(require(...))，
+ * 容器也复用同一份）。静态断言要检查的是逻辑本身，所以统一从这里读。
+ */
+function pageJs(p) {
+  const full = p.indexOf('pages/') === 0 ? p : 'pages/' + p + '/' + p;
+  const logic = path.join(MP, full + '-logic.js');
+  if (fs.existsSync(logic)) return read(logic);
+  return read(path.join(MP, full + '.js'));
+}
+
 const MP_FILES = walk(MP);
 const CF_FILES = walk(CF);
 
@@ -143,23 +156,25 @@ test('app.json 的每个页面都有完整的四件套文件', () => {
   });
 });
 
-test('tabBar 页面都在 pages 里注册，且第一个是默认首页', () => {
-  const list = appJson.tabBar.list.map((t) => t.pagePath);
-  eq(list.length, 4, '应有 4 个页签');
-  list.forEach((p) => {
-    assert(appJson.pages.indexOf(p) >= 0, 'tabBar 页 ' + p + ' 未在 pages 中注册');
+test('单页容器是首页，四个视图页面仍注册（老链接不失效）', () => {
+  eq(appJson.pages[0], 'pages/home/home', '首页应是单页容器');
+  ['today', 'board', 'weekly', 'mine'].forEach((p) => {
+    assert(appJson.pages.indexOf('pages/' + p + '/' + p) >= 0,
+      p + ' 页面仍需注册：旧的分享链接 / 二维码指向它');
   });
-  eq(appJson.pages[0], list[0], '首页应与第一个页签一致');
+  eq(appJson.tabBar, undefined, '单页版不再依赖原生 tabBar');
 });
 
-test('使用自定义 tabBar 时不依赖任何位图图标', () => {
-  eq(appJson.tabBar.custom, true);
-  appJson.tabBar.list.forEach((t) => {
-    eq(t.iconPath, undefined, t.text + ' 不应声明 iconPath（本项目不引位图资源）');
+test('底栏是页面内自绘组件，不依赖任何位图图标', () => {
+  ['index.js', 'index.json', 'index.wxml', 'index.wxss'].forEach((f) => {
+    assert(fs.existsSync(path.join(MP, 'components', 'app-tabbar', f)),
+      '缺少 components/app-tabbar/' + f);
   });
-  assert(fs.existsSync(path.join(MP, 'custom-tab-bar', 'index.js')), '缺少 custom-tab-bar/index.js');
-  assert(fs.existsSync(path.join(MP, 'custom-tab-bar', 'index.wxml')), '缺少 custom-tab-bar/index.wxml');
-  assert(fs.existsSync(path.join(MP, 'custom-tab-bar', 'index.wxss')), '缺少 custom-tab-bar/index.wxss');
+  const wxml = read(path.join(MP, 'components', 'app-tabbar', 'index.wxml'));
+  assert(wxml.indexOf('<image') < 0, '底栏图标应继续用 CSS 画，不引入位图');
+  const homeJson = JSON.parse(read(path.join(MP, 'pages', 'home', 'home.json')));
+  eq(homeJson.usingComponents['app-tabbar'], '/components/app-tabbar/index',
+    '单页容器应挂载这条底栏');
 });
 
 test('字体统一：页面、原生控件、自定义组件都走 --font-sans', () => {
@@ -391,7 +406,7 @@ test('每个页面都把主题类挂在根容器上', () => {
   pages.forEach((p) => {
     const wxml = read(path.join(MP, p + '.wxml'));
     assert(wxml.indexOf('{{themeClass}}') >= 0, p + '.wxml 的根容器缺少 {{themeClass}}');
-    const js = read(path.join(MP, p + '.js'));
+    const js = pageJs(p);
     assert(js.indexOf('themeClassOf') >= 0, p + '.js 没有计算 themeClass');
   });
   const tabWxml = read(path.join(MP, 'custom-tab-bar', 'index.wxml'));
@@ -442,7 +457,7 @@ test('+1 主按钮结构对齐基准：呼吸光 + 斜向高光 + 下缘反光',
 test('+1 连击反馈：四层特效齐全，且节点数被限制在预算内', () => {
   const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
   const css = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
-  const js = read(path.join(MP, 'pages', 'today', 'today.js'));
+  const js = pageJs('today');
 
   ['class="p1-ring', 'class="p1-spark', 'class="p1-float', 'class="confetti-bit', 'class="confetti-glow']
     .forEach((k) => { assert(wxml.indexOf(k) >= 0, 'today.wxml 缺少节点 ' + k); });
@@ -688,7 +703,7 @@ test('四个 tab 页都用自绘 hero，且状态栏配色跟着页面头部走'
     assert(wxml.indexOf('<app-hero') >= 0, p + '.wxml 应使用 <app-hero>');
     assert(wxml.indexOf('class="page-title"') < 0, p + '.wxml 不该再有 page-title（标题在 hero 里）');
 
-    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    const js = pageJs(p);
     assert(js.indexOf('setStatusBarLight(true)') >= 0, p + '.js 应在 onShow 里把状态栏改成白字');
   });
 
@@ -792,7 +807,7 @@ test('分叉模块存在，store 暴露完整入口', () => {
 
 test('四个页签都支持转发，路径由 fork.shareConfig 统一构造', () => {
   ['today', 'board', 'weekly', 'mine'].forEach((p) => {
-    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    const js = pageJs(p);
     assert(js.indexOf('onShareAppMessage') >= 0, p + '.js 应定义 onShareAppMessage');
     assert(js.indexOf('fork.shareConfig') >= 0, p + '.js 应使用 fork.shareConfig');
   });
@@ -809,7 +824,7 @@ test('「我的」页有分享入口与（分叉态的）重新载入入口', ()
 test('今日页分叉欢迎横幅：品牌蓝配色 + 一辈子一次的闸门', () => {
   const wxml = read(path.join(MP, 'pages', 'today', 'today.wxml'));
   const css = stripCssComments(read(path.join(MP, 'pages', 'today', 'today.wxss')));
-  const js = read(path.join(MP, 'pages', 'today', 'today.js'));
+  const js = pageJs('today');
 
   assert(wxml.indexOf('class="fk-banner"') >= 0, '缺少横幅节点 .fk-banner');
   assert(wxml.indexOf('bindtap="dismissForkBanner"') >= 0, '横幅应可关闭');
@@ -960,7 +975,7 @@ test('tabBar：按下只压住，松手才回弹（轻点/长按同规则）', (
 test('弹层与自定义 tabBar：组件级 hidden 收起（z-index 对自定义 tabBar 不可靠）', () => {
   const barJs = read(path.join(MP, 'custom-tab-bar', 'index.js'));
   const barWxml = read(path.join(MP, 'custom-tab-bar', 'index.wxml'));
-  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
+  const mineJs = pageJs('mine');
   assert(barJs.indexOf('hidden: false') >= 0, 'tabBar 组件应有 hidden 状态');
   assert(barJs.indexOf('setVisible(visible)') >= 0, 'tabBar 组件应有 setVisible 方法');
   assert(barWxml.indexOf('wx:if="{{!hidden}}"') >= 0, 'tabBar 根节点应受 hidden 控制');
@@ -1022,7 +1037,7 @@ test('不强制登录：先能浏览功能，授权登录由用户自行选择�
   assert(appJs.indexOf("wx.reLaunch({ url: '/pages/login/login' })") < 0,
     '启动链路不得主动跳登录页');
   ['today', 'board', 'weekly', 'mine'].forEach((p) => {
-    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    const js = pageJs(p);
     assert(js.indexOf('ensureLoginGate') < 0, p + ' 的 onShow 不应再拦截未登录用户');
   });
 
@@ -1034,7 +1049,7 @@ test('不强制登录：先能浏览功能，授权登录由用户自行选择�
 test('音效与震动固定开启，但音效音量仍可调（启动不得重置音量）', () => {
   const wxml = read(path.join(MP, 'pages', 'mine', 'mine.wxml'));
   const mineCss = stripCssComments(read(path.join(MP, 'pages', 'mine', 'mine.wxss')));
-  const mineJs = read(path.join(MP, 'pages', 'mine', 'mine.js'));
+  const mineJs = pageJs('mine');
   ['打卡音效', '打卡震动'].forEach((k) => {
     assert(wxml.indexOf(k) < 0, '「我的」页不应再有「' + k + '」开关');
   });
@@ -1118,7 +1133,7 @@ test('分享卡：四个页签挂同一个离屏组件，分享时补图与数�
     const wxml = read(path.join(MP, 'pages', p, p + '.wxml'));
     assert(wxml.indexOf('<share-card id="shareCard">') >= 0, p + ' 未挂载分享卡画布');
 
-    const js = read(path.join(MP, 'pages', p, p + '.js'));
+    const js = pageJs(p);
     assert(js.indexOf('shareCard.decorate') >= 0, p + ' 分享时未补分享图');
     assert(js.indexOf('shareCard.refresh') >= 0, p + ' 页面显示时未刷新分享卡');
   });

@@ -307,7 +307,7 @@ await test('shareConfig：路径指向今日页，fr 解开就是当前目标', 
   UD.store.addGoal(goal('背单词', { createdAt: '2026-10-01', deadline: '2026-12-30' }));
   const cfg = UD.fork.shareConfig(UD.store.get());
 
-  assert(cfg.path.indexOf('/pages/today/today?fr=') === 0, '路径应指向今日页并带 fr');
+  assert(cfg.path.indexOf('/pages/home/home?tab=today&fr=') === 0, '路径应指向单页容器的今日视图并带 fr');
   const enc = cfg.path.split('fr=')[1];
   const tpl = UD.fork.decodeTpl(enc);
   eq(tpl.g.length, 1);

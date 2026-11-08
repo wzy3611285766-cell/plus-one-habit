@@ -402,8 +402,8 @@ await test('登录页有「先随便看看」出口：不登录也能回到今�
   const before = env.log.length;
   page.browse();
   const nav = env.log.slice(before);
-  assert(nav.some((x) => x.type === 'switchTab' && x.url === '/pages/today/today'),
-    '没有页面栈时应 switchTab 回今日页，而不是把用户困在登录页');
+  assert(nav.some((x) => x.type === 'reLaunch' && x.url === '/pages/home/home?tab=today'),
+    '没有页面栈时应回到单页容器的今日视图，而不是把用户困在登录页');
 
   // 从今日页点「登录」进来（有页面栈）→ 直接返回上一页
   env.pageStack = [{}, {}];

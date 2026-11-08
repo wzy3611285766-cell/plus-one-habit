@@ -1,0 +1,153 @@
+<!-- 单页容器里的「周报」视图：hero 与分享卡由 pages/home 统一提供 -->
+<view class="weekly {{themeClass}}">
+
+  <!-- ---------- 卡片一：周切换 + 本周汇总 ---------- -->
+  <view class="card week-card">
+    <view class="week-nav">
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-ghost week-btn" aria-role="button" bindtap="prevWeek">上一周</view>
+      <text class="week-label">{{range}}{{isCurrent ? '（本周）' : ''}}</text>
+      <view hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-ghost week-btn {{isCurrent ? 'is-off' : ''}}" aria-role="button" aria-disabled="{{isCurrent}}" bindtap="nextWeek">下一周</view>
+    </view>
+
+    <view wx:if="{{!summary.length}}" class="week-empty">这一周还没有打卡记录</view>
+
+    <block wx:else>
+      <view wx:for="{{summary}}" wx:key="gid" class="week-summary-row">
+        <view class="wsr-name">
+          <view class="goal-color-dot" style="background:{{item.color}}"></view>
+          <text class="wsr-text">{{item.name}}</text>
+        </view>
+        <view class="vals">
+          <text wx:if="{{item.hasSum}}" class="wsr-sum num">+{{item.sum}}</text>
+          <text wx:if="{{item.hasSum}}"> {{item.unit }} · </text>
+          <text>打卡 <text class="wsr-strong num">{{item.days}}</text> 天</text>
+          <view wx:if="{{item.compare}}" class="week-compare">上周 {{item.compare}}</view>
+        </view>
+      </view>
+
+      <view class="week-summary-row week-total">
+        <text class="wsr-total-k">PLus one</text>
+        <view class="vals">
+          <text class="wsr-strong num">{{totals.count}}</text> 次
+          <view wx:if="{{totals.prevCount > 0}}" class="week-compare">上周 {{totals.prevCount}} 次</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- ---------- 卡片二：本周小结（自动生成，不用用户写） ---------- -->
+  <view class="card rep-card tone-{{report.tone}}">
+    <view class="card-title">
+      <view class="title-dot rep-dot"></view>
+      <text>本周小结</text>
+      <view class="rep-meta">
+        <text wx:if="{{report.remaining > 0}}" class="rep-left">还剩 {{report.remaining}} 天</text>
+        <text class="rep-auto">自动生成</text>
+      </view>
+    </view>
+
+    <text class="rep-headline">{{report.headline}}</text>
+
+    <view wx:if="{{report.lines.length}}" class="rep-lines">
+      <view wx:for="{{report.lines}}" wx:key="k" class="rep-line">
+        <text class="rep-tag rep-tag-{{item.kind}}">{{item.label}}</text>
+        <text class="rep-text">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ---------- 卡片三：补充你的想法（KPT，默认收起） ----------
+       自动结论已经给了，这张纸是可选的：想记下自己的判断再展开。
+       收起时不渲染输入框，切换周也不会因为四个空 input 拉长页面。 -->
+  <view class="card" id="kpt-card">
+    <view class="card-title kpt-head" aria-role="button" aria-label="补充你的想法，点按展开" bindtap="toggleForm">
+      <view class="title-dot"></view>
+      <text>补充你的想法</text>
+      <view class="kpt-meta">
+        <text class="kpt-opt">{{hasNote ? '已写过' : '可选'}}</text>
+        <view class="arc-toggle {{formOpen ? 'is-open' : ''}}"></view>
+      </view>
+    </view>
+
+    <block wx:if="{{formOpen}}">
+      <view class="kpt-row">
+        <text class="kpt-label">保持 Keep<text class="kpt-hint"> · 做得好的，下周继续</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.keep}}"
+          data-field="keep"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：单词连续 6 天没断"
+          placeholder-class="ph"
+        />
+      </view>
+
+      <view class="kpt-row">
+        <text class="kpt-label">问题 Problem<text class="kpt-hint"> · 卡在哪了</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.problem}}"
+          data-field="problem"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：阅读总拖到睡前，一躺下就刷手机"
+          placeholder-class="ph"
+        />
+      </view>
+
+      <view class="kpt-row">
+        <text class="kpt-label">尝试 Try<text class="kpt-hint"> · 下周试试这样改</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.try}}"
+          data-field="try"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：阅读改到午饭后 20 分钟"
+          placeholder-class="ph"
+        />
+      </view>
+
+      <view class="kpt-row">
+        <text class="kpt-label">下周预案<text class="kpt-hint"> · 如果…我就…</text></text>
+        <input
+          class="kpt-input"
+          value="{{form.next}}"
+          data-field="next"
+          bindinput="onField"
+          maxlength="100"
+          placeholder="例：如果睡前想刷手机，我就先把书读 2 页"
+          placeholder-class="ph"
+        />
+      </view>
+
+      <view class="kpt-actions">
+        <button hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="btn btn-primary" bindtap="save">保存复盘</button>
+      </view>
+    </block>
+
+    <text wx:else class="kpt-teaser">上面的结论是系统按这周记录算出来的。想记下自己的判断，展开写两句。</text>
+  </view>
+
+  <!-- ---------- 卡片三：往期复盘（写过才出现，默认收起） ---------- -->
+  <view wx:if="{{archive.length}}" class="card">
+    <view class="card-title arc-head" aria-role="button" aria-label="往期复盘，点按展开" bindtap="toggleArchive">
+      <view class="title-dot"></view>
+      <text>往期复盘</text>
+      <view class="arc-meta">
+        <text class="arc-count">{{archive.length}} 篇</text>
+        <view class="arc-toggle {{archiveOpen ? 'is-open' : ''}}"></view>
+      </view>
+    </view>
+    <view wx:if="{{archiveOpen}}" class="arc-list">
+      <view wx:for="{{archive}}" wx:key="key" hover-class="is-press" hover-start-time="0" hover-stay-time="300" class="arc-row" aria-role="button" data-off="{{item.off}}" bindtap="goArchive">
+        <view class="arc-main">
+          <text class="arc-week">{{item.label}}</text>
+          <text class="arc-snippet">{{item.snippet}}</text>
+        </view>
+        <view class="arc-chev"></view>
+      </view>
+    </view>
+  </view>
+</view>
