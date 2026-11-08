@@ -1,5 +1,6 @@
 <!-- 离屏画布：只用于生成分享图，不参与布局、不覆盖页面。
-     延迟挂载（mount）：切 tab 时页面首帧不必为一个离屏 canvas 付初始化成本。 -->
+     节点常驻（1×1 + opacity:0），初始化推迟到页面首帧之后，见 index.js 的 ready。
+     不要改成 wx:if 动态插入：原生组件在页面生命周期中途插拔会撞出渲染层的节点错误。 -->
 <view class="sc-host">
-  <canvas wx:if="{{mount}}" type="2d" id="sc" class="sc-canvas"></canvas>
+  <canvas type="2d" id="sc" class="sc-canvas"></canvas>
 </view>

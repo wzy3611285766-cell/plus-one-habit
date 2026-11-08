@@ -76,6 +76,24 @@ Component({
     this.refreshTheme();
   },
 
+  /**
+   * 所属页面每次 show 都自己校正一次选中态。
+   *
+   * 为什么不能只靠页面的 onShow：
+   *   切 tab 时新页面这份组件挂载得比页面 onShow 早，attached 里
+   *   getCurrentPages() 取到的可能还是上一个页面；而页面 onShow 里
+   *   getTabBar() 有时还没就绪，setActive 被跳过 —— 两种时序都会让
+   *   底栏停在上一页的高亮上（例如人在周报页，「进度看板」却亮着）。
+   *   pageLifetimes.show 由框架在页面显示时触发，此时页面一定已入栈。
+   */
+  pageLifetimes: {
+    show() {
+      const key = currentKey();
+      if (key && key !== this.data.active) this.setData({ active: key });
+      this.refreshTheme();
+    }
+  },
+
   detached() {
     if (this._pressTimer) clearTimeout(this._pressTimer);
   },

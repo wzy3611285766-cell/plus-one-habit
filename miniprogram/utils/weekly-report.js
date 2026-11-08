@@ -127,18 +127,20 @@ function build(st, start, end, today) {
   const per = collect(st, goals, start, end);
   const prevPer = collect(st, goals, prevStart, prevEnd);
 
-  /* ---------- 一句话总结 ---------- */
+  /* ---------- 一句话总结 ----------
+     只留四个成分：这周几天 / PLus one 几次 / 活跃几天 / 比上周同期怎样。
+     用户要判断的只有这四个数字，多一个字都是噪音。 */
   const head = [];
-  if (isCurrent && elapsed < 7) head.push('这周过了 ' + elapsed + ' 天');
-  head.push('打卡 ' + count + ' 次');
-  if (Object.keys(daySet).length > 0) head.push('活跃 ' + Object.keys(daySet).length + ' 天');
+  head.push((isCurrent ? '这周 ' : '那周 ') + elapsed + ' 天');
+  head.push('PLus one ' + count + ' 次');
+  head.push('活跃 ' + Object.keys(daySet).length + ' 天');
 
   const diff = count - prevCount;
   let tone = 'flat';
   if (prevCount > 0) {
     if (diff > 0) { head.push('比上周同期多 ' + diff + ' 次'); tone = 'good'; }
     else if (diff < 0) { head.push('比上周同期少 ' + (-diff) + ' 次'); tone = 'watch'; }
-    else head.push('和上周同期持平');
+    else head.push('比上周同期持平');
   } else {
     head.push('上周同期还没有记录');
     tone = count >= elapsed ? 'good' : 'flat';

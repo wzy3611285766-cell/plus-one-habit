@@ -251,6 +251,21 @@ test('WXML 不出现内联事件写法（小程序不支持 onclick）', () => {
   });
 });
 
+/**
+ * wx:elif / wx:else 必须紧邻前一个条件节点。
+ * 中间夹一个注释，WXML 编译会直接失败 —— 开发者工具那边只报一个资源 500，
+ * 页面整页白屏，很难和「注释」联系起来（2026-11-07 真机踩过一次）。
+ */
+test('wx:elif / wx:else 前不能夹注释节点', () => {
+  mp('.wxml').forEach((f) => {
+    const src = read(f);
+    const re = /<!--[\s\S]*?-->\s*<[a-zA-Z][^>]*\swx:(?:elif|else)\b/g;
+    const m = re.exec(src);
+    assert(!m, rel(f) + ' 在条件注释后直接写了 wx:elif/wx:else，编译会失败：'
+      + String(m && m[0]).replace(/\s+/g, ' ').slice(0, 120));
+  });
+});
+
 test('列表渲染都带 wx:key', () => {
   mp('.wxml').forEach((f) => {
     const src = read(f);

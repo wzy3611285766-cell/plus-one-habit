@@ -20,11 +20,6 @@ const DRAW_VERSION = 4;
 const ICON_SRC = '/assets/icon-app.png';
 
 Component({
-  data: {
-    /** 画布延迟挂载：见 ready 里的说明 */
-    mount: false
-  },
-
   lifetimes: {
     /**
      * 首次绘制不跟页面首帧抢线程。
@@ -34,19 +29,24 @@ Component({
      * 很重的同步开销。它挂在 ready 里，正好压在新页面首帧上 ——
      * 低端机上就是「切过去顿一下」。分享图没有任何实时性，等首帧和入场动画
      * 结束再画完全够用（用户看完内容才会点转发）。
+     *
+     * 注意：节点本身必须常驻，只推迟「初始化」。
+     * 之前用 wx:if 在 600ms 后才插入 canvas，等于在页面生命周期中途
+     * 往渲染层插一个原生组件；切页时框架移除节点会和插入队列撞车，
+     * 报 removeChild / not a child of this node。1×1 的透明 canvas
+     * 留在页面里几乎不花钱，稳定的节点结构比省那一点更重要。
      */
     ready() {
       this._alive = true;
-      if (this._mountTimer) clearTimeout(this._mountTimer);
-      this._mountTimer = setTimeout(() => {
-        this._mountTimer = null;
-        if (!this._alive) return;
-        this.setData({ mount: true }, () => { if (this._alive) this.initCanvas(); });
+      if (this._drawTimer) clearTimeout(this._drawTimer);
+      this._drawTimer = setTimeout(() => {
+        this._drawTimer = null;
+        if (this._alive) this.initCanvas();
       }, 600);
     },
     detached() {
       if (this._timer) clearTimeout(this._timer);
-      if (this._mountTimer) { clearTimeout(this._mountTimer); this._mountTimer = null; }
+      if (this._drawTimer) { clearTimeout(this._drawTimer); this._drawTimer = null; }
       this._alive = false;
     }
   },

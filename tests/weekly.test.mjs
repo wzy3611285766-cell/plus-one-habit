@@ -60,8 +60,11 @@ await test('本周没过完时用「上周同期」对比，而不是整周', ()
     log('g1', '2026-11-01')
   ]);
   const r = WR.build(st, WEEK_START, WEEK_END, TODAY);
-  includes(r.headline, '这周过了 6 天');
+  includes(r.headline, '这周 6 天');
+  includes(r.headline, 'PLus one 4 次');
+  includes(r.headline, '活跃 4 天');
   includes(r.headline, '比上周同期多 1 次');
+  assert(r.headline.indexOf('打卡') < 0, '口径统一成 PLus one，不再混用「打卡」');
   eq(r.tone, 'good');
   eq(r.remaining, 1);
 });

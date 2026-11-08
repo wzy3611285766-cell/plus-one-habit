@@ -246,13 +246,17 @@
         <text>编辑目标</text>
       </view>
 
-      <!-- 暂停 / 恢复：同一个位置，按当前状态二选一 -->
+      <!--
+        暂停 / 恢复：同一个位置，按当前状态二选一。
+        这里刻意用两个独立的 wx:if，而不是 wx:if + wx:elif ——
+        wx:elif 必须紧邻前一个条件节点，中间夹任何注释都会让编译失败（表现为整页白屏）。
+        已完成的目不再提供暂停：它已经不在待办里，暂停没有意义。
+      -->
       <view wx:if="{{menuPaused}}" class="menu-item" aria-role="button" bindtap="menuResume">
         <view class="mi-ico mi-play"></view>
         <text>恢复任务</text>
       </view>
-      <!-- 已完成的目标不再提供暂停：它已经不在待办里，暂停没有意义 -->
-      <view wx:elif="{{!menuDone}}" class="menu-item" aria-role="button" bindtap="menuPause">
+      <view wx:if="{{!menuPaused && !menuDone}}" class="menu-item" aria-role="button" bindtap="menuPause">
         <view class="mi-ico mi-pause"></view>
         <text>暂停任务</text>
       </view>
