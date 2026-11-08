@@ -241,8 +241,14 @@
     <view class="goal-menu-sheet" catchtap="noopMenu">
       <view class="menu-head">{{menuName}}</view>
 
+      <!--
+        图标必须是「外层 .mi-ico（固定 20px 居中）+ 内层图形」两层。
+        以前把 mi-pencil / mi-trash 直接写在同一个节点上，图形的 width（16px / 12px）
+        会覆盖 .mi-ico 的 20px，每个菜单项的文字起点就跟着差 4~8px ——
+        看起来就是「三个按键的文字不齐」。
+      -->
       <view class="menu-item" aria-role="button" bindtap="menuEdit">
-        <view class="mi-ico mi-pencil"></view>
+        <view class="mi-ico"><view class="mi-pencil"></view></view>
         <text>编辑目标</text>
       </view>
 
@@ -253,21 +259,21 @@
         已完成的目不再提供暂停：它已经不在待办里，暂停没有意义。
       -->
       <view wx:if="{{menuPaused}}" class="menu-item" aria-role="button" bindtap="menuResume">
-        <view class="mi-ico mi-play"></view>
+        <view class="mi-ico"><view class="mi-play"></view></view>
         <text>恢复任务</text>
       </view>
       <view wx:if="{{!menuPaused && !menuDone}}" class="menu-item" aria-role="button" bindtap="menuPause">
-        <view class="mi-ico mi-pause"></view>
+        <view class="mi-ico"><view class="mi-pause"></view></view>
         <text>暂停任务</text>
       </view>
 
       <view wx:if="{{menuOverdue}}" class="menu-item" bindtap="menuEdit">
-        <view class="mi-ico mi-flag"></view>
+        <view class="mi-ico"><view class="mi-flag"></view></view>
         <text>调整计划</text>
       </view>
 
       <view class="menu-item menu-item-danger" aria-role="button" bindtap="menuDelete">
-        <view class="mi-ico mi-trash"></view>
+        <view class="mi-ico"><view class="mi-trash"></view></view>
         <text>删除目标</text>
       </view>
 
