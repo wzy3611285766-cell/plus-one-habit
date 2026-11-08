@@ -68,11 +68,9 @@ Page({
     prefs.setStatusBarLight(true);
     this.render(true);
     shareCard.refresh(this);
-    /* 只在第一次进入时播：每次切回都从 0 涨一遍，既慢又像「在重新加载」 */
-    if (!this._fxPlayed) {
-      this._fxPlayed = true;
-      this.playEnterFx();
-    }
+    /* 每次进入都播一遍：这是「这一页刚打开」的反馈，切回来没有动画会显得没加载完。
+       逐帧由 setData 回调驱动，所以重复播也不会卡。 */
+    this.playEnterFx();
   },
 
   /* ================= 入场喷涌 =================
