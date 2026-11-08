@@ -69,16 +69,20 @@ module.exports = {
     prefs.setStatusBarLight(true);
     this.render(true);
     shareCard.refresh(this);
-    this.playEnterFx();
+    /* 只在第一次进入时播：每次切回都从 0 涨一遍，既慢又像「在重新加载」 */
+    if (!this._fxPlayed) {
+      this._fxPlayed = true;
+      this.playEnterFx();
+    }
   },
 
   /* ================= 入场喷涌 =================
-     切到看板时图表从无到有「喷涌」成形：
-       柱子 —— fxOn 挂 is-gush 类，CSS scaleY 从地面依次弹起（每列错峰 25ms）；
-       圆环 —— conic-gradient 的 --p 无法做 CSS 过渡，用 14 步 easeOut 扫到
-               目标值，中心的百分比数字跟着一起数上来。
-     两拍式重启：先摘类并把圆环归零，下一拍再挂类起跑 —— 没有这个间隔，
-     上一轮还挂在节点上的动画类不会被重新触发。 */
+    切到看板时图表从无到有「喷涌」成形：
+      柱子 —— fxOn 挂 is-gush 类，CSS scaleY 从地面依次弹起（每列错峰 25ms）；
+      圆环 —— conic-gradient 的 --p 无法做 CSS 过渡，只能按帧改数字；
+              帧由 setData 回调驱动（见下），保证每帧都渲染出来。
+    两拍式重启：先摘类并把圆环归零，下一拍再挂类起跑 —— 没有这个间隔，
+    上一轮还挂在节点上的动画类不会被重新触发。 */
   playEnterFx() {
     if (!this.data.sections.length) return;
     this.stopEnterFx();
@@ -92,15 +96,34 @@ module.exports = {
     this.setData(zero);
 
     this.fxDelayTimer = setTimeout(() => {
-      this.setData({ fxOn: true });
-      const steps = 10;   // 10 帧 × 36ms ≈ 360ms，够看出「长出来」
-      let i = 0;
-      this.pctTimer = setInterval(() => {
-        i++;
-        const eased = 1 - Math.pow(1 - i / steps, 3);
-        this.setData(this.pctPatch(eased));
-        if (i >= steps) { clearInterval(this.pctTimer); this.pctTimer = null; }
-      }, 36);
+      const DURATION = 460;
+      const startTime = Date.now();
+      this._lastPctSig = '';
+
+      /* 用 setData 的回调串起下一帧，而不是固定 36ms 定时器。
+         固定间隔的问题是：渲染层还没画完，下一帧的数据就发过去了，
+         帧被合并 / 丢弃，数字看起来一顿一顿的。
+         回调驱动保证「这一帧真的渲染出来了」再算下一帧 ——
+         帧率随设备能力浮动，但每一帧都看得见，观感是匀的。 */
+      const tick = () => {
+        const t = Math.min(1, (Date.now() - startTime) / DURATION);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const patch = this.pctPatch(eased);
+
+        const next = () => {
+          if (t >= 1) { this.pctTimer = null; return; }
+          this.pctTimer = setTimeout(tick, 0);
+        };
+
+        /* 整数百分比连续两帧相同是常态（0~100 的早期阶段尤其明显）：
+           跳过重复的 setData，别让渲染层空转 */
+        const sig = JSON.stringify(patch);
+        if (sig === this._lastPctSig) { next(); return; }
+        this._lastPctSig = sig;
+        this.setData(patch, next);
+      };
+
+      this.setData({ fxOn: true }, tick);
     }, 40);
   },
 
@@ -122,7 +145,11 @@ module.exports = {
   },
 
   stopEnterFx() {
-    if (this.pctTimer) { clearInterval(this.pctTimer); this.pctTimer = null; }
+    if (this.pctTimer) {
+      clearTimeout(this.pctTimer);
+      clearInterval(this.pctTimer);
+      this.pctTimer = null;
+    }
     if (this.fxDelayTimer) { clearTimeout(this.fxDelayTimer); this.fxDelayTimer = null; }
   },
 
