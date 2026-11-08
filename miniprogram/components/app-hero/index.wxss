@@ -33,7 +33,10 @@
   overflow:hidden;
   margin:calc(var(--gap-block) * -.7) calc(var(--pad-page) * -1) 0;
   padding:0 var(--pad-page) 8px;
+  /* 兜底：CSS 变量没生效时，hero 至少是一块品牌蓝，而不是透明成黑 */
+  background:#007AFF;
   background:var(--hero-grad);
+  color:#F2F2F7;
   color:var(--text-on-dark);
 }
 

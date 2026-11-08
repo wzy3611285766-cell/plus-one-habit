@@ -79,6 +79,19 @@
   color:var(--text-3);
 }
 
+/**
+ * 首帧无模糊档。
+ * 组件刚挂上来的 160ms 里先不挂 backdrop-filter：切 tab 时整条栏是新建的，
+ * 模糊要立刻读一遍底图，低端安卓上会和页面首帧抢同一帧。
+ * 底色提到 .92 补上「没有模糊」的透明度损失，肉眼几乎看不出差别。
+ */
+.tabbar.no-glass{
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  background:rgba(255,255,255,.92);
+}
+.tabbar.theme-dark.no-glass{ background:rgba(28,28,30,.92); }
+
 /* spacing 分体：每枚胶囊都要「饱满成立」，间距拉开到 6px。
    融合（2px 相接）是老方案；改版后按键自身有玻璃体量和投影，
    再贴在一起会糊成一片 */

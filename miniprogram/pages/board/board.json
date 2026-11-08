@@ -1,5 +1,7 @@
 {
   "navigationStyle": "custom",
+  "backgroundTextStyle": "dark",
+  "initialRenderingCache": "static",
   "usingComponents": {
     "app-hero": "/components/app-hero/index",
     "share-card": "/components/share-card/index"

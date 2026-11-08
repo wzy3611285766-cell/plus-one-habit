@@ -61,6 +61,8 @@ Component({
     /** 松手：才播放回弹动画 */
     popKey: '',
     themeClass: currentThemeClass(),
+    /** 首帧先关掉毛玻璃：切页时新页面要重建整条栏，blur 是安卓上最贵的一笔 */
+    glass: false,
     list: [
       { key: 'today', text: '今日打卡', path: '/pages/today/today' },
       { key: 'board', text: '进度看板', path: '/pages/board/board' },
@@ -74,6 +76,7 @@ Component({
     const key = currentKey();
     if (key && key !== this.data.active) this.setData({ active: key });
     this.refreshTheme();
+    this.enableGlass();
   },
 
   /**
@@ -91,14 +94,32 @@ Component({
       const key = currentKey();
       if (key && key !== this.data.active) this.setData({ active: key });
       this.refreshTheme();
+      this.enableGlass();
     }
   },
 
   detached() {
     if (this._pressTimer) clearTimeout(this._pressTimer);
+    if (this._glassTimer) { clearTimeout(this._glassTimer); this._glassTimer = null; }
   },
 
   methods: {
+    /**
+     * 首帧先不给毛玻璃，等新页面画完（160ms）再把 blur 挂回来。
+     *
+     * 为什么：切 tab 时新页面这份组件要整条重建，backdrop-filter 会立刻
+     * 触发一次「读取底图 + 高斯模糊」；低端安卓上这一下就是肉眼可见的顿挫。
+     * 纯色底在 160ms 内几乎看不出差别（页面本身也在渲染），
+     * 但省掉的是切页瞬间最贵的一次合成。
+     */
+    enableGlass() {
+      if (this.data.glass || this._glassTimer) return;
+      this._glassTimer = setTimeout(() => {
+        this._glassTimer = null;
+        if (!this.data.glass) this.setData({ glass: true });
+      }, 160);
+    },
+
     /** 供页面在弹层开合时调用：收起 / 恢复整条栏 */
     setVisible(visible) {
       if (this.data.hidden === !visible) return;

@@ -86,7 +86,7 @@ Page({
     // 横幅贴在自绘 hero 下方：位置由胶囊量出来的导航高度决定（app.measureNav）
     const nav = getApp().globalData.nav || {};
     this.setData({ bannerTop: (nav.statusBar || 20) + (nav.navH || 44) + 10 });
-    this.render();
+    this.render(true);
   },
 
   onShow() {
@@ -96,14 +96,36 @@ Page({
     if (auth.isLogged()) {
       store.pull().then(() => this.render()).catch(() => this.render());
     }
-    this.render();
+    this.render(true);
     shareCard.refresh(this);
+  },
+
+  /**
+   * 切走时把「临时状态」复位。
+   *
+   * 页面开了 initialRenderingCache: static，微信会把最后一帧的 data 存下来，
+   * 下次冷启动打开这个 tab 时先用它渲一帧。弹层、彩带、提示这些一次性状态
+   * 如果留在缓存里，用户会看到上回的菜单先闪一下再消失。真实数据不用清，
+   * 它们本来就要用缓存值占位。
+   */
+  onHide() {
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
+    this._rest = null;
+    if (!this.data.menuOn && !this.data.toastOn && !this.data.p1Level &&
+        !this.data.confettiOn && !this.data.fxList.length) return;
+    this.setData({
+      menuOn: false, menuGid: '', menuName: '', menuOverdue: false,
+      menuPaused: false, menuDone: false,
+      toastOn: false, toast: '',
+      fxList: [], popClass: '', p1Level: '',
+      confettiOn: false, confetti: []
+    });
   },
 
   onUnload() {
     if (this.unsub) this.unsub();
     if (this.unsubAuth) this.unsubAuth();
-    [this.toastTimer, this.bumpTimer, this.comboTimer, this.confettiTimer].forEach((t) => {
+    [this._restTimer, this.toastTimer, this.bumpTimer, this.comboTimer, this.confettiTimer].forEach((t) => {
       if (t) clearTimeout(t);
     });
     (this.fxTimers || []).forEach((t) => clearTimeout(t));
@@ -124,7 +146,7 @@ Page({
 
   /* ================= 渲染 ================= */
 
-  render() {
+  render(defer) {
     const st = store.get();
     if (!st) return;
     const logged = auth.isLogged();
@@ -347,10 +369,33 @@ Page({
     const sig = JSON.stringify(patch);
     if (sig === this._lastRenderSig) return;
     this._lastRenderSig = sig;
+
+    /* 节奏卡在页面最底部，首帧没必要跟着一起发：先让目标卡出来 */
+    const rest = { rhythm: patch.rhythm, rhythmTotal: patch.rhythmTotal };
+    delete patch.rhythm;
+    delete patch.rhythmTotal;
     this.setData(patch);
+    this.flushRest(rest, defer);
     /* 只有当天建议量的快照真的被写入了才落盘。
        这一页会因为同步事件被反复重绘，无条件 save 等于每次同步都整份写一次本地存储。 */
     if (ov.snapshotsWritten) store.save();
+  },
+
+  /** 把「不在首屏」的数据推迟一拍再 setData；defer=false 时立即发 */
+  flushRest(patch, defer) {
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
+    if (!defer) {
+      this._rest = null;
+      this.setData(patch);
+      return;
+    }
+    this._rest = patch;
+    this._restTimer = setTimeout(() => {
+      this._restTimer = null;
+      if (!this._rest) return;
+      this.setData(this._rest);
+      this._rest = null;
+    }, 160);
   },
 
   /* ================= 打卡 ================= */

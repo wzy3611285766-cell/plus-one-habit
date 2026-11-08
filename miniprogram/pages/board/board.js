@@ -60,13 +60,13 @@ Page({
 
   onLoad() {
     this.unsub = store.on((e) => { if (e.type === 'state') this.render(); });
-    this.render();
+    this.render(true);
   },
 
   onShow() {
     if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('board');
     prefs.setStatusBarLight(true);
-    this.render();
+    this.render(true);
     shareCard.refresh(this);
     this.playEnterFx();
   },
@@ -82,32 +82,42 @@ Page({
     if (!this.data.sections.length) return;
     this.stopEnterFx();
     this._fxTargets = this.data.sections.map((sec) => sec.cards.map((c) => c.pct));
-    this.setData({
-      fxOn: false,
-      sections: this.data.sections.map((sec) => Object.assign({}, sec, {
-        cards: sec.cards.map((c) => Object.assign({}, c, { pct: 0 }))
-      }))
-    });
+
+    /* 归零与逐帧都只传 pct 这一个数字（路径更新），不重建整个 sections。
+       每张卡还挂着 logs 数组，整份 map 一遍再 setData，一帧就几十 KB ——
+       入场动画本身反而成了切页最卡的一环。 */
+    const zero = this.pctPatch(0);
+    zero.fxOn = false;
+    this.setData(zero);
+
     this.fxDelayTimer = setTimeout(() => {
       this.setData({ fxOn: true });
-      const steps = 14;
+      const steps = 10;   // 10 帧 × 36ms ≈ 360ms，够看出「长出来」
       let i = 0;
       this.pctTimer = setInterval(() => {
         i++;
         const eased = 1 - Math.pow(1 - i / steps, 3);
-        const targets = this._fxTargets || [];
-        this.setData({
-          sections: this.data.sections.map((sec, si) => Object.assign({}, sec, {
-            cards: sec.cards.map((c, ci) => Object.assign({}, c, {
-              /* 动画窗口内可能同步进来新目标，卡片数比开场时多 ——
-                 targets[si] 可能不存在，直接下标会抛 TypeError 并中断整段动效。 */
-              pct: Math.round(((targets[si] || [])[ci] || 0) * eased)
-            }))
-          }))
-        });
+        this.setData(this.pctPatch(eased));
         if (i >= steps) { clearInterval(this.pctTimer); this.pctTimer = null; }
       }, 36);
     }, 40);
+  },
+
+  /** 生成 { 'sections[i].cards[j].pct': n } 的增量补丁 */
+  pctPatch(level) {
+    const targets = this._fxTargets || [];
+    const sections = this.data.sections || [];
+    const patch = {};
+    for (let si = 0; si < sections.length; si++) {
+      const cards = sections[si].cards || [];
+      for (let ci = 0; ci < cards.length; ci++) {
+        /* 动画窗口内可能同步进来新目标，卡片数比开场时多 ——
+           targets[si] 可能不存在，直接下标会抛 TypeError 并中断整段动效。 */
+        const t = (targets[si] || [])[ci] || 0;
+        patch['sections[' + si + '].cards[' + ci + '].pct'] = Math.round(t * level);
+      }
+    }
+    return patch;
   },
 
   stopEnterFx() {
@@ -118,15 +128,22 @@ Page({
   onUnload() {
     if (this.unsub) this.unsub();
     if (this.confirmTimer) clearTimeout(this.confirmTimer);
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
     this.stopEnterFx();
   },
 
   /* 切走时收掉动效定时器：真实值由下一次 onShow 的 render() 恢复 */
   onHide() {
     this.stopEnterFx();
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
+    this._rest = null;
+    /* 首屏渲染缓存会保留最后一帧：展开的记录、删除确认、选中的柱子都要复位 */
+    if (this.data.expanded || this.data.confirmDel || this.data.picked || this.data.fxOn) {
+      this.setData({ expanded: '', confirmDel: '', picked: '', fxOn: false });
+    }
   },
 
-  render() {
+  render(defer) {
     const st = store.get();
     if (!st) return;
 
@@ -289,18 +306,42 @@ Page({
     if (pausedCards.length) sections.push({ key: 'paused', title: '已暂停', count: pausedCards.length, cards: pausedCards });
     if (doneCards.length) sections.push({ key: 'done', title: '已完成', count: doneCards.length, cards: doneCards });
 
+    /* 首帧只画「进来就要看」的部分：统计条 + 目标卡。
+       14 天柱状图 / 35 格热力 / 最近动态都在页面下半部分，晚一拍再发 ——
+       首帧 setData 体积能少一半，切页时页面先出内容、后补图表。
+       切回来时 data 里已有旧值，推迟只是「稍后更新」，不会让它们消失。 */
     this.setData({
       themeClass: prefs.themeClassOf(st.settings && st.settings.theme),
       logged: auth.isLogged(),
       statCards: statCards,
       sections: sections,
-      hasData: goals.length > 0,
+      hasData: goals.length > 0
+    });
+
+    this.flushRest({
       chart: chart,
       chartMax: chartMax,
       legend: legend,
       heat: heat,
       feed: feed
-    });
+    }, defer);
+  },
+
+  /** 把「不在首屏」的数据推迟一拍再 setData；defer=false 时立即发 */
+  flushRest(patch, defer) {
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
+    if (!defer) {
+      this._rest = null;
+      this.setData(patch);
+      return;
+    }
+    this._rest = patch;
+    this._restTimer = setTimeout(() => {
+      this._restTimer = null;
+      if (!this._rest) return;
+      this.setData(this._rest);
+      this._rest = null;
+    }, 160);
   },
 
   /* ================= 交互 ================= */

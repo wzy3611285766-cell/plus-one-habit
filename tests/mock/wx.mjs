@@ -292,12 +292,18 @@ export function instantiate(pageOptions) {
   inst.data = JSON.parse(JSON.stringify(pageOptions.data || {}));
   inst.setData = function (patch, cb) {
     Object.keys(patch).forEach((key) => {
-      if (key.indexOf('.') < 0) { inst.data[key] = patch[key]; return; }
-      const parts = key.split('.');
+      if (key.indexOf('.') < 0 && key.indexOf('[') < 0) { inst.data[key] = patch[key]; return; }
+      /* 支持小程序真实的路径语法：'a.b' 与 'a[0].b[1].c'。
+         路径更新是产品代码在用的（看板入场动画只传 pct，避免整份 sections 重发），
+         mock 不支持的话，测试读到的还是旧值，会误判成产品 bug。 */
+      const parts = key.replace(/\[(\d+)\]/g, '.$1').split('.');
       let cur = inst.data;
       for (let i = 0; i < parts.length - 1; i++) {
-        if (cur[parts[i]] === undefined || cur[parts[i]] === null) cur[parts[i]] = {};
-        cur = cur[parts[i]];
+        const k = parts[i];
+        if (cur[k] === undefined || cur[k] === null) {
+          cur[k] = /^\d+$/.test(parts[i + 1]) ? [] : {};
+        }
+        cur = cur[k];
       }
       cur[parts[parts.length - 1]] = patch[key];
     });

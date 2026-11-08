@@ -63,6 +63,11 @@ Page({
     shareCard.refresh(this);
   },
 
+  /* 首屏渲染缓存会保留最后一帧：只复位「已保存」提示，草稿与展开状态属于用户数据，不清 */
+  onHide() {
+    if (this.data.savedTip) this.setData({ savedTip: '' });
+  },
+
   onUnload() {
     if (this.unsub) this.unsub();
     if (this.savedTipTimer) clearTimeout(this.savedTipTimer);

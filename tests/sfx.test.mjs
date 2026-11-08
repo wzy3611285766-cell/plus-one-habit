@@ -148,7 +148,8 @@ await test('音量增益必须排在压缩器之后，否则滑块差会被压�
   assert(comp && comp.__type === 'compressor', '音量增益上游应是压缩器');
   const input = comp.__in;
   assert(input && input.__type === 'gain', '压缩器上游应是输入增益');
-  near(input.gain.value, 4, 1e-6, '输入补益固定 4，不随音量变化');
+  /* 2026-11-08 用户反馈整体偏轻，输入补益从 4 提到 6（听感约 +3.5 dB，压缩器兜峰） */
+  near(input.gain.value, 6, 1e-6, '输入补益固定 6，不随音量变化');
 });
 
 await test('改音量后下一次发声就跟着变：40% → 0.4；纯函数映射保持 0.4 不变', () => {

@@ -89,7 +89,13 @@ Page({
   onHide() {
     // 弹层开着时若用户点底栏切走了（底栏可能浮在遮罩之上），
     // 回来时不应还挂着弹层，tabBar 也要恢复
-    if (this.data.sheet) this.setData({ sheet: '' });
+    const patch = {};
+    if (this.data.sheet) patch.sheet = '';
+    /* 首屏渲染缓存会把最后一帧留到下次：提示与忙碌态必须复位 */
+    if (this.data.toastOn) patch.toastOn = false;
+    if (this.data.busy) patch.busy = false;
+    if (this.data.formError) patch.formError = '';
+    if (Object.keys(patch).length) this.setData(patch);
     this.setTabBarVisible(true);
   },
 

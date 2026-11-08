@@ -29,11 +29,16 @@ const MAX_PCT = 100;
 
 /**
  * 主增益补益：音色振幅是 H5 基准的绝对幅度，手机扬声器上偏小，
- * 这里在 WebAudio 主增益上一级补齐（×4 ≈ +12 dB）。
+ * 这里在 WebAudio 主增益上一级补齐。
+ *
+ * ×6 ≈ +15.5 dB（2026-11-08 用户反馈整体偏轻，从 ×4 提到 ×6）。
+ * 注意仍要过压缩器（threshold -4 / ratio 8）：实际听感提升约 3.5 dB，
+ * 不会把 +1 的连击叠音压爆。再往上调要先降压缩比，否则只是把声音压闷。
+ *
  * 只作用于合成链路 —— 兜底 wav 的 InnerAudioContext.volume 上限是 1，
  * 不吃补益（否则映射不单调）。
  */
-const MASTER_BOOST = 4;
+const MASTER_BOOST = 6;
 
 
 /** 连击音阶：C 大调五声音阶向上走一轮（基准 COMBO_STEPS） */

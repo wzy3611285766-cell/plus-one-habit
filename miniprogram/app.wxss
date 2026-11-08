@@ -104,7 +104,12 @@ page{
   --bg-glow:rgba(0,122,255,.055);
   --mask-bg:rgba(0,0,0,.35);
 
+  /* 前一行是不依赖变量的兜底：真机上 CSS 变量一旦没生效（旧内核 / 深色媒体查询未命中），
+     var() 声明会整条失效，页面只剩 theme.json 给的纯黑底，文字和卡片一起「消失」。
+     有了兜底至少能看见内容，也方便判断黑屏到底是变量问题还是渲染问题。 */
+  background:#F2F2F7;
   background:var(--bg-app);
+  color:#1D1D1F;
   color:var(--text-1);
   font-family:var(--font-sans);
   font-size:var(--fs-body);
@@ -505,6 +510,7 @@ view,text,button,input,textarea,scroll-view,image{ box-sizing:border-box; }
    （配色方案由系统决定），所以由这个容器撑满视口并铺底色。 */
 .page{
   min-height:100vh;
+  background-color:#F2F2F7;
   background-color:var(--bg-app);
   /* 顶部一层几乎看不见的色晕。纯色背景上的玻璃是「无色可透」的，
      有了它，半透明浮层透过去才有层次；透明度压在 .05~.09，不当装饰用 */
@@ -539,6 +545,8 @@ app-hero{ display:block; margin-bottom:10px; }
 
 /* ---------- 卡片 ---------- */
 .card{
+  /* 兜底同 page：变量失效时卡片仍是白底黑字，不会和深色页面糊成一片黑 */
+  background:#FFFFFF;
   background:var(--surface);
   border-radius:var(--r-lg);
   box-shadow:var(--sh-2);
