@@ -286,18 +286,15 @@ function planIncoming(query, logged, st) {
 /* ================= 出站：构造转发卡片 ================= */
 
 /**
- * 四个页签共用的转发配置。模板取当前状态 —— 未登录的分享者也能分享
- * （模板 = 他手机上的真实目标）。
- *
- * 单页版把入口收到 pages/home（tab=today）：分享卡点开后直接进容器，
- * 底栏和四个视图都在。旧的 /pages/today/today 仍是可用页面，老链接不会失效。
+ * 四个页签共用的转发配置。路径固定指向今日页（同学的入口就是打卡页），
+ * 模板取当前状态 —— 未登录的分享者也能分享（模板 = 他手机上的真实目标）。
  */
 function shareConfig(st) {
   const tpl = tplFromState(st || { goals: [] });
   const enc = encodeTplFit(tpl);
   const path = enc
-    ? '/pages/home/home?tab=today&' + QUERY_KEY + '=' + enc
-    : '/pages/home/home?tab=today';
+    ? '/pages/today/today?' + QUERY_KEY + '=' + enc
+    : '/pages/today/today';
   return {
     title: '学习目标打卡，分享给你一起坚持',
     path: path

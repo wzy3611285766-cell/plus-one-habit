@@ -1,6 +1,423 @@
 /**
- * 独立页入口。
- * 逻辑在 board-logic.js —— 单页容器（pages/home）会直接复用那份配置，
- * 这里只负责注册成页面，保证旧的分享链接 / 路径仍然能打开。
+ * 进度看板 —— 结构对齐 design-baseline.html 的 #panel-board。
+ *
+ * 页面顺序（与基准一致）：
+ *   统计条（2 张卡）→ 目标卡网格 → 已完成分区 → 14 天堆叠图 + 图例 → 热力 → 最近动态
+ *
+ * 图表用 flex 柱而不是 SVG：
+ *   WXML 没有 svg 标签，canvas 是原生组件会盖住弹层，flex 柱天然自适应且跟随主题。
+ *   代价是拿不到基准的 <title> 悬浮提示，改成点击出气泡（移动端本来也没有 hover）。
  */
-Page(require('./board-logic.js'));
+
+const store = require('../../utils/store.js');
+const auth = require('../../utils/auth.js');
+const fork = require('../../utils/fork.js');
+const shareCard = require('../../utils/share-card.js');
+const etaLabel = require('../../utils/eta-label.js');
+const M = require('../../utils/model.js');
+const U = require('../../utils/util.js');
+const prefs = require('../../utils/prefs.js');
+
+const LOG_ROWS = 10;   // 按天聚合后：仅显示最近 10 天
+
+Page({
+  data: {
+    themeClass: '',
+    logged: false,
+
+    /* 统计条：累计打卡 / 累计活跃 */
+    statCards: [],
+
+    /* 目标卡：进行中在前，已完成单独分区。卡片只存 sections 一份，WXML 也只消费它 */
+    sections: [],
+    hasData: false,
+
+    /* 近 14 天堆叠图 */
+    chart: [],
+    chartMax: 1,
+    legend: [],
+    picked: '',
+
+    /* 近 35 天热力 */
+    heat: [],
+    weekdays: ['一', '二', '三', '四', '五', '六', '日'],
+
+    /* 最近动态 */
+    feed: [],
+
+    /** 当前展开记录的目标；空串表示都收起 */
+    expanded: '',
+    /** 正在等待二次确认删除的记录 id */
+    confirmDel: '',
+    /** 入场喷涌开关：挂上后柱子播 CSS 喷涌动画，圆环由 JS 分步扫描 */
+    fxOn: false
+  },
+
+  /** 转发卡片带目标模板：同学点开即可得到一份自己的副本（见 utils/fork.js） */
+  onShareAppMessage() {
+    return shareCard.decorate(fork.shareConfig(store.get()), this);
+  },
+
+  onLoad() {
+    this.unsub = store.on((e) => { if (e.type === 'state') this.render(); });
+    this.render(true);
+  },
+
+  onShow() {
+    if (this.getTabBar && this.getTabBar()) this.getTabBar().setActive('board');
+    prefs.setStatusBarLight(true);
+    this.render(true);
+    shareCard.refresh(this);
+    /* 每次进入都播一遍：这是「这一页刚打开」的反馈，切回来没有动画会显得没加载完。
+       逐帧由 setData 回调驱动，所以重复播也不会卡。 */
+    this.playEnterFx();
+  },
+
+  /* ================= 入场喷涌 =================
+    切到看板时图表从无到有「喷涌」成形：
+      柱子 —— fxOn 挂 is-gush 类，CSS scaleY 从地面依次弹起（每列错峰 25ms）；
+      圆环 —— conic-gradient 的 --p 无法做 CSS 过渡，只能按帧改数字；
+              帧由 setData 回调驱动（见下），保证每帧都渲染出来。
+    两拍式重启：先摘类并把圆环归零，下一拍再挂类起跑 —— 没有这个间隔，
+    上一轮还挂在节点上的动画类不会被重新触发。 */
+  playEnterFx() {
+    if (!this.data.sections.length) return;
+    this.stopEnterFx();
+    this._fxTargets = this.data.sections.map((sec) => sec.cards.map((c) => c.pct));
+
+    /* 归零与逐帧都只传 pct 这一个数字（路径更新），不重建整个 sections。
+       每张卡还挂着 logs 数组，整份 map 一遍再 setData，一帧就几十 KB ——
+       入场动画本身反而成了切页最卡的一环。 */
+    const zero = this.pctPatch(0);
+    zero.fxOn = false;
+    this.setData(zero);
+
+    this.fxDelayTimer = setTimeout(() => {
+      const DURATION = 460;
+      const startTime = Date.now();
+      this._lastPctSig = '';
+
+      /* 用 setData 的回调串起下一帧，而不是固定 36ms 定时器。
+         固定间隔的问题是：渲染层还没画完，下一帧的数据就发过去了，
+         帧被合并 / 丢弃，数字看起来一顿一顿的。
+         回调驱动保证「这一帧真的渲染出来了」再算下一帧 ——
+         帧率随设备能力浮动，但每一帧都看得见，观感是匀的。 */
+      const tick = () => {
+        const t = Math.min(1, (Date.now() - startTime) / DURATION);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const patch = this.pctPatch(eased);
+
+        const next = () => {
+          if (t >= 1) { this.pctTimer = null; return; }
+          this.pctTimer = setTimeout(tick, 0);
+        };
+
+        /* 整数百分比连续两帧相同是常态（0~100 的早期阶段尤其明显）：
+           跳过重复的 setData，别让渲染层空转 */
+        const sig = JSON.stringify(patch);
+        if (sig === this._lastPctSig) { next(); return; }
+        this._lastPctSig = sig;
+        this.setData(patch, next);
+      };
+
+      this.setData({ fxOn: true }, tick);
+    }, 40);
+  },
+
+  /** 生成 { 'sections[i].cards[j].pct': n } 的增量补丁 */
+  pctPatch(level) {
+    const targets = this._fxTargets || [];
+    const sections = this.data.sections || [];
+    const patch = {};
+    for (let si = 0; si < sections.length; si++) {
+      const cards = sections[si].cards || [];
+      for (let ci = 0; ci < cards.length; ci++) {
+        /* 动画窗口内可能同步进来新目标，卡片数比开场时多 ——
+           targets[si] 可能不存在，直接下标会抛 TypeError 并中断整段动效。 */
+        const t = (targets[si] || [])[ci] || 0;
+        patch['sections[' + si + '].cards[' + ci + '].pct'] = Math.round(t * level);
+      }
+    }
+    return patch;
+  },
+
+  stopEnterFx() {
+    if (this.pctTimer) {
+      clearTimeout(this.pctTimer);
+      clearInterval(this.pctTimer);
+      this.pctTimer = null;
+    }
+    if (this.fxDelayTimer) { clearTimeout(this.fxDelayTimer); this.fxDelayTimer = null; }
+  },
+
+  onUnload() {
+    if (this.unsub) this.unsub();
+    if (this.confirmTimer) clearTimeout(this.confirmTimer);
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
+    this.stopEnterFx();
+  },
+
+  /* 切走时收掉动效定时器：真实值由下一次 onShow 的 render() 恢复 */
+  onHide() {
+    this.stopEnterFx();
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
+    this._rest = null;
+    /* 首屏渲染缓存会保留最后一帧：展开的记录、删除确认、选中的柱子都要复位 */
+    if (this.data.expanded || this.data.confirmDel || this.data.picked || this.data.fxOn) {
+      this.setData({ expanded: '', confirmDel: '', picked: '', fxOn: false });
+    }
+  },
+
+  render(defer) {
+    const st = store.get();
+    if (!st) return;
+
+    const today = U.todayStr();
+    const goals = M.activeGoals(st);
+    const logs = M.activeLogs(st);
+
+    /* ---------- 目标卡 ---------- */
+    const buildCard = (g) => {
+      const done = M.doneAmount(st, g.id);
+      const pct = g.total > 0 ? Math.min(100, done / g.total * 100) : 0;
+      const streak = M.streak(st, g.id);
+      const e = M.eta(st, g);
+
+      let etaText = '';
+      if (e.status === 'done') etaText = '已达成';
+      else if (e.status === 'paused') etaText = '暂停中，恢复后重新推算';
+      else if (e.status === 'unknown') etaText = '近 7 天无记录，暂无推算';
+      else if (e.status === 'overdue') etaText = '已过截止日，仍差 ' + U.trimNum(g.total - done) + ' ' + g.unit;
+      else etaText = etaLabel.label(e);
+
+      /* 记录按天聚合：一行 = 这一天在该目标上的合计（连点几次的 +1 不再逐条刷屏）。
+         复盘要看的是「哪天加了多少」；删除也按天整删（ids 串，两段式确认不变）。 */
+      const byDay = {};
+      logs.forEach((l) => {
+        if (l.goalId !== g.id) return;
+        const d = byDay[l.date] || (byDay[l.date] = { date: l.date, amount: 0, count: 0, minutes: 0, makeup: false, ids: [] });
+        d.amount += l.amount;
+        d.count += 1;
+        d.minutes += l.minutes || 0;
+        if (l.makeup) d.makeup = true;
+        d.ids.push(l.id);
+      });
+      const rows = Object.keys(byDay)
+        .sort((a, b) => (a < b ? 1 : -1))
+        .slice(0, LOG_ROWS)
+        .map((date) => {
+          const d = byDay[date];
+          return {
+            id: d.ids.join(','),
+            date: U.fmtShort(date),
+            amount: U.trimNum(d.amount),
+            count: d.count,
+            minutes: d.minutes,
+            makeup: d.makeup
+          };
+        });
+
+      return {
+        gid: g.id,
+        name: g.name,
+        color: U.gcolor(g.color),
+        sample: !!g.sample,
+        paused: M.isPaused(g),
+        isDone: M.isComplete(st, g),
+        unit: g.unit,
+        done: U.trimNum(done),
+        total: U.trimNum(g.total),
+        pct: Math.round(pct),
+        streak: streak,
+        etaText: etaText,
+        etaAhead: e.status === 'ok' && e.diff >= 0,
+        etaBehind: e.status === 'ok' && e.diff < 0,
+        plan: g.plan || '',
+        obstacle: g.obstacle || '',
+        logCount: Object.keys(byDay).length,
+        logs: rows
+      };
+    };
+
+    /* 暂停的目标单独成区：它既不是「进行中」（今天不用做），
+       也不是「已完成」（任务还没结束）。混在一起会误导进度判断。 */
+    const activeCards = goals.filter((g) => !M.isComplete(st, g) && !M.isPaused(g)).map(buildCard);
+    const pausedCards = goals.filter((g) => !M.isComplete(st, g) && M.isPaused(g)).map(buildCard);
+    const doneCards = goals.filter((g) => M.isComplete(st, g)).map(buildCard);
+
+    /* ---------- 统计条：累计打卡 / 累计活跃 ---------- */
+    const daySet = {};
+    logs.forEach((l) => { daySet[l.date] = 1; });
+    const statCards = [
+      { k: 'logs', num: logs.length, label: 'Plus one（次）', tone: 'is-amber' },
+      { k: 'days', num: Object.keys(daySet).length, label: '累计活跃（天）', tone: 'is-brand' }
+    ];
+
+    /* ---------- 近 14 天堆叠图 ---------- */
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = U.addDays(today, -i);
+      const segs = [];
+      let total = 0;
+      goals.forEach((g) => {
+        const v = M.logsOn(st, g.id, d);
+        if (v > 0) segs.push({ key: g.id, name: g.name, unit: g.unit, color: U.gcolor(g.color || M.COLORS[0]), amount: v });
+        total += v;
+      });
+      days.push({ date: d, label: String(Number(d.slice(8, 10))), isToday: d === today, total: total, segs: segs });
+    }
+
+    const chartMax = Math.max(1, days.reduce((mx, d) => Math.max(mx, d.total), 0));
+    const chart = days.map((d) => ({
+      date: d.date,
+      label: d.label,
+      isToday: d.isToday,
+      pct: Math.round(d.total / chartMax * 100),
+      tipDate: U.fmtShort(d.date) + ' ' + U.weekdayCN(d.date),
+      tipRows: d.segs.slice(0, 4).map((s) => ({
+        k: s.key, name: s.name, unit: s.unit, amount: U.trimNum(s.amount), color: s.color
+      })),
+      /* 段高不再用百分比：柱身已按 total/chartMax 定高，段内用 flex-grow 按
+         数量比例分配即可精确填满 —— 嵌套百分比（段% × 柱%）会被二次缩放，
+         取整误差还会让最高那根溢出裁切或填不满（线上柱子半截的根因）。 */
+      segs: d.segs.map((s) => ({ key: s.key, color: s.color, amount: s.amount }))
+    }));
+
+    /* 图例：只列近 14 天真的出现过的目标（基准 usedGoals 的口径） */
+    const used = {};
+    days.forEach((d) => d.segs.forEach((s) => { used[s.key] = 1; }));
+    const legend = goals
+      .filter((g) => used[g.id])
+      .map((g) => ({ key: g.id, name: g.name, color: U.gcolor(g.color) }));
+
+    /* ---------- 近 35 天热力 ---------- */
+    const heatStart = U.addDays(today, -34);
+    const pad = U.diffDays(U.mondayOf(heatStart), heatStart);
+    const perDay = {};
+    logs.forEach((l) => { perDay[l.date] = (perDay[l.date] || 0) + 1; });
+
+    const heat = [];
+    for (let i = 0; i < pad; i++) heat.push({ k: 'pad' + i, lv: 0, blank: true, isToday: false });
+    for (let i = 0; i < 35; i++) {
+      const d = U.addDays(heatStart, i);
+      const n = perDay[d] || 0;
+      const lv = n <= 0 ? 0 : (n === 1 ? 1 : (n <= 3 ? 2 : (n <= 6 ? 3 : 4)));
+      heat.push({ k: d, lv: lv, blank: false, isToday: d === today });
+    }
+
+    /* ---------- 最近动态 ---------- */
+    const feed = logs
+      .slice()
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+      .map((l) => {
+        const g = M.goalById(st, l.goalId);
+        if (!g) return null;
+        return {
+          k: l.id,
+          name: g.name,
+          amount: U.trimNum(l.amount),
+          unit: g.unit,
+          color: U.gcolor(g.color),
+          date: l.date === today ? '今天'
+            : (l.date === U.addDays(today, -1) ? '昨天' : U.fmtShort(l.date))
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 8);
+
+    /* 分区：进行中在前，已完成单独一段；没有卡片的分区不渲染 */
+    const sections = [];
+    if (activeCards.length) sections.push({ key: 'active', title: '', count: 0, cards: activeCards });
+    if (pausedCards.length) sections.push({ key: 'paused', title: '已暂停', count: pausedCards.length, cards: pausedCards });
+    if (doneCards.length) sections.push({ key: 'done', title: '已完成', count: doneCards.length, cards: doneCards });
+
+    /* 首帧只画「进来就要看」的部分：统计条 + 目标卡。
+       14 天柱状图 / 35 格热力 / 最近动态都在页面下半部分，晚一拍再发 ——
+       首帧 setData 体积能少一半，切页时页面先出内容、后补图表。
+       切回来时 data 里已有旧值，推迟只是「稍后更新」，不会让它们消失。 */
+    this.setData({
+      themeClass: prefs.themeClassOf(st.settings && st.settings.theme),
+      logged: auth.isLogged(),
+      statCards: statCards,
+      sections: sections,
+      hasData: goals.length > 0
+    });
+
+    this.flushRest({
+      chart: chart,
+      chartMax: chartMax,
+      legend: legend,
+      heat: heat,
+      feed: feed
+    }, defer);
+  },
+
+  /** 把「不在首屏」的数据推迟一拍再 setData；defer=false 时立即发 */
+  flushRest(patch, defer) {
+    if (this._restTimer) { clearTimeout(this._restTimer); this._restTimer = null; }
+    if (!defer) {
+      this._rest = null;
+      this.setData(patch);
+      return;
+    }
+    this._rest = patch;
+    this._restTimer = setTimeout(() => {
+      this._restTimer = null;
+      if (!this._rest) return;
+      this.setData(this._rest);
+      this._rest = null;
+    }, 160);
+  },
+
+  /* ================= 交互 ================= */
+
+  /** 点柱子：同一根再点收起 */
+  pickDay(e) {
+    const date = e.currentTarget.dataset.date;
+    if (!date) return;
+    this.setData({ picked: this.data.picked === date ? '' : date });
+  },
+
+  /** 「查看 N 条记录」：一次只展开一个 */
+  toggleLogs(e) {
+    const gid = e.currentTarget.dataset.gid;
+    this.setData({ expanded: this.data.expanded === gid ? '' : gid, confirmDel: '' });
+  },
+
+  /**
+   * 删除一条记录：两段式确认（第一次变红，3 秒内再点才真删）。
+   * 基准用的是同一套「点一次变色、再点确认」的交互，不是长按。
+   */
+  deleteLog(e) {
+    const raw = String(e.currentTarget.dataset.id || '');
+    if (!raw) return;
+
+    if (this.data.confirmDel !== raw) {
+      this.setData({ confirmDel: raw });
+      if (this.confirmTimer) clearTimeout(this.confirmTimer);
+      this.confirmTimer = setTimeout(() => this.setData({ confirmDel: '' }), 3000);
+      return;
+    }
+
+    if (this.confirmTimer) clearTimeout(this.confirmTimer);
+    /* 行是「天」，id 是当天的记录 id 串：一次批量删完 ——
+       逐条 deleteLog 会让每一条都整份落盘并触发一次全页重算，删十几条就卡。 */
+    const removed = store.deleteLogs(raw.split(','));
+    this.setData({ confirmDel: '' });
+    if (removed) {
+      this.render();
+      wx.showToast({ title: '已删除', icon: 'none' });
+    }
+  },
+
+  /** 在看板上直接恢复：卡片上写着「暂停中」，恢复入口就应该在同一张卡上 */
+  resumeGoal(e) {
+    const gid = e.currentTarget.dataset.gid;
+    if (!gid) return;
+    store.resumeGoal(gid);
+    this.render();
+    wx.showToast({ title: '已恢复', icon: 'none' });
+  },
+
+  goToday() { wx.switchTab({ url: '/pages/today/today' }); }
+});

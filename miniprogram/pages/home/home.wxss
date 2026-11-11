@@ -1,3 +1,0 @@
-/* 单页容器本身不排版：页间距沿用 app.wxss 的 .page，
-   各视图的样式在各自的组件 wxss 里（styleIsolation: apply-shared，互不污染）。 */
-.home{ min-height:100vh; }

@@ -38,7 +38,7 @@ Page({
     });
     // 已经登录的人不该再看到登录页
     if (auth.isLogged()) {
-      wx.reLaunch({ url: '/pages/home/home?tab=today' });
+      wx.switchTab({ url: '/pages/today/today' });
     }
   },
 
@@ -75,7 +75,7 @@ Page({
         const fromOtherPage = !!(stack && stack.length > 1);
         setTimeout(() => {
           if (fromOtherPage) wx.navigateBack();
-          else wx.reLaunch({ url: '/pages/home/home?tab=today' });
+          else wx.switchTab({ url: '/pages/today/today' });
         }, 500);
       })
       .catch((e) => {
@@ -92,7 +92,7 @@ Page({
   browse() {
     const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
     if (pages && pages.length > 1) { wx.navigateBack(); return; }
-    wx.reLaunch({ url: '/pages/home/home?tab=today' });
+    wx.switchTab({ url: '/pages/today/today' });
   },
 
 });
