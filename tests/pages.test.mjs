@@ -44,7 +44,8 @@ const pageFiles = {
   board: path.join(PAGES, 'board', 'board.js'),
   weekly: path.join(PAGES, 'weekly', 'weekly.js'),
   mine: path.join(PAGES, 'mine', 'mine.js'),
-  goalEdit: path.join(PAGES, 'goal-edit', 'goal-edit.js')
+  goalEdit: path.join(PAGES, 'goal-edit', 'goal-edit.js'),
+  home: path.join(PAGES, 'home', 'home.js')
 };
 
 /** util 层有模块级状态（当前会话、shards），每轮都重新加载一份干净的 */
@@ -402,8 +403,8 @@ await test('登录页有「先随便看看」出口：不登录也能回到今�
   const before = env.log.length;
   page.browse();
   const nav = env.log.slice(before);
-  assert(nav.some((x) => x.type === 'switchTab' && x.url === '/pages/today/today'),
-    '没有页面栈时应 switchTab 回今日页，而不是把用户困在登录页');
+  assert(nav.some((x) => x.type === 'reLaunch' && x.url === '/pages/home/home?tab=today'),
+    '没有页面栈时应回到单页容器的今日视图，而不是把用户困在登录页');
 
   // 从今日页点「登录」进来（有页面栈）→ 直接返回上一页
   env.pageStack = [{}, {}];
@@ -1280,6 +1281,52 @@ await test('周报页：暂停目标不占汇总行，也不生成卡片错误',
   eq(page.data.summary.length, 0, '暂停且本周没投入的目标不占汇总行');
   assert(page.data.report && page.data.report.headline, '自动小结必须有结论');
   eq(page.data.formOpen, false, '手写复盘默认收起');
+});
+
+group('单页容器 · 常驻视图');
+
+await test('首屏只挂今日页，其余三份交给预热，不跟首帧抢主线程', async () => {
+  const U34 = freshUtils();
+  await boot(U34);
+
+  const page = mount('home');
+  page.onLoad({ tab: 'today' });
+
+  eq(page.data.tab, 'today');
+  eq(page.data.mounted.today, true, '首屏必须先有今日视图');
+  eq(page.data.mounted.board, false, '首屏不能一次创建四份视图');
+  eq(page.data.mounted.weekly, false);
+  eq(page.data.mounted.mine, false);
+
+  /* onReady 只排预热定时器：预热必须晚于首帧，不能顶住冷启动 */
+  page.onReady();
+  assert(page._preheatTimer, 'onReady 应把预热排进定时器');
+
+  page.onUnload();
+  eq(page._preheatTimer, null, 'onUnload 必须清掉预热定时器');
+});
+
+await test('切视图只改 data，不产生任何页面跳转', async () => {
+  const U35 = freshUtils();
+  await boot(U35);
+
+  const page = mount('home');
+  page.onLoad({ tab: 'today' });
+
+  const before = env.log.length;
+  page.onSwitch({ detail: { key: 'board' } });
+
+  eq(page.data.tab, 'board', '当前视图应切到看板');
+  eq(page.data.mounted.board, true, '目标视图应被挂上');
+  eq(page.data.mounted.today, true, '旧的视图要常驻，不能卸载');
+
+  const nav = env.log.slice(before).filter((x) => x.type === 'switchTab' || x.type === 'reLaunch' || x.type === 'redirectTo');
+  eq(nav.length, 0, '单页容器切视图不得触发页面跳转（否则又回到创建页面的老路）');
+
+  /* 记住各自滚动位置：切回来不该被拉到顶部 */
+  page.onPageScroll({ scrollTop: 420 });
+  page.onSwitch({ detail: { key: 'today' } });
+  eq(page._scrollTop.board, 420, '离开看板时应记住它的滚动位置');
 });
 
 export const suite = '页面集成';

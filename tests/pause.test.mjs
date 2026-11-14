@@ -229,3 +229,38 @@ await test('云端 goal 白名单保留暂停区间，坏区间丢弃', () => {
   deepEq(payload.goals[0].pauses, [{ f: '2026-11-01', t: '' }],
     '暂停状态必须能同步到另一台设备，否则那边会重新按漏卡计算');
 });
+
+group('任务暂停（持久化：重启 / 旧客户端回写）');
+
+await test('暂停态落盘后重新解析仍在（冷启动不丢暂停）', () => {
+  const st = M.blankState();
+  st.goals.push(mg({ pauses: undefined }));
+  store.replaceAll(st);
+  store.pauseGoal('g1', TODAY);
+
+  /* load() 走的就是这条路：storage 里的 JSON → parseState。
+     以前这里没有用例，暂停是否「过夜还在」全靠运气。 */
+  const saved = M.parseState(JSON.parse(JSON.stringify(store.get()))).state;
+  eq(M.isPaused(saved.goals[0]), true, '重新载入后仍应是暂停中');
+  eq(M.todayOverview(saved).rows.length, 0, '暂停目标不该回到今日待办');
+});
+
+await test('同时间戳时，旧客户端丢掉 pauses 的那一份不能赢', () => {
+  const local = mg({ pauses: [{ f: TODAY, t: '' }], updatedAt: 1000 });
+  /* 旧版本客户端不认识 pauses：它把目标原样同步回云端，只少了这个字段，
+     updatedAt 一模一样。以前「打平取云端」会把暂停抹掉。 */
+  const remote = mg({ pauses: undefined, updatedAt: 1000 });
+
+  eq(M.isPaused(M.mergeGoals([local], [remote])[0]), true,
+    '本机按下的暂停不能被旧客户端的回写抹掉');
+  eq(M.isPaused(M.mergeGoals([remote], [local])[0]), true,
+    '反过来合并也必须得到同一结果（收敛性不能破）');
+});
+
+await test('恢复过的区间不会因为合并被判回暂停', () => {
+  /* 恢复是一次真实的写入（updatedAt 更新），LWW 必须让新的那份赢 */
+  const resumed = mg({ pauses: [{ f: U.addDays(TODAY, -3), t: U.addDays(TODAY, -1) }], updatedAt: 2000 });
+  const paused = mg({ pauses: [{ f: U.addDays(TODAY, -3), t: '' }], updatedAt: 1000 });
+
+  eq(M.isPaused(M.mergeGoals([paused], [resumed])[0]), false, '恢复晚于暂停，应以恢复为准');
+});

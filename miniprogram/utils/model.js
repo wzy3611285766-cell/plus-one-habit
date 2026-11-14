@@ -610,11 +610,31 @@ function isExpiredTombstone(obj, deletedAt) {
   return deletedAt < cutTs;
 }
 
+/**
+ * 暂停区间的「完整度」。同时间戳时用它判断哪一侧的数据更全。
+ *
+ * 为什么需要它：不认识 pauses 字段的旧版本客户端，把同一个目标同步回云端时
+ * 会把这个字段整个丢掉，而 updatedAt 原样带回来。合并时时间戳打平、按
+ * 「打平取云端」的规则就会把用户刚按下的暂停悄悄抹掉 —— 表现就是「暂停了，
+ * 第二天任务又回到待办，得再按一次」。
+ * 这个比较是纯函数：两台设备面对同一对对象必得同一结果，收敛性不受影响。
+ */
+function pauseDepth(g) {
+  if (!g || !Array.isArray(g.pauses)) return 0;
+  let n = 0;
+  g.pauses.forEach((p) => { if (p && U.isDateString(p.f)) n++; });
+  return n;
+}
+
 function pickNewer(a, b) {
   const ua = U.finiteNumber(a && a.updatedAt, 0, 1e15) ? a.updatedAt : 0;
   const ub = U.finiteNumber(b && b.updatedAt, 0, 1e15) ? b.updatedAt : 0;
   if (ua !== ub) return ua > ub ? a : b;
-  // 打平：一律取「云端」侧（参数 b），两台设备因此得出相同结果
+  /* 打平：先比暂停区间的完整度（旧客户端丢字段的那一份不能赢），
+     再一律取「云端」侧（参数 b），两台设备因此得出相同结果 */
+  const da = pauseDepth(a);
+  const db = pauseDepth(b);
+  if (da !== db) return da > db ? a : b;
   return b;
 }
 

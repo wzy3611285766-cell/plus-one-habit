@@ -814,7 +814,13 @@
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .menu-item{
-  display:flex;align-items:center;gap:12px;
+  /* 用网格而不是 flex：图标列宽写死 20px，文字起点就与「图形自身多宽」
+     彻底无关。flex + gap 时，铅笔 15 / 暂停 12 / 垃圾桶 13 只要有一个
+     撑开或缩窄，三个菜单项的文字起点就会各差几像素 —— 看着就是字不齐。 */
+  display:grid;
+  grid-template-columns:20px minmax(0,1fr);
+  column-gap:12px;
+  align-items:center;
   width:100%;
   min-height:50px;
   padding:0 4px;
@@ -832,6 +838,8 @@
 .menu-item-danger{ color:var(--danger-ink); }
 .menu-item-danger:active{ background:rgba(255,59,48,.12); }
 .menu-item-ghost{
+  /* 取消键只有一行字、没有图标，不参与上面的两列网格 */
+  display:flex;
   justify-content:center;
   color:var(--text-2);
   font-weight:600;

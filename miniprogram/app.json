@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/home/home",
     "pages/today/today",
     "pages/board/board",
     "pages/weekly/weekly",
@@ -14,19 +15,6 @@
     "navigationBarTextStyle": "black",
     "backgroundColor": "#F2F2F7",
     "navigationStyle": "default"
-  },
-  "tabBar": {
-    "custom": true,
-    "color": "#8E8E93",
-    "selectedColor": "#007AFF",
-    "backgroundColor": "#FFFFFF",
-    "borderStyle": "white",
-    "list": [
-      { "pagePath": "pages/today/today", "text": "今日打卡" },
-      { "pagePath": "pages/board/board", "text": "进度看板" },
-      { "pagePath": "pages/weekly/weekly", "text": "周报复盘" },
-      { "pagePath": "pages/mine/mine", "text": "我的" }
-    ]
   },
   "darkmode": true,
   "themeLocation": "theme.json",
